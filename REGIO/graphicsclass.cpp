@@ -6,6 +6,7 @@
 
 GraphicsClass::GraphicsClass()
 {
+
 }
 
 
