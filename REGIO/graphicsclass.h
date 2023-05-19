@@ -32,12 +32,12 @@ public:
 	bool Initialize(int, int, HWND);
 	void Shutdown();
 	bool Frame();
-
+	float count = 0;
 private:
 	bool Render();
 
 private:
-
+	
 	D3DClass* m_D3D;
 
 };
