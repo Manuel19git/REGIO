@@ -2,15 +2,24 @@
 
 #pragma comment(lib, "d3d11.lib")
 
+#define GFX_THROW_FAILED(hrcall) if(FAILED(hr = (hrcall) ) ) throw D3DClass::HrException(__LINE__, __FILE__, hr);
+#define GFX_DEVICE_REMOVED_EXCEPT(hr) D3DClass::DeviceRemovedException(__LINE__, __FILE__, hr);
+
 D3DClass::D3DClass()
 {
 	pDevice = 0;
 	pDeviceContext = 0;
     pSwap = 0;
+    pTarget = 0;
 }
 
 D3DClass::~D3DClass()
 {
+}
+
+void DirectXError(HRESULT hr, const std::string& Msg, const std::string& File, int Line)
+{
+    
 }
 
 bool D3DClass::Initialize(HWND hWnd)
@@ -27,13 +36,17 @@ bool D3DClass::Initialize(HWND hWnd)
     desc.SampleDesc.Count = 1;      //multisampling setting (With this we specify that we don't want antialiasing)
     desc.SampleDesc.Quality = 0;    //vendor-specific flag
     desc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
-    desc.OutputWindow = hWnd;
+    //desc.OutputWindow = hWnd;
+    desc.OutputWindow = (HWND)6969;
 
-    D3D11CreateDeviceAndSwapChain(
+    //I have to initialize hr in order for the macro to work
+    HRESULT hr;
+
+    GFX_THROW_FAILED(D3D11CreateDeviceAndSwapChain(
         nullptr,
         D3D_DRIVER_TYPE_HARDWARE,
         nullptr,
-        0,
+        D3D11_CREATE_DEVICE_DEBUG,
         nullptr,
         0,                          //Give me all feature levels you can
         D3D11_SDK_VERSION,
@@ -42,17 +55,17 @@ bool D3DClass::Initialize(HWND hWnd)
         &pDevice,
         nullptr,
         &pDeviceContext
-    );
+    ));
 
     //Get back buffer from the swap chain
     ID3D11Resource* pBackBuffer = nullptr;
-    pSwap->GetBuffer(0, __uuidof(ID3D11Resource), reinterpret_cast<void**>(&pBackBuffer));
+    GFX_THROW_FAILED( pSwap->GetBuffer(0, __uuidof(ID3D11Resource), reinterpret_cast<void**>(&pBackBuffer)) );
 
-    pDevice->CreateRenderTargetView(
+    GFX_THROW_FAILED( pDevice->CreateRenderTargetView(
         pBackBuffer,
         nullptr,
         &pTarget
-    );
+    ));
 
     //Once the target view is created we don't need the handler to the back buffer
     pBackBuffer->Release();
@@ -63,8 +76,20 @@ bool D3DClass::Initialize(HWND hWnd)
 //This method will be in charge of flipping (Taking the back buffer and presenting it as the front)
 void D3DClass::EndScene()
 {
+    HRESULT hr;
+
     //SyncInterval of 1u would mean 60 fps. And 2u for 30fps
-    pSwap->Present(1u, 0u);
+    if (FAILED( hr = pSwap->Present(1u, 0u)))
+    {
+        if (hr == DXGI_ERROR_DEVICE_REMOVED)
+        {
+            throw GFX_DEVICE_REMOVED_EXCEPT(pDevice->GetDeviceRemovedReason());
+        }
+        else
+        {
+            GFX_THROW_FAILED(hr);
+        }
+    }
 }
 
 void D3DClass::Shutdown()
@@ -86,3 +111,51 @@ void D3DClass::Shutdown()
         pDevice->Release();
     }
 }
+
+//Here we implement hr exceptions
+
+D3DClass::HrException::HrException(int line, const char* file, HRESULT hr, std::vector<std::string> infoMsgs)
+    :
+    MyException(line, file),
+    hr(hr)
+{}
+
+const char* D3DClass::HrException::what() const
+{
+    std::ostringstream oss;
+    oss << GetType() << std::endl
+        << "[Error Code] 0x" << std::hex << std::uppercase << GetErrorCode()
+        << std::dec << "(" << (unsigned long)GetErrorCode() << ")" << std::endl
+        << "[Error String] " << GetErrorString() << std::endl
+        << "[Error Description] " << GetErrorDescription() << std::endl
+        << GetOriginstring();
+    whatBuffer = oss.str();
+    return whatBuffer.c_str();
+}
+
+const char* D3DClass::HrException::GetType() const
+{
+    return "My Graphics Exception";
+}
+HRESULT D3DClass::HrException::GetErrorCode() const
+{
+    return hr;
+}
+std::string D3DClass::HrException::GetErrorString() const
+{
+    return DXGetErrorStringA(hr);
+}
+std::string D3DClass::HrException::GetErrorDescription() const
+{
+    char buf[512];
+    DXGetErrorDescriptionA(hr, buf, sizeof(buf));
+    return buf;
+}
+
+
+const char* D3DClass::DeviceRemovedException::GetType() const
+{
+    return "My Graphics Exception [Device Removed] DXGI_ERROR_DEVICE_REMOVED";
+}
+
+

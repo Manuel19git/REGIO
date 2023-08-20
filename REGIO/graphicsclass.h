@@ -9,7 +9,7 @@
 // INCLUDES //
 //////////////
 #include "d3dclass.h"
-
+#include "MyException.h"
 
 /////////////
 // GLOBALS //

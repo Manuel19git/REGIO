@@ -7,6 +7,10 @@
 #include <d3d11_2.h>
 #include <DirectXMath.h>
 #include <wrl.h>
+#include <vector>
+#include <sstream>
+
+#include "MyException.h"
 
 using namespace DirectX;
 
@@ -19,6 +23,27 @@ using namespace DirectX;
 ////////////////////////////////////////////////////////////////////////////////
 class D3DClass
 {
+public:
+	class HrException : public MyException
+	{
+	public:
+		HrException(int line, const char* file, HRESULT hr, std::vector<std::string> infoMsgs = {});
+		const char* what() const override;
+		const char* GetType() const override;
+		HRESULT GetErrorCode() const;
+		std::string GetErrorString() const;
+		std::string GetErrorDescription() const;
+
+	private:
+		HRESULT hr;
+	};
+	class DeviceRemovedException : public HrException
+	{
+		using HrException::HrException;
+	public:
+		const char* GetType() const override;
+	};
+
 public:
 	D3DClass();
 	D3DClass(const D3DClass&) = delete;
@@ -52,5 +77,7 @@ private:
 	IDXGISwapChain* pSwap;
 	ID3D11RenderTargetView* pTarget;
 };
+
+#define D3_EXCEPT(hr) D3DClass::HrException(__LINE__, __FILE__, hr);
 
 #endif

@@ -7,18 +7,36 @@
 //nCmdShow -> aplicación maximizada, minimizada o normal
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow)
 {
-	SystemClass* systemClass = new SystemClass();
-	bool result;
-
-	//Inicializar ventana y algunas variables
-	result = systemClass->Initialize();
-	if (result)
+	try
 	{
-		systemClass->Run();
+
+		SystemClass* systemClass = new SystemClass();
+		bool result;
+
+		//Inicializar ventana y algunas variables
+		result = systemClass->Initialize();
+		if (result)
+		{
+			systemClass->Run();
+		}
+
+		systemClass->Shutdown();
+		delete systemClass;
+
+		return 0;
+	}
+	catch (const MyException& e)
+	{
+		MessageBoxA(nullptr, e.what(), e.GetType(), MB_OK | MB_ICONEXCLAMATION);
+	}
+	catch (const std::exception& e)
+	{
+		MessageBoxA(nullptr, e.what(), "Standard Exception", MB_OK | MB_ICONEXCLAMATION);
+	}
+	catch (...)
+	{
+		MessageBoxA(nullptr, "No details available", "Unknown Exception", MB_OK | MB_ICONEXCLAMATION);
 	}
 
-	systemClass->Shutdown();
-	delete systemClass;
-
-	return 0;
+	return -1;
 }
