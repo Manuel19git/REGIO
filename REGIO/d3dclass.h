@@ -9,6 +9,7 @@
 #include <wrl.h>
 #include <vector>
 #include <sstream>
+#include <wrl.h> //ComPtr
 
 #include "MyException.h"
 #include "DxgiInfoManager.h"
@@ -71,11 +72,7 @@ public:
 
 	void BeginScene();
 	void EndScene();
-	void ClearBuffer(float red, float green, float blue) noexcept
-	{
-		const float color[] = {red, green, blue, 1.0f};
-		pDeviceContext->ClearRenderTargetView(pTarget, color);
-	}
+	void ClearBuffer(float red, float green, float blue);
 
 	ID3D11Device* GetDevice();
 	ID3D11DeviceContext* GetDeviceContext();
@@ -93,10 +90,10 @@ private:
 	DxgiInfoManager infoManager;
 #endif
 
-	ID3D11Device* pDevice;
-	ID3D11DeviceContext* pDeviceContext;
-	IDXGISwapChain* pSwap;
-	ID3D11RenderTargetView* pTarget;
+	Microsoft::WRL::ComPtr<ID3D11Device> pDevice;
+	Microsoft::WRL::ComPtr<ID3D11DeviceContext> pDeviceContext;
+	Microsoft::WRL::ComPtr<IDXGISwapChain> pSwap;
+	Microsoft::WRL::ComPtr<ID3D11RenderTargetView> pTarget;
 };
 
 

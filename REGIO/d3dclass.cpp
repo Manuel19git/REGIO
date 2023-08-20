@@ -4,20 +4,11 @@
 
 
 D3DClass::D3DClass()
-{
-	pDevice = 0;
-	pDeviceContext = 0;
-    pSwap = 0;
-    pTarget = 0;
-}
+{}
 
-D3DClass::~D3DClass()
-{
-}
 
 void DirectXError(HRESULT hr, const std::string& Msg, const std::string& File, int Line)
 {
-    
 }
 
 bool D3DClass::Initialize(HWND hWnd)
@@ -34,8 +25,7 @@ bool D3DClass::Initialize(HWND hWnd)
     desc.SampleDesc.Count = 1;      //multisampling setting (With this we specify that we don't want antialiasing)
     desc.SampleDesc.Quality = 0;    //vendor-specific flag
     desc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
-    //desc.OutputWindow = hWnd;
-    desc.OutputWindow = (HWND)6969;
+    desc.OutputWindow = hWnd;
 
 
     UINT swapCreateFlags = 0u;
@@ -62,17 +52,14 @@ bool D3DClass::Initialize(HWND hWnd)
     ));
 
     //Get back buffer from the swap chain
-    ID3D11Resource* pBackBuffer = nullptr;
-    GFX_THROW_INFO( pSwap->GetBuffer(0, __uuidof(ID3D11Resource), reinterpret_cast<void**>(&pBackBuffer)) );
+    Microsoft::WRL::ComPtr<ID3D11Resource> pBackBuffer;
+    GFX_THROW_INFO( pSwap->GetBuffer(0, __uuidof(ID3D11Resource), &pBackBuffer) );
 
     GFX_THROW_INFO( pDevice->CreateRenderTargetView(
-        pBackBuffer,
+        pBackBuffer.Get(),
         nullptr,
         &pTarget
     ));
-
-    //Once the target view is created we don't need the handler to the back buffer
-    pBackBuffer->Release();
 
     return true;
 }
@@ -118,6 +105,12 @@ void D3DClass::Shutdown()
     {
         pDevice->Release();
     }
+}
+
+void D3DClass::ClearBuffer(float red, float green, float blue)
+{
+    const float color[] = { red, green, blue, 1.0f };
+    pDeviceContext->ClearRenderTargetView(pTarget.Get(), color);
 }
 
 //Here we implement hr exceptions
