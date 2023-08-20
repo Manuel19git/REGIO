@@ -2,8 +2,6 @@
 
 #pragma comment(lib, "d3d11.lib")
 
-#define GFX_THROW_FAILED(hrcall) if(FAILED(hr = (hrcall) ) ) throw D3DClass::HrException(__LINE__, __FILE__, hr);
-#define GFX_DEVICE_REMOVED_EXCEPT(hr) D3DClass::DeviceRemovedException(__LINE__, __FILE__, hr);
 
 D3DClass::D3DClass()
 {
@@ -39,14 +37,20 @@ bool D3DClass::Initialize(HWND hWnd)
     //desc.OutputWindow = hWnd;
     desc.OutputWindow = (HWND)6969;
 
+
+    UINT swapCreateFlags = 0u;
+#ifndef NDEBUG
+    swapCreateFlags |= D3D11_CREATE_DEVICE_DEBUG;
+#endif
+
     //I have to initialize hr in order for the macro to work
     HRESULT hr;
 
-    GFX_THROW_FAILED(D3D11CreateDeviceAndSwapChain(
+    GFX_THROW_INFO(D3D11CreateDeviceAndSwapChain(
         nullptr,
         D3D_DRIVER_TYPE_HARDWARE,
         nullptr,
-        D3D11_CREATE_DEVICE_DEBUG,
+        swapCreateFlags,
         nullptr,
         0,                          //Give me all feature levels you can
         D3D11_SDK_VERSION,
@@ -59,9 +63,9 @@ bool D3DClass::Initialize(HWND hWnd)
 
     //Get back buffer from the swap chain
     ID3D11Resource* pBackBuffer = nullptr;
-    GFX_THROW_FAILED( pSwap->GetBuffer(0, __uuidof(ID3D11Resource), reinterpret_cast<void**>(&pBackBuffer)) );
+    GFX_THROW_INFO( pSwap->GetBuffer(0, __uuidof(ID3D11Resource), reinterpret_cast<void**>(&pBackBuffer)) );
 
-    GFX_THROW_FAILED( pDevice->CreateRenderTargetView(
+    GFX_THROW_INFO( pDevice->CreateRenderTargetView(
         pBackBuffer,
         nullptr,
         &pTarget
@@ -77,6 +81,10 @@ bool D3DClass::Initialize(HWND hWnd)
 void D3DClass::EndScene()
 {
     HRESULT hr;
+#ifndef NDEBUG
+    infoManager.Set();
+#endif 
+
 
     //SyncInterval of 1u would mean 60 fps. And 2u for 30fps
     if (FAILED( hr = pSwap->Present(1u, 0u)))
@@ -87,7 +95,7 @@ void D3DClass::EndScene()
         }
         else
         {
-            GFX_THROW_FAILED(hr);
+            GFX_THROW_INFO(hr);
         }
     }
 }
@@ -118,7 +126,19 @@ D3DClass::HrException::HrException(int line, const char* file, HRESULT hr, std::
     :
     MyException(line, file),
     hr(hr)
-{}
+{
+    //join messages
+    for (const auto& m : infoMsgs)
+    {
+        info += m;
+        info.push_back('\n');
+    }
+    //remove final line if exists
+    if (!info.empty())
+    {
+        info.pop_back();
+    }
+}
 
 const char* D3DClass::HrException::what() const
 {
@@ -127,8 +147,12 @@ const char* D3DClass::HrException::what() const
         << "[Error Code] 0x" << std::hex << std::uppercase << GetErrorCode()
         << std::dec << "(" << (unsigned long)GetErrorCode() << ")" << std::endl
         << "[Error String] " << GetErrorString() << std::endl
-        << "[Error Description] " << GetErrorDescription() << std::endl
-        << GetOriginstring();
+        << "[Error Description] " << GetErrorDescription() << std::endl;
+    if (!info.empty())
+    {
+        oss << "\n[Error Info]\n" << GetErrorInfo() << std::endl;
+    }
+    oss << GetOriginString();
     whatBuffer = oss.str();
     return whatBuffer.c_str();
 }
@@ -150,6 +174,10 @@ std::string D3DClass::HrException::GetErrorDescription() const
     char buf[512];
     DXGetErrorDescriptionA(hr, buf, sizeof(buf));
     return buf;
+}
+std::string D3DClass::HrException::GetErrorInfo() const
+{
+    return info;
 }
 
 

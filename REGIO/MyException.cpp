@@ -6,7 +6,7 @@ const char* MyException::what() const
 {
 	std::ostringstream oss;
 	oss << GetType() << std::endl
-		<< GetOriginstring();
+		<< GetOriginString();
 	whatBuffer = oss.str();
 	return whatBuffer.c_str();
 }
@@ -26,7 +26,7 @@ const std::string MyException::GetFile() const
 	return file;
 }
 
-std::string MyException::GetOriginstring() const
+std::string MyException::GetOriginString() const
 {
 	std::ostringstream oss;
 	oss << "[File]" << file << std::endl

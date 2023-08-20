@@ -12,7 +12,7 @@ public:
 	virtual const char* GetType() const;
 	int GetLine() const;
 	const std::string GetFile() const;
-	std::string GetOriginstring() const;
+	std::string GetOriginString() const;
 
 private:
 	int line;

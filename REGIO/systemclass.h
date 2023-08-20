@@ -17,9 +17,30 @@
 #include "inputclass.h"
 #include "graphicsclass.h"
 
+#define WND_EXCEPT( hr ) SystemClass::HrException( __LINE__,__FILE__,(hr) );
+#define WND_LAST_EXCEPT() SystemClass::HrException( __LINE__,__FILE__,GetLastError() );
+#define WND_NOGFX_EXCEPT() SystemClass::NoGfxException( __LINE__,__FILE__ );
 
 class SystemClass
 {
+public:
+	class HrException : public MyException
+	{
+	public:
+		HrException(int line, const char* file, HRESULT hr);
+		const char* what() const override;
+		const char* GetType() const override;
+		HRESULT GetErrorCode() const;
+		std::string GetErrorDescription() const;
+	private:
+		HRESULT hr;
+	};
+	class NoGfxException : public MyException
+	{
+	public:
+		using MyException::MyException;
+		const char* GetType() const override;
+	};
 public:
 	SystemClass();
 	SystemClass(const SystemClass&);

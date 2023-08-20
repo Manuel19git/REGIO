@@ -11,8 +11,23 @@
 #include <sstream>
 
 #include "MyException.h"
+#include "DxgiInfoManager.h"
 
 using namespace DirectX;
+
+#define GFX_EXCEPT_NOINFO(hr) D3DClass::HrException( __LINE__,__FILE__,(hr) );
+#define GFX_THROW_NOINFO(hrcall) if( FAILED( hr = (hrcall) ) ) throw D3DClass::HrException( __LINE__,__FILE__,hr );
+
+#ifndef NDEBUG
+#define GFX_EXCEPT(hr) D3DClass::HrException( __LINE__,__FILE__,(hr),infoManager.GetMessages() )
+#define GFX_THROW_INFO(hrcall) infoManager.Set(); if( FAILED( hr = (hrcall) ) ) throw GFX_EXCEPT(hr)
+#define GFX_DEVICE_REMOVED_EXCEPT(hr) D3DClass::DeviceRemovedException( __LINE__,__FILE__,(hr),infoManager.GetMessages() )
+#else
+#define GFX_EXCEPT(hr) D3DClass::HrException( __LINE__,__FILE__,(hr) )
+#define GFX_THROW_INFO(hrcall) GFX_THROW_NOINFO(hrcall)
+#define GFX_DEVICE_REMOVED_EXCEPT(hr) D3DClass::DeviceRemovedException( __LINE__,__FILE__,(hr) )
+#endif
+
 
 /////////////
 // GLOBALS //
@@ -33,9 +48,11 @@ public:
 		HRESULT GetErrorCode() const;
 		std::string GetErrorString() const;
 		std::string GetErrorDescription() const;
+		std::string GetErrorInfo() const;
 
 	private:
 		HRESULT hr;
+		std::string info;
 	};
 	class DeviceRemovedException : public HrException
 	{
@@ -72,12 +89,15 @@ public:
 
 
 private:
+#ifndef NDEBUG
+	DxgiInfoManager infoManager;
+#endif
+
 	ID3D11Device* pDevice;
 	ID3D11DeviceContext* pDeviceContext;
 	IDXGISwapChain* pSwap;
 	ID3D11RenderTargetView* pTarget;
 };
 
-#define D3_EXCEPT(hr) D3DClass::HrException(__LINE__, __FILE__, hr);
 
 #endif
