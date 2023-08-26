@@ -10,6 +10,7 @@
 #include <vector>
 #include <sstream>
 #include <wrl.h> //ComPtr
+#include <d3dcompiler.h>
 
 #include "MyException.h"
 #include "DxgiInfoManager.h"
@@ -22,6 +23,7 @@ using namespace DirectX;
 #ifndef NDEBUG
 #define GFX_EXCEPT(hr) D3DClass::HrException( __LINE__,__FILE__,(hr),infoManager.GetMessages() )
 #define GFX_THROW_INFO(hrcall) infoManager.Set(); if( FAILED( hr = (hrcall) ) ) throw GFX_EXCEPT(hr)
+#define GFX_THROW_INFO_ONLY(call) infoManager.Set(); (call); {auto v = infoManager.GetMessages(); if(!v.empty()) {throw D3DClass::InfoException( __LINE__,__FILE__,v );}}
 #define GFX_DEVICE_REMOVED_EXCEPT(hr) D3DClass::DeviceRemovedException( __LINE__,__FILE__,(hr),infoManager.GetMessages() )
 #else
 #define GFX_EXCEPT(hr) D3DClass::HrException( __LINE__,__FILE__,(hr) )
@@ -55,6 +57,17 @@ public:
 		HRESULT hr;
 		std::string info;
 	};
+	class InfoException : public MyException
+	{
+	public:
+		InfoException(int line, const char* file, std::vector<std::string> infoMsgs = {});
+		const char* what() const override;
+		const char* GetType() const override;
+		std::string GetErrorInfo() const;
+
+	private:
+		std::string info;
+	};
 	class DeviceRemovedException : public HrException
 	{
 		using HrException::HrException;
@@ -72,6 +85,7 @@ public:
 
 	void BeginScene();
 	void EndScene();
+	void DrawTestTriangle();
 	void ClearBuffer(float red, float green, float blue);
 
 	ID3D11Device* GetDevice();

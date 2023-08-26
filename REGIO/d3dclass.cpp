@@ -1,6 +1,8 @@
+#include <iostream>
 #include "d3dclass.h"
 
 #pragma comment(lib, "d3d11.lib")
+#pragma comment(lib, "D3DCompiler.lib")
 
 
 D3DClass::D3DClass()
@@ -113,6 +115,51 @@ void D3DClass::ClearBuffer(float red, float green, float blue)
     pDeviceContext->ClearRenderTargetView(pTarget.Get(), color);
 }
 
+void D3DClass::DrawTestTriangle()
+{
+    HRESULT hr;
+    namespace wrl = Microsoft::WRL;
+
+    //Creation of buffer with vertex for triangle
+    struct Vertex
+    {
+        float x;
+        float y;
+    };
+    const Vertex triangle[] = {
+        {-0.5, 0.5},
+        {0.5, -0.5},
+        {-0.5, -0.5}
+    };
+    D3D11_BUFFER_DESC bufferDesc;
+    bufferDesc.ByteWidth = sizeof(triangle);
+    bufferDesc.Usage = D3D11_USAGE_DEFAULT;
+    bufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+    bufferDesc.CPUAccessFlags = 0;
+    bufferDesc.MiscFlags = 0;
+    bufferDesc.StructureByteStride = sizeof(Vertex);
+    D3D11_SUBRESOURCE_DATA subData;
+    subData.pSysMem = triangle;
+    wrl::ComPtr<ID3D11Buffer> pVertexBuffer;
+    GFX_THROW_INFO(pDevice->CreateBuffer(&bufferDesc, &subData, &pVertexBuffer));
+
+    const UINT strides = sizeof(Vertex);
+    const UINT offset = 0;
+    //Bind vertex buffer to pipeline (Side note: this method usually doesn't show the errors so throwing here doesn't make sense)
+    GFX_THROW_INFO_ONLY(pDeviceContext->IASetVertexBuffers(0, 1, &pVertexBuffer, &strides, &offset));
+
+    //Create vertex shader
+    wrl::ComPtr<ID3D11VertexShader> pVertexShader;
+    wrl::ComPtr<ID3DBlob> pBlob;
+    GFX_THROW_INFO_ONLY(D3DReadFileToBlob(L"VertexShader.cso", &pBlob));
+    GFX_THROW_INFO_ONLY(pDevice->CreateVertexShader(pBlob->GetBufferPointer(), pBlob->GetBufferSize(), nullptr, &pVertexShader));
+
+    //Bind vertex to context
+    pDeviceContext->VSSetShader(pVertexShader.Get(), 0, 0);
+
+    GFX_THROW_INFO_ONLY(pDeviceContext->Draw((UINT)std::size(triangle), 0u));
+}
+
 //Here we implement hr exceptions
 
 D3DClass::HrException::HrException(int line, const char* file, HRESULT hr, std::vector<std::string> infoMsgs)
@@ -169,6 +216,46 @@ std::string D3DClass::HrException::GetErrorDescription() const
     return buf;
 }
 std::string D3DClass::HrException::GetErrorInfo() const
+{
+    return info;
+}
+
+D3DClass::InfoException::InfoException(int line, const char* file, std::vector<std::string> infoMsgs)
+    :
+    MyException(line, file)
+{
+    //join messages
+    for (const auto& m : infoMsgs)
+    {
+        info += m;
+        info.push_back('\n');
+    }
+    //remove final line if exists
+    if (!info.empty())
+    {
+        info.pop_back();
+    }
+}
+
+const char* D3DClass::InfoException::what() const
+{
+    std::ostringstream oss;
+    oss << GetType() << std::endl;
+    if (!info.empty())
+    {
+        oss << "\n[Error Info]\n" << GetErrorInfo() << std::endl;
+    }
+    oss << GetOriginString();
+    whatBuffer = oss.str();
+    return whatBuffer.c_str();
+}
+
+const char* D3DClass::InfoException::GetType() const
+{
+    return "Output Info Only Exception";
+}
+
+std::string D3DClass::InfoException::GetErrorInfo() const
 {
     return info;
 }

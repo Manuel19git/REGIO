@@ -47,6 +47,7 @@ bool GraphicsClass::Frame()
 	float color = sin(count);
 	count += 0.01f;
 	m_D3D->ClearBuffer(color, color, 0.5f);
+	m_D3D->DrawTestTriangle();
 	m_D3D->EndScene();
 
 	return true;
