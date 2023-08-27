@@ -146,22 +146,60 @@ void D3DClass::DrawTestTriangle()
     const UINT strides = sizeof(Vertex);
     const UINT offset = 0;
     //Bind vertex buffer to pipeline (Side note: this method usually doesn't show the errors so throwing here doesn't make sense)
-    GFX_THROW_INFO_ONLY(pDeviceContext->IASetVertexBuffers(0, 1, &pVertexBuffer, &strides, &offset));
+    GFX_THROW_INFO_ONLY(pDeviceContext->IASetVertexBuffers(0, 1, pVertexBuffer.GetAddressOf(), &strides, &offset));
+
+    //Create pixel shader
+    wrl::ComPtr<ID3D11PixelShader> pPixelShader;
+    wrl::ComPtr<ID3DBlob> pBlob;
+    GFX_THROW_INFO_ONLY(D3DReadFileToBlob(L"PixelShader.cso", &pBlob));
+    GFX_THROW_INFO_ONLY(pDevice->CreatePixelShader(pBlob->GetBufferPointer(), pBlob->GetBufferSize(), nullptr, &pPixelShader));
+
+    //Bind pixel shader to context
+    pDeviceContext->PSSetShader(pPixelShader.Get(), 0, 0);
+
 
     //Create vertex shader
     wrl::ComPtr<ID3D11VertexShader> pVertexShader;
-    wrl::ComPtr<ID3DBlob> pBlob;
     GFX_THROW_INFO_ONLY(D3DReadFileToBlob(L"VertexShader.cso", &pBlob));
     GFX_THROW_INFO_ONLY(pDevice->CreateVertexShader(pBlob->GetBufferPointer(), pBlob->GetBufferSize(), nullptr, &pVertexShader));
 
-    //Bind vertex to context
+    //Bind vertex shader to context
     pDeviceContext->VSSetShader(pVertexShader.Get(), 0, 0);
+
+    //Set Input Layout
+    wrl::ComPtr<ID3D11InputLayout> pInputLayout;
+    const D3D11_INPUT_ELEMENT_DESC inputLayoutDesc[] =
+    {
+        {"POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0}
+    };
+
+    //Blob en este caso debe ser del vertex shader, debe hacer la comprobación de si el layout coincide con el del shader
+    GFX_THROW_INFO( pDevice->CreateInputLayout(inputLayoutDesc, 1, pBlob->GetBufferPointer(), pBlob->GetBufferSize(), &pInputLayout));
+
+    //Bind Input Layout to pipeline
+    pDeviceContext->IASetInputLayout(pInputLayout.Get());
+
+    //Set primitive topology to triangle
+    pDeviceContext->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+    //Bind render target
+    pDeviceContext->OMSetRenderTargets(1, pTarget.GetAddressOf(), nullptr);
+
+    //Viewport
+    D3D11_VIEWPORT viewport;
+    viewport.Width = 800;
+    viewport.Height = 600;
+    viewport.TopLeftX = 0;
+    viewport.TopLeftY = 0;
+    viewport.MinDepth = 0;
+    viewport.MaxDepth = 1;
+    pDeviceContext->RSSetViewports(1, &viewport);
+
 
     GFX_THROW_INFO_ONLY(pDeviceContext->Draw((UINT)std::size(triangle), 0u));
 }
 
 //Here we implement hr exceptions
-
 D3DClass::HrException::HrException(int line, const char* file, HRESULT hr, std::vector<std::string> infoMsgs)
     :
     MyException(line, file),
