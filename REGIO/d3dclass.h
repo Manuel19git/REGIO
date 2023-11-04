@@ -83,10 +83,9 @@ public:
 	bool Initialize(HWND hWnd);
 	void Shutdown();
 
-	void BeginScene();
-	void EndScene();
 	void DrawTestTriangle();
 	void ClearBuffer(float red, float green, float blue);
+	void EndScene();
 
 	ID3D11Device* GetDevice();
 	ID3D11DeviceContext* GetDeviceContext();

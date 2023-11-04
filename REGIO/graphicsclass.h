@@ -33,8 +33,6 @@ public:
 	void Shutdown();
 	bool Frame();
 	float count = 0;
-private:
-	bool Render();
 
 private:
 	

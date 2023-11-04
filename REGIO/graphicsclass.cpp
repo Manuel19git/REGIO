@@ -52,10 +52,3 @@ bool GraphicsClass::Frame()
 
 	return true;
 }
-
-
-bool GraphicsClass::Render()
-{
-
-	return true;
-}

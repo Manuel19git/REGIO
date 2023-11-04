@@ -66,29 +66,6 @@ bool D3DClass::Initialize(HWND hWnd)
     return true;
 }
 
-//This method will be in charge of flipping (Taking the back buffer and presenting it as the front)
-void D3DClass::EndScene()
-{
-    HRESULT hr;
-#ifndef NDEBUG
-    infoManager.Set();
-#endif 
-
-
-    //SyncInterval of 1u would mean 60 fps. And 2u for 30fps
-    if (FAILED( hr = pSwap->Present(1u, 0u)))
-    {
-        if (hr == DXGI_ERROR_DEVICE_REMOVED)
-        {
-            throw GFX_DEVICE_REMOVED_EXCEPT(pDevice->GetDeviceRemovedReason());
-        }
-        else
-        {
-            GFX_THROW_INFO(hr);
-        }
-    }
-}
-
 void D3DClass::Shutdown()
 {
     if (pTarget != nullptr)
@@ -197,6 +174,29 @@ void D3DClass::DrawTestTriangle()
 
 
     GFX_THROW_INFO_ONLY(pDeviceContext->Draw((UINT)std::size(triangle), 0u));
+}
+
+//This method will be in charge of flipping (Taking the back buffer and presenting it as the front)
+void D3DClass::EndScene()
+{
+    HRESULT hr;
+#ifndef NDEBUG
+    infoManager.Set();
+#endif 
+
+
+    //SyncInterval of 1u would mean 60 fps. And 2u for 30fps
+    if (FAILED(hr = pSwap->Present(1u, 0u)))
+    {
+        if (hr == DXGI_ERROR_DEVICE_REMOVED)
+        {
+            throw GFX_DEVICE_REMOVED_EXCEPT(pDevice->GetDeviceRemovedReason());
+        }
+        else
+        {
+            GFX_THROW_INFO(hr);
+        }
+    }
 }
 
 //Here we implement hr exceptions
