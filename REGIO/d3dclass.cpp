@@ -100,30 +100,65 @@ void D3DClass::DrawTestTriangle()
     //Creation of buffer with vertex for triangle
     struct Vertex
     {
-        float x;
-        float y;
+        struct
+        {
+            float x;
+            float y;
+        } pos;
+        struct
+        {
+            unsigned char r;
+            unsigned char g;
+            unsigned char b;
+            unsigned char a;
+        } color;
     };
-    const Vertex triangle[] = {
-        {-0.5, 0.5},
-        {0.5, -0.5},
-        {-0.5, -0.5}
+    //There has to be a better way to store extra values in vertex.
+    Vertex vertices[] = {
+        {0.0f, 0.5f, 255, 0, 0, 0},
+        {0.5, -0.5, 0, 255, 0, 0},
+        {-0.5, -0.5, 0, 0, 255, 0},
+        {0.3f, 0.3f, 255, 0, 0, 0},
+        {-0.3f, 0.3f, 0, 255, 0, 0},
+        {0.0f, -0.8f, 0, 0, 255, 0},
     };
     D3D11_BUFFER_DESC bufferDesc;
-    bufferDesc.ByteWidth = sizeof(triangle);
+    bufferDesc.ByteWidth = sizeof(vertices);
     bufferDesc.Usage = D3D11_USAGE_DEFAULT;
     bufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
     bufferDesc.CPUAccessFlags = 0;
     bufferDesc.MiscFlags = 0;
     bufferDesc.StructureByteStride = sizeof(Vertex);
     D3D11_SUBRESOURCE_DATA subData;
-    subData.pSysMem = triangle;
+    subData.pSysMem = vertices;
     wrl::ComPtr<ID3D11Buffer> pVertexBuffer;
     GFX_THROW_INFO(pDevice->CreateBuffer(&bufferDesc, &subData, &pVertexBuffer));
+
 
     const UINT strides = sizeof(Vertex);
     const UINT offset = 0;
     //Bind vertex buffer to pipeline (Side note: this method usually doesn't show the errors so throwing here doesn't make sense)
     GFX_THROW_INFO_ONLY(pDeviceContext->IASetVertexBuffers(0, 1, pVertexBuffer.GetAddressOf(), &strides, &offset));
+
+    const unsigned short indices[] =
+    {
+        0,1,2,
+        0,3,1,
+        1,5,2,
+        2,4,0
+    };
+    D3D11_BUFFER_DESC indexDesc;
+    indexDesc.ByteWidth = sizeof(indices);
+    indexDesc.Usage = D3D11_USAGE_DEFAULT;
+    indexDesc.BindFlags = D3D10_BIND_INDEX_BUFFER;
+    indexDesc.CPUAccessFlags = 0;
+    indexDesc.MiscFlags = 0;
+    indexDesc.StructureByteStride = sizeof(unsigned short);
+    D3D11_SUBRESOURCE_DATA isd;
+    isd.pSysMem = indices;
+    wrl::ComPtr<ID3D11Buffer> pIndexBuffer;
+    GFX_THROW_INFO(pDevice->CreateBuffer(&indexDesc, &isd, &pIndexBuffer));
+    GFX_THROW_INFO_ONLY(pDeviceContext->IASetIndexBuffer(pIndexBuffer.Get(), DXGI_FORMAT_R16_UINT, 0));
 
     //Create pixel shader
     wrl::ComPtr<ID3D11PixelShader> pPixelShader;
@@ -145,13 +180,15 @@ void D3DClass::DrawTestTriangle()
 
     //Set Input Layout
     wrl::ComPtr<ID3D11InputLayout> pInputLayout;
+    //D3D11_APPEND_ALIGNED_ELEMENT is a way to let d3d calculate the offset from previous element
     const D3D11_INPUT_ELEMENT_DESC inputLayoutDesc[] =
     {
-        {"POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0}
+        {"POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
+        {"COLOR", 0, DXGI_FORMAT_R8G8B8A8_UNORM, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0}
     };
 
     //Blob en este caso debe ser del vertex shader, debe hacer la comprobación de si el layout coincide con el del shader
-    GFX_THROW_INFO( pDevice->CreateInputLayout(inputLayoutDesc, 1, pBlob->GetBufferPointer(), pBlob->GetBufferSize(), &pInputLayout));
+    GFX_THROW_INFO( pDevice->CreateInputLayout(inputLayoutDesc, std::size(inputLayoutDesc), pBlob->GetBufferPointer(), pBlob->GetBufferSize(), &pInputLayout));
 
     //Bind Input Layout to pipeline
     pDeviceContext->IASetInputLayout(pInputLayout.Get());
@@ -173,7 +210,7 @@ void D3DClass::DrawTestTriangle()
     pDeviceContext->RSSetViewports(1, &viewport);
 
 
-    GFX_THROW_INFO_ONLY(pDeviceContext->Draw((UINT)std::size(triangle), 0u));
+    GFX_THROW_INFO_ONLY(pDeviceContext->DrawIndexed(std::size(indices), 0u, 0u));
 }
 
 //This method will be in charge of flipping (Taking the back buffer and presenting it as the front)
