@@ -83,7 +83,7 @@ public:
 	bool Initialize(HWND hWnd);
 	void Shutdown();
 
-	void DrawTestTriangle();
+	void DrawTestTriangle(float angle);
 	void ClearBuffer(float red, float green, float blue);
 	void EndScene();
 

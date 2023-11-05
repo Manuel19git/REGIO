@@ -92,7 +92,7 @@ void D3DClass::ClearBuffer(float red, float green, float blue)
     pDeviceContext->ClearRenderTargetView(pTarget.Get(), color);
 }
 
-void D3DClass::DrawTestTriangle()
+void D3DClass::DrawTestTriangle(float angle)
 {
     HRESULT hr;
     namespace wrl = Microsoft::WRL;
@@ -120,7 +120,7 @@ void D3DClass::DrawTestTriangle()
         {-0.5, -0.5, 0, 0, 255, 0},
         {0.3f, 0.3f, 255, 0, 0, 0},
         {-0.3f, 0.3f, 0, 255, 0, 0},
-        {0.0f, -0.8f, 0, 0, 255, 0},
+        {0.0f, -1.0f, 0, 0, 255, 0},
     };
     D3D11_BUFFER_DESC bufferDesc;
     bufferDesc.ByteWidth = sizeof(vertices);
@@ -140,6 +140,7 @@ void D3DClass::DrawTestTriangle()
     //Bind vertex buffer to pipeline (Side note: this method usually doesn't show the errors so throwing here doesn't make sense)
     GFX_THROW_INFO_ONLY(pDeviceContext->IASetVertexBuffers(0, 1, pVertexBuffer.GetAddressOf(), &strides, &offset));
 
+    //Create index buffer
     const unsigned short indices[] =
     {
         0,1,2,
@@ -159,6 +160,37 @@ void D3DClass::DrawTestTriangle()
     wrl::ComPtr<ID3D11Buffer> pIndexBuffer;
     GFX_THROW_INFO(pDevice->CreateBuffer(&indexDesc, &isd, &pIndexBuffer));
     GFX_THROW_INFO_ONLY(pDeviceContext->IASetIndexBuffer(pIndexBuffer.Get(), DXGI_FORMAT_R16_UINT, 0));
+
+    //Create constant buffer
+    struct ConstantBuffer
+    {
+        struct
+        {
+            float element[4][4];
+        } transformation;
+    };
+    const ConstantBuffer cb =
+    {
+        {
+            std::cos(angle),   std::sin(angle),  0.0f, 0.0f,
+            -std::sin(angle),  std::cos(angle),  0.0f, 0.0f,
+            0.0f,              0.0f,             1.0f, 0.0f,
+            0.0f,              0.0f,             0.0f, 1.0f
+        }
+    };
+
+    D3D11_BUFFER_DESC constDesc;
+    constDesc.ByteWidth = sizeof(cb);
+    constDesc.Usage = D3D11_USAGE_DYNAMIC;
+    constDesc.BindFlags = D3D10_BIND_CONSTANT_BUFFER;
+    constDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+    constDesc.MiscFlags = 0;
+    constDesc.StructureByteStride = 0u;
+    D3D11_SUBRESOURCE_DATA csd;
+    csd.pSysMem = &cb;
+    wrl::ComPtr<ID3D11Buffer> pConstantBuffer;
+    GFX_THROW_INFO(pDevice->CreateBuffer(&constDesc, &csd, &pConstantBuffer));
+    GFX_THROW_INFO_ONLY(pDeviceContext->VSSetConstantBuffers(0u, 1u, pConstantBuffer.GetAddressOf()));
 
     //Create pixel shader
     wrl::ComPtr<ID3D11PixelShader> pPixelShader;
