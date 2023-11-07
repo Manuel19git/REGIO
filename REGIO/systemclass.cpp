@@ -106,15 +106,23 @@ void SystemClass::InitializeWindows(int& screenWidth, int& screenHeight)
 		// If windowed then set it to 800x600 resolution.
 		screenWidth = 800;
 		screenHeight = 600;
-
-		// Place the window in the middle of the screen.
-		posX = (GetSystemMetrics(SM_CXSCREEN) - screenWidth) / 2;
-		posY = (GetSystemMetrics(SM_CYSCREEN) - screenHeight) / 2;
 	}
+
+	//Adjust window
+	RECT wr;
+	wr.left = 100;
+	wr.right = screenWidth + wr.left;
+	wr.top = 100;
+	wr.bottom = screenHeight + wr.top;
+	AdjustWindowRect(&wr, WS_CAPTION | WS_MINIMIZEBOX | WS_SYSMENU, FALSE);
+
+	// Place the window in the middle of the screen.
+	posX = (GetSystemMetrics(SM_CXSCREEN) - (wr.right - wr.left)) / 2;
+	posY = (GetSystemMetrics(SM_CYSCREEN) - (wr.bottom - wr.top)) / 2;
 
 	// Create the window with the screen settings and get the handle to it.
 	m_hwnd = CreateWindowEx(0, m_applicationName, m_applicationName, WS_CAPTION | WS_MINIMIZEBOX | WS_SYSMENU,
-				posX, posY, screenWidth, screenHeight, NULL, NULL, m_hinstance, NULL);
+				posX, posY, (wr.right - wr.left), (wr.bottom - wr.top), NULL, NULL, m_hinstance, NULL);
 
 	// Bring the window up on the screen and set it as main focus.
 	ShowWindow(m_hwnd, SW_SHOW);
