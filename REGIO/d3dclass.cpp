@@ -171,9 +171,10 @@ void D3DClass::DrawTestTriangle(float angle)
     };
     const ConstantBuffer cb =
     {
+        //Multiply by 3/4 in the x axis, to fix the stretching taking place for the 4:3 aspect ratio of the viewport
         {
-            std::cos(angle),   std::sin(angle),  0.0f, 0.0f,
-            -std::sin(angle),  std::cos(angle),  0.0f, 0.0f,
+            (3.0f / 4.0f) * std::cos(angle),   std::sin(angle),  0.0f, 0.0f,
+            (3.0f / 4.0f) * -std::sin(angle),  std::cos(angle),  0.0f, 0.0f,
             0.0f,              0.0f,             1.0f, 0.0f,
             0.0f,              0.0f,             0.0f, 1.0f
         }
