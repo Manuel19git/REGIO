@@ -28,6 +28,7 @@ using namespace DirectX;
 #else
 #define GFX_EXCEPT(hr) D3DClass::HrException( __LINE__,__FILE__,(hr) )
 #define GFX_THROW_INFO(hrcall) GFX_THROW_NOINFO(hrcall)
+#define GFX_THROW_INFO_ONLY(call) (call)
 #define GFX_DEVICE_REMOVED_EXCEPT(hr) D3DClass::DeviceRemovedException( __LINE__,__FILE__,(hr) )
 #endif
 
