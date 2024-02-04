@@ -92,7 +92,7 @@ void D3DClass::ClearBuffer(float red, float green, float blue)
     pDeviceContext->ClearRenderTargetView(pTarget.Get(), color);
 }
 
-void D3DClass::DrawTestTriangle(float angle)
+void D3DClass::DrawTestTriangle(float angle, float x, float y)
 {
     HRESULT hr;
     namespace wrl = Microsoft::WRL;
@@ -171,7 +171,8 @@ void D3DClass::DrawTestTriangle(float angle)
         //Multiply by 3/4 in the x axis, to fix the stretching taking place for the 4:3 aspect ratio of the viewport
         DirectX::XMMatrixTranspose(
             DirectX::XMMatrixRotationZ(angle) * 
-            DirectX::XMMatrixScaling(3.0f / 4.0f, 1.0f, 1.0f)
+            DirectX::XMMatrixScaling(3.0f / 4.0f, 1.0f, 1.0f) *
+            DirectX::XMMatrixTranslation(x, y, 0.0f)
         )
     };
 

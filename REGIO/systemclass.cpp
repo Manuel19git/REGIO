@@ -40,7 +40,7 @@ bool SystemClass::Initialize()
 	// Create and initialize the graphics object.  This object will handle rendering all the graphics for this application.
 	m_Graphics = new GraphicsClass;
 
-	result = m_Graphics->Initialize(screenWidth, screenHeight, m_hwnd);
+	result = m_Graphics->Initialize(screenWidth, screenHeight, m_hwnd, m_Input);
 	if (!result)
 	{
 		return false;
@@ -242,7 +242,7 @@ void SystemClass::Run()
 				done = true;
 			}
 		}
-		if (!m_Input->mouse.IsEmpty())
+		/*if (!m_Input->mouse.IsEmpty())
 		{
 			std::ostringstream oss;
 			const auto e = m_Input->mouse.Read();
@@ -259,7 +259,7 @@ void SystemClass::Run()
 				
 			}
 			SetWindowTextA(m_hwnd, oss.str().c_str());
-		}
+		}*/
 		
 
 	}

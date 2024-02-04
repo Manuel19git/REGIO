@@ -10,6 +10,7 @@
 //////////////
 #include "d3dclass.h"
 #include "MyException.h"
+#include "inputclass.h"
 
 /////////////
 // GLOBALS //
@@ -29,7 +30,7 @@ public:
 	GraphicsClass(const GraphicsClass&);
 	~GraphicsClass();
 
-	bool Initialize(int, int, HWND);
+	bool Initialize(int, int, HWND, InputClass*);
 	void Shutdown();
 	bool Frame();
 	float count = 0;
@@ -37,6 +38,8 @@ public:
 private:
 	
 	D3DClass* m_D3D;
+	Mouse* mouse;
+	HWND m_hwnd;
 
 };
 
