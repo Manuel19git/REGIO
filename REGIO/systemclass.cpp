@@ -2,6 +2,7 @@
 // Filename: systemclass.cpp
 ////////////////////////////////////////////////////////////////////////////////
 #include "systemclass.h"
+#include <sstream>
 
 SystemClass::SystemClass()
 {
@@ -107,6 +108,9 @@ void SystemClass::InitializeWindows(int& screenWidth, int& screenHeight)
 		screenWidth = 800;
 		screenHeight = 600;
 	}
+
+	width = screenWidth;
+	height = screenHeight;
 
 	//Adjust window
 	RECT wr;
@@ -238,6 +242,25 @@ void SystemClass::Run()
 				done = true;
 			}
 		}
+		if (!m_Input->mouse.IsEmpty())
+		{
+			std::ostringstream oss;
+			const auto e = m_Input->mouse.Read();
+			switch (e->GetType())
+			{
+			case Mouse::Event::Type::Leave:
+			{
+				oss << "GONE!";
+				break;
+			}
+
+			case Mouse::Event::Type::Move:
+				oss << "Mouse moved to (" << e->GetPosX() << "," << e->GetPosY() << ")";
+				
+			}
+			SetWindowTextA(m_hwnd, oss.str().c_str());
+		}
+		
 
 	}
 
@@ -262,6 +285,74 @@ LRESULT CALLBACK SystemClass::MessageHandler(HWND hwnd, UINT umsg, WPARAM wparam
 		// If a key is released then send it to the input object so it can unset the state for that key.
 		m_Input->KeyUp((unsigned int)wparam);
 		return 0;
+	}
+
+	//CHECK MOUSE MESSAGES
+	case WM_MOUSEMOVE:
+	{
+		const POINTS pt = MAKEPOINTS(lparam);
+		if (pt.x >= 0 && pt.x < width && pt.y >= 0 && pt.y < height)
+		{
+			m_Input->mouse.OnMouseMove(pt.x, pt.y);
+			if (!m_Input->mouse.IsInWindow())
+			{
+				SetCapture(hwnd);
+				m_Input->mouse.OnMouseEnter();
+			}
+		}
+		else
+		{
+			if (wparam & (MK_LBUTTON | MK_RBUTTON))
+			{
+				m_Input->mouse.OnMouseMove(pt.x, pt.y);
+			}
+			else
+			{
+				ReleaseCapture();
+				m_Input->mouse.OnMouseLeave();
+			}
+		}
+		break;
+	}
+	case WM_LBUTTONDOWN:
+	{
+		const POINTS pt = MAKEPOINTS(lparam);
+		m_Input->mouse.OnLeftPressed(pt.x, pt.y);
+		break;
+	}
+	case WM_RBUTTONDOWN:
+	{
+		const POINTS pt = MAKEPOINTS(lparam);
+		m_Input->mouse.OnRightPressed(pt.x, pt.y);
+		break;
+	}
+	case WM_LBUTTONUP:
+	{
+		const POINTS pt = MAKEPOINTS(lparam);
+		m_Input->mouse.OnLeftReleased(pt.x, pt.y);
+		break;
+	}
+	case WM_RBUTTONUP:
+	{
+		const POINTS pt = MAKEPOINTS(lparam);
+		m_Input->mouse.OnRightReleased(pt.x, pt.y);
+		break;
+	}
+	case WM_MOUSEWHEEL:
+	{
+		const POINTS pt = MAKEPOINTS(lparam);
+		const int delta = GET_WHEEL_DELTA_WPARAM(wparam);
+		m_Input->mouse.OnWheelDelta(pt.x, pt.y, delta);
+
+		/*if (GET_WHEEL_DELTA_WPARAM(wparam) > 0)
+		{
+			m_Input->mouse.OnWheelUp(pt.x, pt.y);
+		}
+		else if (GET_WHEEL_DELTA_WPARAM(wparam) < 0)
+		{
+			m_Input->mouse.OnWheelDown(pt.x, pt.y);
+		}*/
+		break;
 	}
 
 	// Any other messages send to the default message handler as our application won't make use of them.

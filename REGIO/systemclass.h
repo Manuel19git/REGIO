@@ -9,7 +9,7 @@
 ///////////////////////////////
 // INCLUDES //
 ///////////////////////////////
-#include<Windows.h>
+//#include<Windows.h>
 
 ///////////////////////
 // MY CLASS INCLUDES //
@@ -64,6 +64,9 @@ private:
 
 	InputClass* m_Input;
 	GraphicsClass* m_Graphics;
+
+	int width;
+	int height;
 };
 
 /////////////////////////
