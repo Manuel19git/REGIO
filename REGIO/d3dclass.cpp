@@ -104,23 +104,19 @@ void D3DClass::DrawTestTriangle(float angle, float x, float y)
         {
             float x;
             float y;
+            float z;
         } pos;
-        struct
-        {
-            unsigned char r;
-            unsigned char g;
-            unsigned char b;
-            unsigned char a;
-        } color;
     };
     //There has to be a better way to store extra values in vertex.
     Vertex vertices[] = {
-        {0.0f, 0.5f, 255, 0, 0, 0},
-        {0.5, -0.5, 0, 255, 0, 0},
-        {-0.5, -0.5, 0, 0, 255, 0},
-        {0.3f, 0.3f, 255, 0, 0, 0},
-        {-0.3f, 0.3f, 0, 255, 0, 0},
-        {0.0f, -1.0f, 0, 0, 255, 0},
+        {-1.0f, -1.0f, -1.0f },
+        {1.0f, -1.0f, -1.0f  },
+        {-1.0f, 1.0f, -1.0f  },
+        {1.0f, 1.0f, -1.0f   },
+        {-1.0f, -1.0f, 1.0f  },
+        {1.0f, -1.0f, 1.0f   },
+        {-1.0f, 1.0f, 1.0f   },
+        {1.0f, 1.0f, 1.0f    },
     };
     D3D11_BUFFER_DESC bufferDesc;
     bufferDesc.ByteWidth = sizeof(vertices);
@@ -143,10 +139,12 @@ void D3DClass::DrawTestTriangle(float angle, float x, float y)
     //Create index buffer
     const unsigned short indices[] =
     {
-        0,1,2,
-        0,3,1,
-        1,5,2,
-        2,4,0
+        0,2,1, 2,3,1,
+        1,3,5, 3,7,5,
+        2,6,3, 3,6,7,
+        4,5,7, 4,7,6,
+        0,4,2, 2,4,6,
+        0,1,4, 1,5,4
     };
     D3D11_BUFFER_DESC indexDesc;
     indexDesc.ByteWidth = sizeof(indices);
@@ -161,7 +159,7 @@ void D3DClass::DrawTestTriangle(float angle, float x, float y)
     GFX_THROW_INFO(pDevice->CreateBuffer(&indexDesc, &isd, &pIndexBuffer));
     GFX_THROW_INFO_ONLY(pDeviceContext->IASetIndexBuffer(pIndexBuffer.Get(), DXGI_FORMAT_R16_UINT, 0));
 
-    //Create constant buffer
+    //Create transform constant buffer
     struct ConstantBuffer
     {
         DirectX::XMMATRIX transformation;
@@ -170,9 +168,10 @@ void D3DClass::DrawTestTriangle(float angle, float x, float y)
     {
         //Multiply by 3/4 in the x axis, to fix the stretching taking place for the 4:3 aspect ratio of the viewport
         DirectX::XMMatrixTranspose(
-            DirectX::XMMatrixRotationZ(angle) * 
-            DirectX::XMMatrixScaling(3.0f / 4.0f, 1.0f, 1.0f) *
-            DirectX::XMMatrixTranslation(x, y, 0.0f)
+            DirectX::XMMatrixRotationZ(angle) *
+            DirectX::XMMatrixRotationX(angle)*
+            DirectX::XMMatrixTranslation(x, y, 4.0f) *
+            DirectX::XMMatrixPerspectiveLH(1.0f, 3.0f / 4.0f, 0.5f, 10.0f)
         )
     };
 
@@ -188,6 +187,41 @@ void D3DClass::DrawTestTriangle(float angle, float x, float y)
     wrl::ComPtr<ID3D11Buffer> pConstantBuffer;
     GFX_THROW_INFO(pDevice->CreateBuffer(&constDesc, &csd, &pConstantBuffer));
     GFX_THROW_INFO_ONLY(pDeviceContext->VSSetConstantBuffers(0u, 1u, pConstantBuffer.GetAddressOf()));
+
+    //Create buffer to store the color of faces
+    struct ConstantBuffer2
+    {
+        struct
+        {
+            float r;
+            float g;
+            float b;
+            float a;
+        } face_colors[6];
+    };
+    const ConstantBuffer2 cb2 =
+    {
+        {
+            {1.0f, 0.0f, 1.0f},
+            {1.0f, 0.0f, 0.0f},
+            {0.0f, 1.0f, 0.0f},
+            {0.0f, 1.0f, 1.0f},
+            {0.0f, 0.0f, 0.0f},
+            {1.0f, 1.0f, 0.0f}
+        }
+    };
+    D3D11_BUFFER_DESC constDesc2;
+    constDesc2.ByteWidth = sizeof(cb2);
+    constDesc2.Usage = D3D11_USAGE_DEFAULT;
+    constDesc2.BindFlags = D3D10_BIND_CONSTANT_BUFFER;
+    constDesc2.CPUAccessFlags = 0u;
+    constDesc2.MiscFlags = 0;
+    constDesc2.StructureByteStride = 0u;
+    D3D11_SUBRESOURCE_DATA csd2;
+    csd2.pSysMem = &cb2;
+    wrl::ComPtr<ID3D11Buffer> pConstantBuffer2;
+    GFX_THROW_INFO(pDevice->CreateBuffer(&constDesc2, &csd2, &pConstantBuffer2));
+    GFX_THROW_INFO_ONLY(pDeviceContext->PSSetConstantBuffers(0u, 1u, pConstantBuffer2.GetAddressOf()));
 
     //Create pixel shader
     wrl::ComPtr<ID3D11PixelShader> pPixelShader;
@@ -212,8 +246,7 @@ void D3DClass::DrawTestTriangle(float angle, float x, float y)
     //D3D11_APPEND_ALIGNED_ELEMENT is a way to let d3d calculate the offset from previous element
     const D3D11_INPUT_ELEMENT_DESC inputLayoutDesc[] =
     {
-        {"POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
-        {"COLOR", 0, DXGI_FORMAT_R8G8B8A8_UNORM, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0}
+        {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0}
     };
 
     //Blob en este caso debe ser del vertex shader, debe hacer la comprobación de si el layout coincide con el del shader
