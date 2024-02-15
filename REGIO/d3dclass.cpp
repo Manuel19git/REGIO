@@ -16,7 +16,7 @@ void DirectXError(HRESULT hr, const std::string& Msg, const std::string& File, i
 bool D3DClass::Initialize(HWND hWnd)
 {
     //Configure Swap Chain
-    DXGI_SWAP_CHAIN_DESC desc;
+    DXGI_SWAP_CHAIN_DESC desc = {};
     ZeroMemory(&desc, sizeof(DXGI_SWAP_CHAIN_DESC));
     desc.Windowed = TRUE; // Sets the initial state of full-screen mode.
     desc.BufferCount = 1; //This specifies that we want 1 back buffer (1 front and 1 back)
@@ -63,6 +63,43 @@ bool D3DClass::Initialize(HWND hWnd)
         &pTarget
     ));
 
+    //Create Stencil Buffer
+    D3D11_DEPTH_STENCIL_DESC depthStencilDesc = {};
+    depthStencilDesc.DepthEnable = TRUE; 
+    depthStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+    depthStencilDesc.DepthFunc = D3D11_COMPARISON_LESS;
+
+    Microsoft::WRL::ComPtr<ID3D11DepthStencilState> pDepthBuffer;
+    GFX_THROW_INFO(pDevice->CreateDepthStencilState(&depthStencilDesc, &pDepthBuffer));
+    //bind depth buffer
+    GFX_THROW_INFO_ONLY(pDeviceContext->OMSetDepthStencilState(pDepthBuffer.Get(), 1u));
+
+    //Create Depth Stencil Texture
+    D3D11_TEXTURE2D_DESC depthTextureDesc = {};
+    depthTextureDesc.Width = 800; //Width has to be the same as swap chain
+    depthTextureDesc.Height = 600; //Height has to be the same as swap chain
+    depthTextureDesc.MipLevels = 1;
+    depthTextureDesc.ArraySize = 1;
+    depthTextureDesc.Format = DXGI_FORMAT_D32_FLOAT; //Each element of buffer has 32 bits of float type to store depth
+    depthTextureDesc.SampleDesc.Count = 1;
+    depthTextureDesc.SampleDesc.Quality = 0;
+    depthTextureDesc.Usage = D3D11_USAGE_DEFAULT;
+    depthTextureDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
+    Microsoft::WRL::ComPtr<ID3D11Texture2D> pDepthTexture;
+
+    GFX_THROW_INFO(pDevice->CreateTexture2D(&depthTextureDesc, nullptr, &pDepthTexture));
+
+    //Create view of depth stencil texture
+    D3D11_DEPTH_STENCIL_VIEW_DESC depthStencilViewDesc = {};
+    depthStencilViewDesc.Format = DXGI_FORMAT_D32_FLOAT;
+    depthStencilViewDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
+    depthStencilViewDesc.Texture2D.MipSlice = 0;
+
+    GFX_THROW_INFO(pDevice->CreateDepthStencilView(pDepthTexture.Get(), &depthStencilViewDesc, &pDepthStencilView));
+    //bind depth stencil view to pipeline
+    GFX_THROW_INFO_ONLY(pDeviceContext->OMSetRenderTargets(1, pTarget.GetAddressOf(), pDepthStencilView.Get()));
+
+
     return true;
 }
 
@@ -90,9 +127,10 @@ void D3DClass::ClearBuffer(float red, float green, float blue)
 {
     const float color[] = { red, green, blue, 1.0f };
     pDeviceContext->ClearRenderTargetView(pTarget.Get(), color);
+    pDeviceContext->ClearDepthStencilView(pDepthStencilView.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
 }
 
-void D3DClass::DrawTestTriangle(float angle, float x, float y)
+void D3DClass::DrawTestTriangle(float angle, float x, float z)
 {
     HRESULT hr;
     namespace wrl = Microsoft::WRL;
@@ -118,7 +156,7 @@ void D3DClass::DrawTestTriangle(float angle, float x, float y)
         {-1.0f, 1.0f, 1.0f   },
         {1.0f, 1.0f, 1.0f    },
     };
-    D3D11_BUFFER_DESC bufferDesc;
+    D3D11_BUFFER_DESC bufferDesc = {};
     bufferDesc.ByteWidth = sizeof(vertices);
     bufferDesc.Usage = D3D11_USAGE_DEFAULT;
     bufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
@@ -146,7 +184,7 @@ void D3DClass::DrawTestTriangle(float angle, float x, float y)
         0,4,2, 2,4,6,
         0,1,4, 1,5,4
     };
-    D3D11_BUFFER_DESC indexDesc;
+    D3D11_BUFFER_DESC indexDesc = {};
     indexDesc.ByteWidth = sizeof(indices);
     indexDesc.Usage = D3D11_USAGE_DEFAULT;
     indexDesc.BindFlags = D3D10_BIND_INDEX_BUFFER;
@@ -170,12 +208,12 @@ void D3DClass::DrawTestTriangle(float angle, float x, float y)
         DirectX::XMMatrixTranspose(
             DirectX::XMMatrixRotationZ(angle) *
             DirectX::XMMatrixRotationX(angle)*
-            DirectX::XMMatrixTranslation(x, y, 4.0f) *
+            DirectX::XMMatrixTranslation(x, 0.0f, z + 4.0f) *
             DirectX::XMMatrixPerspectiveLH(1.0f, 3.0f / 4.0f, 0.5f, 10.0f)
         )
     };
 
-    D3D11_BUFFER_DESC constDesc;
+    D3D11_BUFFER_DESC constDesc = {};
     constDesc.ByteWidth = sizeof(cb);
     constDesc.Usage = D3D11_USAGE_DYNAMIC;
     constDesc.BindFlags = D3D10_BIND_CONSTANT_BUFFER;
@@ -206,11 +244,11 @@ void D3DClass::DrawTestTriangle(float angle, float x, float y)
             {1.0f, 0.0f, 0.0f},
             {0.0f, 1.0f, 0.0f},
             {0.0f, 1.0f, 1.0f},
-            {0.0f, 0.0f, 0.0f},
-            {1.0f, 1.0f, 0.0f}
+            {1.0f, 1.0f, 0.0f},
+            {0.0f, 0.0f, 0.0f}
         }
     };
-    D3D11_BUFFER_DESC constDesc2;
+    D3D11_BUFFER_DESC constDesc2 = {};
     constDesc2.ByteWidth = sizeof(cb2);
     constDesc2.Usage = D3D11_USAGE_DEFAULT;
     constDesc2.BindFlags = D3D10_BIND_CONSTANT_BUFFER;
@@ -257,9 +295,6 @@ void D3DClass::DrawTestTriangle(float angle, float x, float y)
 
     //Set primitive topology to triangle
     pDeviceContext->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
-    //Bind render target
-    pDeviceContext->OMSetRenderTargets(1, pTarget.GetAddressOf(), nullptr);
 
     //Viewport
     D3D11_VIEWPORT viewport;
