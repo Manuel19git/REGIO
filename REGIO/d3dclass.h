@@ -91,6 +91,7 @@ public:
 	void Shutdown();
 
 	void DrawTestTriangle(float angle, float x, float y);
+	void Draw(aiMesh* mesh);
 	void ClearBuffer(float red, float green, float blue);
 	void EndScene();
 
