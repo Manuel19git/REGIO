@@ -5,6 +5,8 @@
 // PRE-PROCESSING DIRECTIVES //
 ///////////////////////////////
 #define WIN32_LEAN_AND_MEAN
+//Unless we define this NOMINMAX, whenever we includ winowds.h its going to give an error
+#define NOMINMAX
 
 ///////////////////////////////
 // INCLUDES //

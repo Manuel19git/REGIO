@@ -4,9 +4,11 @@
 #ifndef _D3DCLASS_H_
 #define _D3DCLASS_H_
 
+//Unless we define this NOMINMAX, whenever we includ winowds.h its going to give an error
+#define NOMINMAX 
+
 #include <d3d11_2.h>
 #include <DirectXMath.h>
-#include <wrl.h>
 #include <vector>
 #include <sstream>
 #include <wrl.h> //ComPtr
@@ -14,6 +16,10 @@
 
 #include "MyException.h"
 #include "DxgiInfoManager.h"
+
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
 
 using namespace DirectX;
 
