@@ -26,8 +26,12 @@ bool GraphicsClass::Initialize(int screenWidth, int screenHeight, HWND hwnd, Inp
 	mouse = &m_Input->mouse;
 	m_hwnd = hwnd;
 
-	//Create window
+	//Read mesh
+	importer = new Assimp::Importer();
+	mScene = importer->ReadFile("C:\\Users\\Akira\\Desktop\\Proyectos\\REGIO\\output\\Maxwell_cat\\source\\maxwell.obj",
+		aiProcess_Triangulate | aiProcess_ConvertToLeftHanded);
 
+	//Create window
 	m_D3D = new D3DClass();
 	bool result = m_D3D->Initialize(hwnd);
 	if (!result)
@@ -40,6 +44,8 @@ bool GraphicsClass::Initialize(int screenWidth, int screenHeight, HWND hwnd, Inp
 
 void GraphicsClass::Shutdown()
 {
+	delete importer;
+
 	m_D3D->Shutdown();
 	return;
 }
@@ -47,16 +53,11 @@ void GraphicsClass::Shutdown()
 
 bool GraphicsClass::Frame()
 {
-	Assimp::Importer importer;
-	const aiScene* pScene = importer.ReadFile("C:\\Users\\Akira\\Desktop\\Proyectos\\REGIO\\output\\dragon_recon\\dragon_vrip.ply",
-		aiProcess_Triangulate | aiProcess_ConvertToLeftHanded);
-
-	
-	aiMesh* mesh = pScene->mMeshes[0];
-
-	//Division is to normalize mouse position. Division is done to go from [0,2]
-	//Because we want [-1,1] we substract 1. And there is a need to invert the Y position
-	m_D3D->Draw(mesh);
+	float color = sin(count);
+	count += 0.03f;
+	m_D3D->ClearBuffer(1.0f, 1.0f, 1.0f);
+	m_D3D->Draw(mScene, count + 2.0f,
+		-(mouse->GetPosY() / 300.0f - 1.0f));
 	m_D3D->EndScene();
 
 	//float color = sin(count);

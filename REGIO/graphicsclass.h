@@ -41,6 +41,10 @@ private:
 	Mouse* mouse;
 	HWND m_hwnd;
 
+	//Scene and mesh persists as long as the importer
+	Assimp::Importer* importer;
+	const aiScene* mScene;
+
 };
 
 #endif

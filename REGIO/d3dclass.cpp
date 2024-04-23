@@ -130,7 +130,7 @@ void D3DClass::ClearBuffer(float red, float green, float blue)
     pDeviceContext->ClearDepthStencilView(pDepthStencilView.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
 }
 
-void D3DClass::Draw(aiMesh* mesh)
+void D3DClass::Draw(const aiScene* scene, float angle, float z)
 {
     HRESULT hr;
     namespace wrl = Microsoft::WRL;
@@ -157,8 +157,10 @@ void D3DClass::Draw(aiMesh* mesh)
     //    {1.0f, 1.0f, 1.0f    },
     //};
 
-    Vertex* vertices = new Vertex[mesh->mNumVertices];
+    //We suppose there is only one mesh in the scene
+    aiMesh* mesh = scene->mMeshes[0];
 
+    Vertex* vertices = new Vertex[mesh->mNumVertices];
     for (int i = 0; i < mesh->mNumVertices; ++i)
     {
         vertices[i].pos.x = mesh->mVertices[i].x;
@@ -168,19 +170,20 @@ void D3DClass::Draw(aiMesh* mesh)
 
 
     D3D11_BUFFER_DESC bufferDesc = {};
-    bufferDesc.ByteWidth = sizeof(aiVector3D) * mesh->mNumVertices;
+    //bufferDesc.ByteWidth = sizeof(Vertex) * mesh->mNumVertices;
+    bufferDesc.ByteWidth = sizeof(Vertex) * mesh->mNumVertices;
     bufferDesc.Usage = D3D11_USAGE_DEFAULT;
     bufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
     bufferDesc.CPUAccessFlags = 0;
     bufferDesc.MiscFlags = 0;
-    bufferDesc.StructureByteStride = sizeof(aiVector3D);
+    bufferDesc.StructureByteStride = sizeof(Vertex);
     D3D11_SUBRESOURCE_DATA subData;
-    subData.pSysMem = mesh->mVertices;
+    subData.pSysMem = vertices;
     wrl::ComPtr<ID3D11Buffer> pVertexBuffer;
     GFX_THROW_INFO(pDevice->CreateBuffer(&bufferDesc, &subData, &pVertexBuffer));
 
 
-    const UINT strides = sizeof(aiVector3D);
+    const UINT strides = sizeof(Vertex);
     const UINT offset = 0;
     //Bind vertex buffer to pipeline (Side note: this method usually doesn't show the errors so throwing here doesn't make sense)
     GFX_THROW_INFO_ONLY(pDeviceContext->IASetVertexBuffers(0, 1, pVertexBuffer.GetAddressOf(), &strides, &offset));
@@ -197,16 +200,28 @@ void D3DClass::Draw(aiMesh* mesh)
     //};
 
     aiFace* faces = mesh->mFaces;
+    int total_indices = mesh->mNumFaces * mesh->mFaces->mNumIndices;
+    u_short* indices = new u_short[total_indices];
+    char buffer[256];
+    for (int i = 0; i < mesh->mNumFaces; ++i)
+    {
+        for (int j = 0; j < mesh->mFaces->mNumIndices; ++j)
+        {
+            indices[(i * mesh->mFaces->mNumIndices) + j] = mesh->mFaces[i].mIndices[j];
+        }
+    }
+    
 
     D3D11_BUFFER_DESC indexDesc = {};
-    indexDesc.ByteWidth = sizeof(faces);
+    //indexDesc.ByteWidth = sizeof(aiFace) * mesh->mNumFaces;
+    indexDesc.ByteWidth = sizeof(u_short) * total_indices;
     indexDesc.Usage = D3D11_USAGE_DEFAULT;
     indexDesc.BindFlags = D3D10_BIND_INDEX_BUFFER;
     indexDesc.CPUAccessFlags = 0;
     indexDesc.MiscFlags = 0;
-    indexDesc.StructureByteStride = sizeof(aiFace);
+    indexDesc.StructureByteStride = sizeof(u_short);
     D3D11_SUBRESOURCE_DATA isd;
-    isd.pSysMem = faces;
+    isd.pSysMem = indices;
     wrl::ComPtr<ID3D11Buffer> pIndexBuffer;
     GFX_THROW_INFO(pDevice->CreateBuffer(&indexDesc, &isd, &pIndexBuffer));
     GFX_THROW_INFO_ONLY(pDeviceContext->IASetIndexBuffer(pIndexBuffer.Get(), DXGI_FORMAT_R16_UINT, 0));
@@ -218,14 +233,16 @@ void D3DClass::Draw(aiMesh* mesh)
     };
     const ConstantBuffer cb =
     {
-        DirectX::XMMatrixIdentity()
-        //Multiply by 3/4 in the x axis, to fix the stretching taking place for the 4:3 aspect ratio of the viewport
         //DirectX::XMMatrixTranspose(
-        //    DirectX::XMMatrixRotationZ(angle) *
-        //    DirectX::XMMatrixRotationX(angle) *
-        //    DirectX::XMMatrixTranslation(x, 0.0f, z + 4.0f) *
-        //    DirectX::XMMatrixPerspectiveLH(1.0f, 3.0f / 4.0f, 0.5f, 10.0f)
+        //    DirectX::XMMatrixTranslation(0, 0, 0.0f)
         //)
+        //Multiply by 3/4 in the x axis, to fix the stretching taking place for the 4:3 aspect ratio of the viewport
+        DirectX::XMMatrixTranspose(/*
+            DirectX::XMMatrixRotationZ(angle) *
+            DirectX::XMMatrixRotationX(angle) **/
+            DirectX::XMMatrixTranslation(0.0f, -1.0f, z + 4.0f) *
+            DirectX::XMMatrixPerspectiveLH(1.0f, 3.0f / 4.0f, 0.5f, 10.0f)
+        )
     };
 
     D3D11_BUFFER_DESC constDesc = {};
@@ -302,7 +319,7 @@ void D3DClass::Draw(aiMesh* mesh)
         {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0}
     };
 
-    //Blob en este caso debe ser del vertex shader, debe hacer la comprobación de si el layout coincide con el del shader
+    //Blob en este caso debe ser del vertex shader, debe hacer la comprobaciï¿½n de si el layout coincide con el del shader
     GFX_THROW_INFO(pDevice->CreateInputLayout(inputLayoutDesc, std::size(inputLayoutDesc), pBlob->GetBufferPointer(), pBlob->GetBufferSize(), &pInputLayout));
 
     //Bind Input Layout to pipeline
@@ -323,9 +340,10 @@ void D3DClass::Draw(aiMesh* mesh)
 
 
     //GFX_THROW_INFO_ONLY(pDeviceContext->DrawIndexed(std::size(indices), 0u, 0u));
-    pDeviceContext->DrawIndexed(faces->mNumIndices, 0u, 0u);
+    pDeviceContext->DrawIndexed(total_indices, 0u, 0u);
 
     delete[] vertices;
+    delete[] indices;
 }
 
 void D3DClass::DrawTestTriangle(float angle, float x, float z)
@@ -485,7 +503,7 @@ void D3DClass::DrawTestTriangle(float angle, float x, float z)
         {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0}
     };
 
-    //Blob en este caso debe ser del vertex shader, debe hacer la comprobación de si el layout coincide con el del shader
+    //Blob en este caso debe ser del vertex shader, debe hacer la comprobaciï¿½n de si el layout coincide con el del shader
     GFX_THROW_INFO( pDevice->CreateInputLayout(inputLayoutDesc, std::size(inputLayoutDesc), pBlob->GetBufferPointer(), pBlob->GetBufferSize(), &pInputLayout));
 
     //Bind Input Layout to pipeline

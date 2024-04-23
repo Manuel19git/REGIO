@@ -91,7 +91,7 @@ public:
 	void Shutdown();
 
 	void DrawTestTriangle(float angle, float x, float y);
-	void Draw(aiMesh* mesh);
+	void Draw(const aiScene* scene, float angle, float z);
 	void ClearBuffer(float red, float green, float blue);
 	void EndScene();
 
