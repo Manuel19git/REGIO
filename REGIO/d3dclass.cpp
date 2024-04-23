@@ -100,6 +100,28 @@ bool D3DClass::Initialize(HWND hWnd)
     GFX_THROW_INFO_ONLY(pDeviceContext->OMSetRenderTargets(1, pTarget.GetAddressOf(), pDepthStencilView.Get()));
 
 
+    //Textures here
+    D3D11_SAMPLER_DESC sampDesc;
+    ZeroMemory(&sampDesc, sizeof(sampDesc));
+    sampDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+    sampDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+    sampDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+    sampDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+    sampDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
+    sampDesc.MinLOD = 0; //This means highest level of detail
+    sampDesc.MaxLOD = D3D11_FLOAT32_MAX;
+
+    GFX_THROW_INFO(pDevice->CreateSamplerState(&sampDesc, samplerState.GetAddressOf()));
+
+
+    //Create texture
+    GFX_THROW_INFO(CreateWICTextureFromFile(
+        pDevice.Get(), 
+        L"C:\\Users\\Akira\\Desktop\\Proyectos\\REGIO\\output\\Maxwell_cat\\textures\\dingus_nowhiskers.jpg", 
+        nullptr, 
+        myTexture.GetAddressOf()));
+
+
     return true;
 }
 
@@ -144,6 +166,12 @@ void D3DClass::Draw(const aiScene* scene, float angle, float z)
             float y;
             float z;
         } pos;
+
+        struct
+        {
+            float u;
+            float v;
+        } tex;
     };
     //There has to be a better way to store extra values in vertex.
     //Vertex vertices[] = {
@@ -166,6 +194,9 @@ void D3DClass::Draw(const aiScene* scene, float angle, float z)
         vertices[i].pos.x = mesh->mVertices[i].x;
         vertices[i].pos.y = mesh->mVertices[i].y;
         vertices[i].pos.z = mesh->mVertices[i].z;
+
+        vertices[i].tex.u = mesh->mTextureCoords[0][i].x;
+        vertices[i].tex.v = mesh->mTextureCoords[0][i].y;
     }
 
 
@@ -316,17 +347,24 @@ void D3DClass::Draw(const aiScene* scene, float angle, float z)
     //D3D11_APPEND_ALIGNED_ELEMENT is a way to let d3d calculate the offset from previous element
     const D3D11_INPUT_ELEMENT_DESC inputLayoutDesc[] =
     {
-        {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0}
+        {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
+        {"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0}
     };
 
-    //Blob en este caso debe ser del vertex shader, debe hacer la comprobaciï¿½n de si el layout coincide con el del shader
+    //Blob en este caso debe ser del vertex shader, debe hacer la comprobación de si el layout coincide con el del shader
     GFX_THROW_INFO(pDevice->CreateInputLayout(inputLayoutDesc, std::size(inputLayoutDesc), pBlob->GetBufferPointer(), pBlob->GetBufferSize(), &pInputLayout));
 
     //Bind Input Layout to pipeline
     pDeviceContext->IASetInputLayout(pInputLayout.Get());
 
     //Set primitive topology to triangle
+    
     pDeviceContext->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    
+    //Set Texture resource
+    pDeviceContext->PSSetShaderResources(0, 1, myTexture.GetAddressOf());
+    //Set sampler state
+    pDeviceContext->PSSetSamplers(0, 1, samplerState.GetAddressOf());
 
     //Viewport
     D3D11_VIEWPORT viewport;
@@ -503,7 +541,7 @@ void D3DClass::DrawTestTriangle(float angle, float x, float z)
         {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0}
     };
 
-    //Blob en este caso debe ser del vertex shader, debe hacer la comprobaciï¿½n de si el layout coincide con el del shader
+    //Blob en este caso debe ser del vertex shader, debe hacer la comprobación de si el layout coincide con el del shader
     GFX_THROW_INFO( pDevice->CreateInputLayout(inputLayoutDesc, std::size(inputLayoutDesc), pBlob->GetBufferPointer(), pBlob->GetBufferSize(), &pInputLayout));
 
     //Bind Input Layout to pipeline
