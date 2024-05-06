@@ -4,3 +4,6 @@
 [submodule "assimp"]
 	path = assimp
 	url = https://github.com/assimp/assimp.git
+[submodule "FX11"]
+	path = FX11
+	url = https://github.com/microsoft/FX11.git
