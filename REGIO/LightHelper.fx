@@ -31,7 +31,7 @@ void ComputeDirectionalLight(Material mat, DirectionalLight light,
 	specular = float4(0.0f, 0.0f, 0.0f, 0.0f);
 
 	//light vector aims opposite the direction the light rays travel -> Luna's book
-	float3 lightVec = -light.Ambient;
+	float3 lightVec = -light.Direction;
 
 	ambient = mat.Ambient * light.Ambient;
 

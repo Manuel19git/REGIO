@@ -8,6 +8,7 @@
 #define NOMINMAX 
 
 #include <d3d11_2.h>
+#include <d3dx11effect.h>
 #include <DirectXMath.h>
 #include <vector>
 #include <sstream>
@@ -22,6 +23,9 @@
 #include <assimp/postprocess.h>
 
 #include <WICTextureLoader.h>
+
+//Light and material structs
+#include "LightHelper.h"
 
 using namespace DirectX;
 
@@ -92,8 +96,10 @@ public:
 	bool Initialize(HWND hWnd);
 	void Shutdown();
 
-	void DrawTestTriangle(float angle, float x, float y);
 	void Draw(const aiScene* scene, float angle, float z);
+	void DrawTestLight(const aiScene* scene, float angle, float z);
+	void DrawTestTriangle(float angle, float x, float y);
+	
 	void ClearBuffer(float red, float green, float blue);
 	void EndScene();
 
@@ -122,6 +128,19 @@ private:
 	//Texture
 	Microsoft::WRL::ComPtr<ID3D11SamplerState> samplerState;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> myTexture;
+
+	//Effects
+	Microsoft::WRL::ComPtr<ID3DX11Effect> pEffect;
+	Microsoft::WRL::ComPtr<ID3DX11EffectTechnique> pTechnique;
+	D3DX11_PASS_DESC passDesc;
+
+	//Temporal place to save lights and materials for the scene
+	Microsoft::WRL::ComPtr<ID3DX11EffectVariable> fxDirLight;
+	Microsoft::WRL::ComPtr<ID3DX11EffectVariable> fxEyePos;
+	Microsoft::WRL::ComPtr<ID3DX11EffectVariable> fxTransform;
+	Microsoft::WRL::ComPtr<ID3DX11EffectVariable> fxMaterial;
+	DirectionalLight dirLight;
+	Material material;
 };
 
 

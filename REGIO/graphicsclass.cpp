@@ -55,9 +55,13 @@ bool GraphicsClass::Frame()
 {
 	float color = sin(count);
 	count += 0.03f;
-	m_D3D->ClearBuffer(1.0f, 1.0f, 1.0f);
-	m_D3D->Draw(mScene, count + 2.0f,
-		-(mouse->GetPosY() / 300.0f - 1.0f));
+	m_D3D->ClearBuffer(0.0f, 0.0f, 0.0f);
+	//m_D3D->Draw(mScene, count + 2.0f,
+	//	-(mouse->GetPosY() / 300.0f - 1.0f));
+	//m_D3D->Draw(mScene, count + 2.0f,
+	//	-(mouse->GetPosY() / 300.0f - 1.0f));
+	m_D3D->DrawTestLight(mScene, count + 2.0f,
+			-(mouse->GetPosY() / 300.0f - 1.0f));
 	m_D3D->EndScene();
 
 	//float color = sin(count);
