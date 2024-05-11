@@ -27,6 +27,10 @@
 //Light and material structs
 #include "LightHelper.h"
 
+#include "SpriteFont.h"
+#include <chrono>
+#include <Windows.h>
+
 using namespace DirectX;
 
 #define GFX_EXCEPT_NOINFO(hr) D3DClass::HrException( __LINE__,__FILE__,(hr) );
@@ -141,6 +145,11 @@ private:
 	Microsoft::WRL::ComPtr<ID3DX11EffectVariable> fxMaterial;
 	DirectionalLight dirLight;
 	Material material;
+
+	//Show fps
+	std::unique_ptr<SpriteFont> spriteFont;
+	std::unique_ptr <SpriteBatch> spriteBatch;
+	std::chrono::time_point<std::chrono::system_clock> start;
 };
 
 

@@ -2,7 +2,6 @@
 // Filename: graphicsclass.cpp
 ////////////////////////////////////////////////////////////////////////////////
 #include "graphicsclass.h"
-#include <time.h>
 
 
 GraphicsClass::GraphicsClass()

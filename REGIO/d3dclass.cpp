@@ -143,6 +143,12 @@ bool D3DClass::Initialize(HWND hWnd)
     fxTransform = pEffect->GetVariableByName("gTransform");
     fxMaterial  = pEffect->GetVariableByName("gMaterial");
 
+    //Initialize sprint font and batch to render text
+    spriteBatch = std::make_unique<SpriteBatch>(pDeviceContext.Get());
+    spriteFont = std::make_unique<SpriteFont>(pDevice.Get(), L"..\\Data\\Fonts\\arial.spritefont");
+
+    start = std::chrono::system_clock::now();
+
     return true;
 }
 
@@ -726,6 +732,26 @@ void D3DClass::EndScene()
 #ifndef NDEBUG
     infoManager.Set();
 #endif 
+
+    static int fpsCounter = 0;
+    fpsCounter++;
+
+    auto end = std::chrono::system_clock::now();
+
+    auto now = end - start;
+    static std::wstring wst = L"FPS: ";
+    if (std::chrono::duration_cast<std::chrono::milliseconds>(now).count() > 1000)
+    {
+        wst = L"FPS: " + std::to_wstring(fpsCounter);
+        fpsCounter = 0;
+        start = std::chrono::system_clock::now();
+    }
+     
+    const wchar_t* value = wst.c_str();
+
+    spriteBatch->Begin();
+    spriteFont->DrawString(spriteBatch.get(), value, XMFLOAT2(0, 0), Colors::White, 0.0f, XMFLOAT2(0.0f, 0.0f), XMFLOAT2(1.0f, 1.0f));
+    spriteBatch->End();
 
 
     //SyncInterval of 1u would mean 60 fps. And 2u for 30fps
