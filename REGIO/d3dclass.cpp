@@ -1,4 +1,4 @@
-#include <iostream>
+﻿#include <iostream>
 #include "d3dclass.h"
 
 #pragma comment(lib, "d3d11.lib")
@@ -163,12 +163,8 @@ bool D3DClass::Initialize(HWND hWnd, const aiScene* pScene)
     depthStencilDesc.DepthEnable = TRUE; 
     depthStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
     depthStencilDesc.DepthFunc = D3D11_COMPARISON_LESS;
-
-    Microsoft::WRL::ComPtr<ID3D11DepthStencilState> pDepthBuffer;
     GFX_THROW_INFO(pDevice->CreateDepthStencilState(&depthStencilDesc, &pDepthBuffer));
-    //bind depth buffer
-    GFX_THROW_INFO_ONLY(pDeviceContext->OMSetDepthStencilState(pDepthBuffer.Get(), 1u));
-
+    
     //Create Depth Stencil Texture
     D3D11_TEXTURE2D_DESC depthTextureDesc = {};
     depthTextureDesc.Width = 800; //Width has to be the same as swap chain
@@ -181,7 +177,6 @@ bool D3DClass::Initialize(HWND hWnd, const aiScene* pScene)
     depthTextureDesc.Usage = D3D11_USAGE_DEFAULT;
     depthTextureDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
     Microsoft::WRL::ComPtr<ID3D11Texture2D> pDepthTexture;
-
     GFX_THROW_INFO(pDevice->CreateTexture2D(&depthTextureDesc, nullptr, &pDepthTexture));
 
     //Create view of depth stencil texture
@@ -189,10 +184,7 @@ bool D3DClass::Initialize(HWND hWnd, const aiScene* pScene)
     depthStencilViewDesc.Format = DXGI_FORMAT_D32_FLOAT;
     depthStencilViewDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
     depthStencilViewDesc.Texture2D.MipSlice = 0;
-
     GFX_THROW_INFO(pDevice->CreateDepthStencilView(pDepthTexture.Get(), &depthStencilViewDesc, &pDepthStencilView));
-    //bind depth stencil view to pipeline
-    GFX_THROW_INFO_ONLY(pDeviceContext->OMSetRenderTargets(1, pTarget.GetAddressOf(), pDepthStencilView.Get()));
 
     //Build Geometry
     BuildGeometry(pScene);
@@ -334,6 +326,10 @@ void D3DClass::EndScene()
     spriteBatch->Begin();
     spriteFont->DrawString(spriteBatch.get(), value, XMFLOAT2(0, 0), Colors::White, 0.0f, XMFLOAT2(0.0f, 0.0f), XMFLOAT2(1.0f, 1.0f));
     spriteBatch->End();
+
+    ///I have to bind depth nbuffer and stencil after spriteBatch::End() to avoid problems with depth buffer
+    GFX_THROW_INFO_ONLY(pDeviceContext->OMSetDepthStencilState(pDepthBuffer.Get(), 1u));
+    GFX_THROW_INFO_ONLY(pDeviceContext->OMSetRenderTargets(1, pTarget.GetAddressOf(), pDepthStencilView.Get()));
 
 
     //SyncInterval of 1u would mean 60 fps. And 2u for 30fps

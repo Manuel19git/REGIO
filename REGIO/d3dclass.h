@@ -154,6 +154,10 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11RenderTargetView> pTarget;
 	Microsoft::WRL::ComPtr<ID3D11DepthStencilView> pDepthStencilView;
 
+	//Initialize depth stencil buffer
+	Microsoft::WRL::ComPtr<ID3D11DepthStencilState> pDepthBuffer;
+	Microsoft::WRL::ComPtr<ID3D11Texture2D> pDepthTexture;
+
 	//Scene offset for efficient use of vertex/index buffers
 	UINT* pVertexOffsets;
 	UINT* pIndexOffsets;
