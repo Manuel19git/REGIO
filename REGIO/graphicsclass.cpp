@@ -27,12 +27,12 @@ bool GraphicsClass::Initialize(int screenWidth, int screenHeight, HWND hwnd, Inp
 
 	//Read mesh
 	importer = new Assimp::Importer();
-	mScene = importer->ReadFile("C:\\Users\\Akira\\Desktop\\Proyectos\\REGIO\\output\\Maxwell_cat\\source\\maxwell.obj",
+	mScene = importer->ReadFile("C:\\Users\\Akira\\Desktop\\Proyectos\\REGIO\\output\\Maxwell_cat\\source\\maxwell_scene.obj",
 		aiProcess_Triangulate | aiProcess_ConvertToLeftHanded);
 
 	//Create window
 	m_D3D = new D3DClass();
-	bool result = m_D3D->Initialize(hwnd);
+	bool result = m_D3D->Initialize(hwnd, mScene);
 	if (!result)
 	{
 		return false;
@@ -44,6 +44,7 @@ bool GraphicsClass::Initialize(int screenWidth, int screenHeight, HWND hwnd, Inp
 void GraphicsClass::Shutdown()
 {
 	delete importer;
+	delete mScene;
 
 	m_D3D->Shutdown();
 	return;
@@ -52,14 +53,8 @@ void GraphicsClass::Shutdown()
 
 bool GraphicsClass::Frame()
 {
-	float color = sin(count);
-	count += 0.03f;
 	m_D3D->ClearBuffer(0.0f, 0.0f, 0.0f);
-	//m_D3D->Draw(mScene, count + 2.0f,
-	//	-(mouse->GetPosY() / 300.0f - 1.0f));
-	//m_D3D->Draw(mScene, count + 2.0f,
-	//	-(mouse->GetPosY() / 300.0f - 1.0f));
-	m_D3D->DrawTestLight(mScene, count + 2.0f,
+	m_D3D->DrawScene(mScene,
 			-(mouse->GetPosY() / 300.0f - 1.0f));
 	m_D3D->EndScene();
 

@@ -32,6 +32,7 @@
 #include <Windows.h>
 
 using namespace DirectX;
+namespace wrl = Microsoft::WRL;
 
 #define GFX_EXCEPT_NOINFO(hr) D3DClass::HrException( __LINE__,__FILE__,(hr) );
 #define GFX_THROW_NOINFO(hrcall) if( FAILED( hr = (hrcall) ) ) throw D3DClass::HrException( __LINE__,__FILE__,hr );
@@ -50,8 +51,32 @@ using namespace DirectX;
 
 
 /////////////
-// GLOBALS //
+// STRUCTS //
 /////////////
+
+struct Vertex
+{
+	struct
+	{
+		float x;
+		float y;
+		float z;
+	} pos;
+
+	struct
+	{
+		float x;
+		float y;
+		float z;
+	} normal;
+
+	struct
+	{
+		float u;
+		float v;
+	} tex;
+
+};
 
 ////////////////////////////////////////////////////////////////////////////////
 // Class name: D3DClass
@@ -97,12 +122,12 @@ public:
 	D3DClass(const D3DClass&) = delete;
 	~D3DClass();
 
-	bool Initialize(HWND hWnd);
+	bool Initialize(HWND hWnd, const aiScene* pScene);
 	void Shutdown();
 
-	void Draw(const aiScene* scene, float angle, float z);
-	void DrawTestLight(const aiScene* scene, float angle, float z);
-	void DrawTestTriangle(float angle, float x, float y);
+	void BuildGeometry(const aiScene* scene);
+	void BuildVertexLayout();
+	void DrawScene(const aiScene* scene, float z);
 	
 	void ClearBuffer(float red, float green, float blue);
 	void EndScene();
@@ -128,6 +153,15 @@ private:
 	Microsoft::WRL::ComPtr<IDXGISwapChain> pSwap;
 	Microsoft::WRL::ComPtr<ID3D11RenderTargetView> pTarget;
 	Microsoft::WRL::ComPtr<ID3D11DepthStencilView> pDepthStencilView;
+
+	//Scene offset for efficient use of vertex/index buffers
+	UINT* pVertexOffsets;
+	UINT* pIndexOffsets;
+	UINT* pIndexCount;
+
+	wrl::ComPtr<ID3D11Buffer> pVertexBuffer;
+	wrl::ComPtr<ID3D11Buffer> pIndexBuffer;
+	wrl::ComPtr<ID3D11InputLayout> pInputLayout;
 
 	//Texture
 	Microsoft::WRL::ComPtr<ID3D11SamplerState> samplerState;

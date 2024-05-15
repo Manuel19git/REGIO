@@ -13,7 +13,102 @@ void DirectXError(HRESULT hr, const std::string& Msg, const std::string& File, i
 {
 }
 
-bool D3DClass::Initialize(HWND hWnd)
+void D3DClass::BuildGeometry(const aiScene* pScene)
+{
+    HRESULT hr;
+
+    //Define size and Initialize all offset arrays to zero
+    pVertexOffsets = new UINT[pScene->mNumMeshes]();
+    pIndexOffsets = new UINT[pScene->mNumMeshes]();
+    pIndexCount = new UINT[pScene->mNumMeshes]();
+
+    //I am going to take advantage of the for loops to fill the totalCount for vertex and index
+    UINT totalVertexCount = pScene->mMeshes[0]->mNumVertices;
+    UINT totalIndexCount = 0;
+    
+    for (int i = 0; i < pScene->mNumMeshes; ++i)
+    {
+        pIndexCount[i] = pScene->mMeshes[i]->mNumFaces * pScene->mMeshes[i]->mFaces[0].mNumIndices;
+
+        totalIndexCount += pIndexCount[i];
+    }
+    for (int i = 1; i < pScene->mNumMeshes; ++i)
+    {
+        pVertexOffsets[i] = pVertexOffsets[i - 1] + pScene->mMeshes[i - 1]->mNumVertices;
+        pIndexOffsets[i] = pIndexOffsets[i - 1] + pIndexCount[i - 1];
+
+        totalVertexCount += pScene->mMeshes[i]->mNumVertices;
+    }
+    
+    //Fill vertices and index array with data from each mesh
+    Vertex* vertices = new Vertex[totalVertexCount];
+    u_short* indices = new u_short[totalIndexCount];
+    for (int meshId = 0; meshId < pScene->mNumMeshes; ++meshId)
+    {
+        aiMesh* mesh = pScene->mMeshes[meshId];
+
+        for (int vertexId = 0; vertexId < mesh->mNumVertices; ++vertexId)
+        {
+            vertices[pVertexOffsets[meshId] + vertexId].pos.x = mesh->mVertices[vertexId].x;
+            vertices[pVertexOffsets[meshId] + vertexId].pos.y = mesh->mVertices[vertexId].y;
+            vertices[pVertexOffsets[meshId] + vertexId].pos.z = mesh->mVertices[vertexId].z;
+
+            vertices[pVertexOffsets[meshId] + vertexId].normal.x = mesh->mNormals[vertexId].x;
+            vertices[pVertexOffsets[meshId] + vertexId].normal.y = mesh->mNormals[vertexId].y;
+            vertices[pVertexOffsets[meshId] + vertexId].normal.z = mesh->mNormals[vertexId].z;
+        }
+
+        for (int faceId = 0; faceId < mesh->mNumFaces; ++faceId)
+        {
+            for (int faceVertexId = 0; faceVertexId < mesh->mFaces->mNumIndices; ++faceVertexId)
+            {
+                indices[pIndexOffsets[meshId] + (faceId * mesh->mFaces->mNumIndices) + faceVertexId] = mesh->mFaces[faceId].mIndices[faceVertexId];
+            }
+        }
+    }
+    D3D11_BUFFER_DESC bufferDesc = {};
+    bufferDesc.ByteWidth = sizeof(Vertex) * totalVertexCount;
+    bufferDesc.Usage = D3D11_USAGE_DEFAULT;
+    bufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+    bufferDesc.CPUAccessFlags = 0;
+    bufferDesc.MiscFlags = 0;
+    bufferDesc.StructureByteStride = sizeof(Vertex);
+    D3D11_SUBRESOURCE_DATA subData;
+    subData.pSysMem = vertices;
+    GFX_THROW_INFO(pDevice->CreateBuffer(&bufferDesc, &subData, &pVertexBuffer));
+
+
+    D3D11_BUFFER_DESC indexDesc = {};
+    //indexDesc.ByteWidth = sizeof(aiFace) * mesh->mNumFaces;
+    indexDesc.ByteWidth = sizeof(u_short) * totalIndexCount;
+    indexDesc.Usage = D3D11_USAGE_DEFAULT;
+    indexDesc.BindFlags = D3D10_BIND_INDEX_BUFFER;
+    indexDesc.CPUAccessFlags = 0;
+    indexDesc.MiscFlags = 0;
+    indexDesc.StructureByteStride = sizeof(u_short);
+    D3D11_SUBRESOURCE_DATA isd;
+    isd.pSysMem = indices;
+    GFX_THROW_INFO(pDevice->CreateBuffer(&indexDesc, &isd, &pIndexBuffer));
+
+    delete[] vertices;
+    delete[] indices;
+}
+
+void D3DClass::BuildVertexLayout()
+{
+    HRESULT hr;
+
+    //D3D11_APPEND_ALIGNED_ELEMENT is a way to let d3d calculate the offset from previous element
+    const D3D11_INPUT_ELEMENT_DESC inputLayoutDesc[] =
+    {
+        {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
+        {"NORMAL", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0}
+    };
+    pTechnique->GetPassByIndex(0)->GetDesc(&passDesc);
+    GFX_THROW_INFO(pDevice->CreateInputLayout(inputLayoutDesc, std::size(inputLayoutDesc), passDesc.pIAInputSignature, passDesc.IAInputSignatureSize, &pInputLayout));
+}
+
+bool D3DClass::Initialize(HWND hWnd, const aiScene* pScene)
 {
     //Configure Swap Chain
     DXGI_SWAP_CHAIN_DESC desc = {};
@@ -99,6 +194,15 @@ bool D3DClass::Initialize(HWND hWnd)
     //bind depth stencil view to pipeline
     GFX_THROW_INFO_ONLY(pDeviceContext->OMSetRenderTargets(1, pTarget.GetAddressOf(), pDepthStencilView.Get()));
 
+    //Build Geometry
+    BuildGeometry(pScene);
+
+    //Build Effects
+    GFX_THROW_INFO(D3DX11CreateEffectFromFile(L"LightEffect.fxo", 0, pDevice.Get(), pEffect.GetAddressOf()));
+    pTechnique = pEffect->GetTechniqueByName("LighTech");
+
+    //Build Vertex Layout
+    BuildVertexLayout();
 
     //Textures here
     D3D11_SAMPLER_DESC sampDesc;
@@ -121,12 +225,6 @@ bool D3DClass::Initialize(HWND hWnd)
         nullptr, 
         myTexture.GetAddressOf()));
 
-    //Create effect
-    GFX_THROW_INFO(D3DX11CreateEffectFromFile(L"LightEffect.fxo", 0, pDevice.Get(), pEffect.GetAddressOf()));
-    pTechnique = pEffect->GetTechniqueByName("LighTech");
-
-    
-    pTechnique->GetPassByIndex(0)->GetDesc(&passDesc);
 
     //Create light and material
     dirLight.Ambient    = XMFLOAT4(0.2f, 0.2f, 0.2f, 1.0f);
@@ -152,26 +250,6 @@ bool D3DClass::Initialize(HWND hWnd)
     return true;
 }
 
-void D3DClass::Shutdown()
-{
-    if (pTarget != nullptr)
-    {
-        pTarget->Release();
-    }
-    if (pSwap != nullptr)
-    {
-        pSwap->Release();
-    }
-    if (pDeviceContext != nullptr)
-    {
-        pDeviceContext->Release();
-    }
-    if (pDevice != nullptr)
-    {
-        pDevice->Release();
-    }
-}
-
 void D3DClass::ClearBuffer(float red, float green, float blue)
 {
     const float color[] = { red, green, blue, 1.0f };
@@ -179,137 +257,31 @@ void D3DClass::ClearBuffer(float red, float green, float blue)
     pDeviceContext->ClearDepthStencilView(pDepthStencilView.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
 }
 
-void D3DClass::DrawTestLight(const aiScene* scene, float angle, float z)
+void D3DClass::DrawScene(const aiScene* scene, float z)
 {
     HRESULT hr;
-    namespace wrl = Microsoft::WRL;
 
-    //Creation of buffer with vertex for triangle
-    struct Vertex
-    {
-        struct
-        {
-            float x;
-            float y;
-            float z;
-        } pos;
+    //Bind Vertex Layout and Primitive Topology
+    pDeviceContext->IASetInputLayout(pInputLayout.Get());
+    pDeviceContext->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-        struct
-        {
-            float x;
-            float y;
-            float z;
-        } normal;
-
-        struct
-        {
-            float u;
-            float v;
-        } tex;
-
-    };
-
-    //We suppose there is only one mesh in the scene
-    aiMesh* mesh = scene->mMeshes[0];
-
-    Vertex* vertices = new Vertex[mesh->mNumVertices];
-    for (int i = 0; i < mesh->mNumVertices; ++i)
-    {
-        vertices[i].pos.x = mesh->mVertices[i].x;
-        vertices[i].pos.y = mesh->mVertices[i].y;
-        vertices[i].pos.z = mesh->mVertices[i].z;
-
-        vertices[i].normal.x = mesh->mNormals[i].x;
-        vertices[i].normal.y = mesh->mNormals[i].y;
-        vertices[i].normal.z = mesh->mNormals[i].z;
-    }
-
-
-    D3D11_BUFFER_DESC bufferDesc = {};
-    //bufferDesc.ByteWidth = sizeof(Vertex) * mesh->mNumVertices;
-    bufferDesc.ByteWidth = sizeof(Vertex) * mesh->mNumVertices;
-    bufferDesc.Usage = D3D11_USAGE_DEFAULT;
-    bufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-    bufferDesc.CPUAccessFlags = 0;
-    bufferDesc.MiscFlags = 0;
-    bufferDesc.StructureByteStride = sizeof(Vertex);
-    D3D11_SUBRESOURCE_DATA subData;
-    subData.pSysMem = vertices;
-    wrl::ComPtr<ID3D11Buffer> pVertexBuffer;
-    GFX_THROW_INFO(pDevice->CreateBuffer(&bufferDesc, &subData, &pVertexBuffer));
-
-
+    //Bind Vertex and Index buffer
     const UINT strides = sizeof(Vertex);
     const UINT offset = 0;
-    //Bind vertex buffer to pipeline (Side note: this method usually doesn't show the errors so throwing here doesn't make sense)
     GFX_THROW_INFO_ONLY(pDeviceContext->IASetVertexBuffers(0, 1, pVertexBuffer.GetAddressOf(), &strides, &offset));
-
-
-    aiFace* faces = mesh->mFaces;
-    int total_indices = mesh->mNumFaces * mesh->mFaces->mNumIndices;
-    u_short* indices = new u_short[total_indices];
-    char buffer[256];
-    for (int i = 0; i < mesh->mNumFaces; ++i)
-    {
-        for (int j = 0; j < mesh->mFaces->mNumIndices; ++j)
-        {
-            indices[(i * mesh->mFaces->mNumIndices) + j] = mesh->mFaces[i].mIndices[j];
-        }
-    }
-    
-
-    D3D11_BUFFER_DESC indexDesc = {};
-    //indexDesc.ByteWidth = sizeof(aiFace) * mesh->mNumFaces;
-    indexDesc.ByteWidth = sizeof(u_short) * total_indices;
-    indexDesc.Usage = D3D11_USAGE_DEFAULT;
-    indexDesc.BindFlags = D3D10_BIND_INDEX_BUFFER;
-    indexDesc.CPUAccessFlags = 0;
-    indexDesc.MiscFlags = 0;
-    indexDesc.StructureByteStride = sizeof(u_short);
-    D3D11_SUBRESOURCE_DATA isd;
-    isd.pSysMem = indices;
-    wrl::ComPtr<ID3D11Buffer> pIndexBuffer;
-    GFX_THROW_INFO(pDevice->CreateBuffer(&indexDesc, &isd, &pIndexBuffer));
     GFX_THROW_INFO_ONLY(pDeviceContext->IASetIndexBuffer(pIndexBuffer.Get(), DXGI_FORMAT_R16_UINT, 0));
 
     //Set constant buffers
-    struct ConstantBuffer
-    {
-        DirectX::XMMATRIX transformation;
-    };
-    const ConstantBuffer cb =
-    {
-        //Multiply by 3/4 in the x axis, to fix the stretching taking place for the 4:3 aspect ratio of the viewport
-        DirectX::XMMatrixTranspose(
+    DirectX::XMMATRIX transformation = DirectX::XMMatrixTranspose(
             DirectX::XMMatrixTranslation(0.0f, -1.0f, z + 4.0f) *
             DirectX::XMMatrixPerspectiveLH(1.0f, 3.0f / 4.0f, 0.5f, 10.0f)
-        )
-    };
+            );
+
     fxDirLight->SetRawValue(&dirLight, 0, sizeof(DirectionalLight));
     XMFLOAT3 eyePos = XMFLOAT3(0.0f, 0.0f, 0.0f);
     fxEyePos->SetRawValue(&eyePos, 0, sizeof(XMFLOAT3));
-    fxTransform->SetRawValue(&cb.transformation, 0, sizeof(XMMATRIX));
+    fxTransform->SetRawValue(&transformation, 0, sizeof(XMMATRIX));
     fxMaterial->SetRawValue(&material, 0, sizeof(Material));
-
-
-    //Set Input Layout
-    wrl::ComPtr<ID3D11InputLayout> pInputLayout;
-    //D3D11_APPEND_ALIGNED_ELEMENT is a way to let d3d calculate the offset from previous element
-    const D3D11_INPUT_ELEMENT_DESC inputLayoutDesc[] =
-    {
-        {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
-        {"NORMAL", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0}
-    };
-
-    //Blob en este caso debe ser del vertex shader, debe hacer la comprobaci�n de si el layout coincide con el del shade
-    GFX_THROW_INFO(pDevice->CreateInputLayout(inputLayoutDesc, std::size(inputLayoutDesc), passDesc.pIAInputSignature, passDesc.IAInputSignatureSize, &pInputLayout));
-
-    //Bind Input Layout to pipeline
-    pDeviceContext->IASetInputLayout(pInputLayout.Get());
-
-    //Set primitive topology to triangle
-    
-    pDeviceContext->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
     //Viewport
     D3D11_VIEWPORT viewport;
@@ -320,409 +292,19 @@ void D3DClass::DrawTestLight(const aiScene* scene, float angle, float z)
     viewport.MinDepth = 0;
     viewport.MaxDepth = 1;
     pDeviceContext->RSSetViewports(1, &viewport);
+
 
     D3DX11_TECHNIQUE_DESC techDesc;
     pTechnique->GetDesc(&techDesc);
     for (UINT32 p = 0; p < techDesc.Passes; ++p)
     {
-        pTechnique->GetPassByIndex(p)->Apply(0, pDeviceContext.Get());
-
-        pDeviceContext->DrawIndexed(total_indices, 0u, 0u);
-    }
-    
-    delete[] vertices;
-    delete[] indices;
-}
-
-void D3DClass::Draw(const aiScene* scene, float angle, float z)
-{
-    HRESULT hr;
-    namespace wrl = Microsoft::WRL;
-
-    //Creation of buffer with vertex for triangle
-    struct Vertex
-    {
-        struct
+        for (int meshId = 0; meshId < scene->mNumMeshes; ++meshId)
         {
-            float x;
-            float y;
-            float z;
-        } pos;
-
-        struct
-        {
-            float u;
-            float v;
-        } tex;
-    };
-
-    //We suppose there is only one mesh in the scene
-    aiMesh* mesh = scene->mMeshes[0];
-
-    Vertex* vertices = new Vertex[mesh->mNumVertices];
-    for (int i = 0; i < mesh->mNumVertices; ++i)
-    {
-        vertices[i].pos.x = mesh->mVertices[i].x;
-        vertices[i].pos.y = mesh->mVertices[i].y;
-        vertices[i].pos.z = mesh->mVertices[i].z;
-
-        vertices[i].tex.u = mesh->mTextureCoords[0][i].x;
-        vertices[i].tex.v = mesh->mTextureCoords[0][i].y;
-    }
-
-
-    D3D11_BUFFER_DESC bufferDesc = {};
-    //bufferDesc.ByteWidth = sizeof(Vertex) * mesh->mNumVertices;
-    bufferDesc.ByteWidth = sizeof(Vertex) * mesh->mNumVertices;
-    bufferDesc.Usage = D3D11_USAGE_DEFAULT;
-    bufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-    bufferDesc.CPUAccessFlags = 0;
-    bufferDesc.MiscFlags = 0;
-    bufferDesc.StructureByteStride = sizeof(Vertex);
-    D3D11_SUBRESOURCE_DATA subData;
-    subData.pSysMem = vertices;
-    wrl::ComPtr<ID3D11Buffer> pVertexBuffer;
-    GFX_THROW_INFO(pDevice->CreateBuffer(&bufferDesc, &subData, &pVertexBuffer));
-
-
-    const UINT strides = sizeof(Vertex);
-    const UINT offset = 0;
-    //Bind vertex buffer to pipeline (Side note: this method usually doesn't show the errors so throwing here doesn't make sense)
-    GFX_THROW_INFO_ONLY(pDeviceContext->IASetVertexBuffers(0, 1, pVertexBuffer.GetAddressOf(), &strides, &offset));
-
-
-    aiFace* faces = mesh->mFaces;
-    int total_indices = mesh->mNumFaces * mesh->mFaces->mNumIndices;
-    u_short* indices = new u_short[total_indices];
-    char buffer[256];
-    for (int i = 0; i < mesh->mNumFaces; ++i)
-    {
-        for (int j = 0; j < mesh->mFaces->mNumIndices; ++j)
-        {
-            indices[(i * mesh->mFaces->mNumIndices) + j] = mesh->mFaces[i].mIndices[j];
+            pTechnique->GetPassByIndex(p)->Apply(0, pDeviceContext.Get());
+            pDeviceContext->DrawIndexed(pIndexCount[meshId], pIndexOffsets[meshId], pVertexOffsets[meshId]);
         }
+        
     }
-    
-
-    D3D11_BUFFER_DESC indexDesc = {};
-    //indexDesc.ByteWidth = sizeof(aiFace) * mesh->mNumFaces;
-    indexDesc.ByteWidth = sizeof(u_short) * total_indices;
-    indexDesc.Usage = D3D11_USAGE_DEFAULT;
-    indexDesc.BindFlags = D3D10_BIND_INDEX_BUFFER;
-    indexDesc.CPUAccessFlags = 0;
-    indexDesc.MiscFlags = 0;
-    indexDesc.StructureByteStride = sizeof(u_short);
-    D3D11_SUBRESOURCE_DATA isd;
-    isd.pSysMem = indices;
-    wrl::ComPtr<ID3D11Buffer> pIndexBuffer;
-    GFX_THROW_INFO(pDevice->CreateBuffer(&indexDesc, &isd, &pIndexBuffer));
-    GFX_THROW_INFO_ONLY(pDeviceContext->IASetIndexBuffer(pIndexBuffer.Get(), DXGI_FORMAT_R16_UINT, 0));
-
-    //Create transform constant buffer
-    struct ConstantBuffer
-    {
-        DirectX::XMMATRIX transformation;
-    };
-    const ConstantBuffer cb =
-    {
-        //DirectX::XMMatrixTranspose(
-        //    DirectX::XMMatrixTranslation(0, 0, 0.0f)
-        //)
-        //Multiply by 3/4 in the x axis, to fix the stretching taking place for the 4:3 aspect ratio of the viewport
-        DirectX::XMMatrixTranspose(/*
-            DirectX::XMMatrixRotationZ(angle) *
-            DirectX::XMMatrixRotationX(angle) **/
-            DirectX::XMMatrixTranslation(0.0f, -1.0f, z + 4.0f) *
-            DirectX::XMMatrixPerspectiveLH(1.0f, 3.0f / 4.0f, 0.5f, 10.0f)
-        )
-    };
-
-    D3D11_BUFFER_DESC constDesc = {};
-    constDesc.ByteWidth = sizeof(cb);
-    constDesc.Usage = D3D11_USAGE_DYNAMIC;
-    constDesc.BindFlags = D3D10_BIND_CONSTANT_BUFFER;
-    constDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-    constDesc.MiscFlags = 0;
-    constDesc.StructureByteStride = 0u;
-    D3D11_SUBRESOURCE_DATA csd;
-    csd.pSysMem = &cb;
-    wrl::ComPtr<ID3D11Buffer> pConstantBuffer;
-    GFX_THROW_INFO(pDevice->CreateBuffer(&constDesc, &csd, &pConstantBuffer));
-    GFX_THROW_INFO_ONLY(pDeviceContext->VSSetConstantBuffers(0u, 1u, pConstantBuffer.GetAddressOf()));
-
-    //Create buffer to store the color of faces
-    //struct ConstantBuffer2
-    //{
-    //    struct
-    //    {
-    //        float r;
-    //        float g;
-    //        float b;
-    //        float a;
-    //    } face_colors[6];
-    //};
-    //const ConstantBuffer2 cb2 =
-    //{
-    //    {
-    //        {1.0f, 0.0f, 1.0f},
-    //        {1.0f, 0.0f, 0.0f},
-    //        {0.0f, 1.0f, 0.0f},
-    //        {0.0f, 1.0f, 1.0f},
-    //        {1.0f, 1.0f, 0.0f},
-    //        {0.0f, 0.0f, 0.0f}
-    //    }
-    //};
-    //D3D11_BUFFER_DESC constDesc2 = {};
-    //constDesc2.ByteWidth = sizeof(cb2);
-    //constDesc2.Usage = D3D11_USAGE_DEFAULT;
-    //constDesc2.BindFlags = D3D10_BIND_CONSTANT_BUFFER;
-    //constDesc2.CPUAccessFlags = 0u;
-    //constDesc2.MiscFlags = 0;
-    //constDesc2.StructureByteStride = 0u;
-    //D3D11_SUBRESOURCE_DATA csd2;
-    //csd2.pSysMem = &cb2;
-    //wrl::ComPtr<ID3D11Buffer> pConstantBuffer2;
-    //GFX_THROW_INFO(pDevice->CreateBuffer(&constDesc2, &csd2, &pConstantBuffer2));
-    //GFX_THROW_INFO_ONLY(pDeviceContext->PSSetConstantBuffers(0u, 1u, pConstantBuffer2.GetAddressOf()));
-
-    //Create pixel shader
-    wrl::ComPtr<ID3D11PixelShader> pPixelShader;
-    wrl::ComPtr<ID3DBlob> pBlob;
-    GFX_THROW_INFO_ONLY(D3DReadFileToBlob(L"PixelShader.cso", &pBlob));
-    GFX_THROW_INFO_ONLY(pDevice->CreatePixelShader(pBlob->GetBufferPointer(), pBlob->GetBufferSize(), nullptr, &pPixelShader));
-
-    //Bind pixel shader to context
-    pDeviceContext->PSSetShader(pPixelShader.Get(), 0, 0);
-
-
-    //Create vertex shader
-    wrl::ComPtr<ID3D11VertexShader> pVertexShader;
-    GFX_THROW_INFO_ONLY(D3DReadFileToBlob(L"VertexShader.cso", &pBlob));
-    GFX_THROW_INFO_ONLY(pDevice->CreateVertexShader(pBlob->GetBufferPointer(), pBlob->GetBufferSize(), nullptr, &pVertexShader));
-
-    //Bind vertex shader to context
-    pDeviceContext->VSSetShader(pVertexShader.Get(), 0, 0);
-
-    //Set Input Layout
-    wrl::ComPtr<ID3D11InputLayout> pInputLayout;
-    //D3D11_APPEND_ALIGNED_ELEMENT is a way to let d3d calculate the offset from previous element
-    const D3D11_INPUT_ELEMENT_DESC inputLayoutDesc[] =
-    {
-        {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
-        {"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0}
-    };
-
-    //Blob en este caso debe ser del vertex shader, debe hacer la comprobaci�n de si el layout coincide con el del shader
-    GFX_THROW_INFO(pDevice->CreateInputLayout(inputLayoutDesc, std::size(inputLayoutDesc), pBlob->GetBufferPointer(), pBlob->GetBufferSize(), &pInputLayout));
-
-    //Bind Input Layout to pipeline
-    pDeviceContext->IASetInputLayout(pInputLayout.Get());
-
-    //Set primitive topology to triangle
-    
-    pDeviceContext->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    
-    //Set Texture resource
-    pDeviceContext->PSSetShaderResources(0, 1, myTexture.GetAddressOf());
-    //Set sampler state
-    pDeviceContext->PSSetSamplers(0, 1, samplerState.GetAddressOf());
-
-    //Viewport
-    D3D11_VIEWPORT viewport;
-    viewport.Width = 800;
-    viewport.Height = 600;
-    viewport.TopLeftX = 0;
-    viewport.TopLeftY = 0;
-    viewport.MinDepth = 0;
-    viewport.MaxDepth = 1;
-    pDeviceContext->RSSetViewports(1, &viewport);
-
-
-    //GFX_THROW_INFO_ONLY(pDeviceContext->DrawIndexed(std::size(indices), 0u, 0u));
-    pDeviceContext->DrawIndexed(total_indices, 0u, 0u);
-
-    delete[] vertices;
-    delete[] indices;
-}
-
-void D3DClass::DrawTestTriangle(float angle, float x, float z)
-{
-    HRESULT hr;
-    namespace wrl = Microsoft::WRL;
-
-    //Creation of buffer with vertex for triangle
-    struct Vertex
-    {
-        struct
-        {
-            float x;
-            float y;
-            float z;
-        } pos;
-    };
-    //There has to be a better way to store extra values in vertex.
-    Vertex vertices[] = {
-        {-1.0f, -1.0f, -1.0f },
-        {1.0f, -1.0f, -1.0f  },
-        {-1.0f, 1.0f, -1.0f  },
-        {1.0f, 1.0f, -1.0f   },
-        {-1.0f, -1.0f, 1.0f  },
-        {1.0f, -1.0f, 1.0f   },
-        {-1.0f, 1.0f, 1.0f   },
-        {1.0f, 1.0f, 1.0f    },
-    };
-    D3D11_BUFFER_DESC bufferDesc = {};
-    bufferDesc.ByteWidth = sizeof(vertices);
-    bufferDesc.Usage = D3D11_USAGE_DEFAULT;
-    bufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-    bufferDesc.CPUAccessFlags = 0;
-    bufferDesc.MiscFlags = 0;
-    bufferDesc.StructureByteStride = sizeof(Vertex);
-    D3D11_SUBRESOURCE_DATA subData;
-    subData.pSysMem = vertices;
-    wrl::ComPtr<ID3D11Buffer> pVertexBuffer;
-    GFX_THROW_INFO(pDevice->CreateBuffer(&bufferDesc, &subData, &pVertexBuffer));
-
-
-    const UINT strides = sizeof(Vertex);
-    const UINT offset = 0;
-    //Bind vertex buffer to pipeline (Side note: this method usually doesn't show the errors so throwing here doesn't make sense)
-    GFX_THROW_INFO_ONLY(pDeviceContext->IASetVertexBuffers(0, 1, pVertexBuffer.GetAddressOf(), &strides, &offset));
-
-    //Create index buffer
-    const unsigned short indices[] =
-    {
-        0,2,1, 2,3,1,
-        1,3,5, 3,7,5,
-        2,6,3, 3,6,7,
-        4,5,7, 4,7,6,
-        0,4,2, 2,4,6,
-        0,1,4, 1,5,4
-    };
-    D3D11_BUFFER_DESC indexDesc = {};
-    indexDesc.ByteWidth = sizeof(indices);
-    indexDesc.Usage = D3D11_USAGE_DEFAULT;
-    indexDesc.BindFlags = D3D10_BIND_INDEX_BUFFER;
-    indexDesc.CPUAccessFlags = 0;
-    indexDesc.MiscFlags = 0;
-    indexDesc.StructureByteStride = sizeof(unsigned short);
-    D3D11_SUBRESOURCE_DATA isd;
-    isd.pSysMem = indices;
-    wrl::ComPtr<ID3D11Buffer> pIndexBuffer;
-    GFX_THROW_INFO(pDevice->CreateBuffer(&indexDesc, &isd, &pIndexBuffer));
-    GFX_THROW_INFO_ONLY(pDeviceContext->IASetIndexBuffer(pIndexBuffer.Get(), DXGI_FORMAT_R16_UINT, 0));
-
-    //Create transform constant buffer
-    struct ConstantBuffer
-    {
-        DirectX::XMMATRIX transformation;
-    };
-    const ConstantBuffer cb =
-    {
-        //Multiply by 3/4 in the x axis, to fix the stretching taking place for the 4:3 aspect ratio of the viewport
-        DirectX::XMMatrixTranspose(
-            DirectX::XMMatrixRotationZ(angle) *
-            DirectX::XMMatrixRotationX(angle)*
-            DirectX::XMMatrixTranslation(x, 0.0f, z + 4.0f) *
-            DirectX::XMMatrixPerspectiveLH(1.0f, 3.0f / 4.0f, 0.5f, 10.0f)
-        )
-    };
-
-    D3D11_BUFFER_DESC constDesc = {};
-    constDesc.ByteWidth = sizeof(cb);
-    constDesc.Usage = D3D11_USAGE_DYNAMIC;
-    constDesc.BindFlags = D3D10_BIND_CONSTANT_BUFFER;
-    constDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-    constDesc.MiscFlags = 0;
-    constDesc.StructureByteStride = 0u;
-    D3D11_SUBRESOURCE_DATA csd;
-    csd.pSysMem = &cb;
-    wrl::ComPtr<ID3D11Buffer> pConstantBuffer;
-    GFX_THROW_INFO(pDevice->CreateBuffer(&constDesc, &csd, &pConstantBuffer));
-    GFX_THROW_INFO_ONLY(pDeviceContext->VSSetConstantBuffers(0u, 1u, pConstantBuffer.GetAddressOf()));
-
-    //Create buffer to store the color of faces
-    struct ConstantBuffer2
-    {
-        struct
-        {
-            float r;
-            float g;
-            float b;
-            float a;
-        } face_colors[6];
-    };
-    const ConstantBuffer2 cb2 =
-    {
-        {
-            {1.0f, 0.0f, 1.0f},
-            {1.0f, 0.0f, 0.0f},
-            {0.0f, 1.0f, 0.0f},
-            {0.0f, 1.0f, 1.0f},
-            {1.0f, 1.0f, 0.0f},
-            {0.0f, 0.0f, 0.0f}
-        }
-    };
-    D3D11_BUFFER_DESC constDesc2 = {};
-    constDesc2.ByteWidth = sizeof(cb2);
-    constDesc2.Usage = D3D11_USAGE_DEFAULT;
-    constDesc2.BindFlags = D3D10_BIND_CONSTANT_BUFFER;
-    constDesc2.CPUAccessFlags = 0u;
-    constDesc2.MiscFlags = 0;
-    constDesc2.StructureByteStride = 0u;
-    D3D11_SUBRESOURCE_DATA csd2;
-    csd2.pSysMem = &cb2;
-    wrl::ComPtr<ID3D11Buffer> pConstantBuffer2;
-    GFX_THROW_INFO(pDevice->CreateBuffer(&constDesc2, &csd2, &pConstantBuffer2));
-    GFX_THROW_INFO_ONLY(pDeviceContext->PSSetConstantBuffers(0u, 1u, pConstantBuffer2.GetAddressOf()));
-
-    //Create pixel shader
-    wrl::ComPtr<ID3D11PixelShader> pPixelShader;
-    wrl::ComPtr<ID3DBlob> pBlob;
-    GFX_THROW_INFO_ONLY(D3DReadFileToBlob(L"PixelShader.cso", &pBlob));
-    GFX_THROW_INFO_ONLY(pDevice->CreatePixelShader(pBlob->GetBufferPointer(), pBlob->GetBufferSize(), nullptr, &pPixelShader));
-
-    //Bind pixel shader to context
-    pDeviceContext->PSSetShader(pPixelShader.Get(), 0, 0);
-
-
-    //Create vertex shader
-    wrl::ComPtr<ID3D11VertexShader> pVertexShader;
-    GFX_THROW_INFO_ONLY(D3DReadFileToBlob(L"VertexShader.cso", &pBlob));
-    GFX_THROW_INFO_ONLY(pDevice->CreateVertexShader(pBlob->GetBufferPointer(), pBlob->GetBufferSize(), nullptr, &pVertexShader));
-
-    //Bind vertex shader to context
-    pDeviceContext->VSSetShader(pVertexShader.Get(), 0, 0);
-
-    //Set Input Layout
-    wrl::ComPtr<ID3D11InputLayout> pInputLayout;
-    //D3D11_APPEND_ALIGNED_ELEMENT is a way to let d3d calculate the offset from previous element
-    const D3D11_INPUT_ELEMENT_DESC inputLayoutDesc[] =
-    {
-        {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0}
-    };
-
-    //Blob en este caso debe ser del vertex shader, debe hacer la comprobaci�n de si el layout coincide con el del shader
-    GFX_THROW_INFO( pDevice->CreateInputLayout(inputLayoutDesc, std::size(inputLayoutDesc), pBlob->GetBufferPointer(), pBlob->GetBufferSize(), &pInputLayout));
-
-    //Bind Input Layout to pipeline
-    pDeviceContext->IASetInputLayout(pInputLayout.Get());
-
-    //Set primitive topology to triangle
-    pDeviceContext->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
-    //Viewport
-    D3D11_VIEWPORT viewport;
-    viewport.Width = 800;
-    viewport.Height = 600;
-    viewport.TopLeftX = 0;
-    viewport.TopLeftY = 0;
-    viewport.MinDepth = 0;
-    viewport.MaxDepth = 1;
-    pDeviceContext->RSSetViewports(1, &viewport);
-
-
-    GFX_THROW_INFO_ONLY(pDeviceContext->DrawIndexed(std::size(indices), 0u, 0u));
 }
 
 //This method will be in charge of flipping (Taking the back buffer and presenting it as the front)
@@ -766,6 +348,30 @@ void D3DClass::EndScene()
             GFX_THROW_INFO(hr);
         }
     }
+}
+
+void D3DClass::Shutdown()
+{
+    if (pTarget != nullptr)
+    {
+        pTarget->Release();
+    }
+    if (pSwap != nullptr)
+    {
+        pSwap->Release();
+    }
+    if (pDeviceContext != nullptr)
+    {
+        pDeviceContext->Release();
+    }
+    if (pDevice != nullptr)
+    {
+        pDevice->Release();
+    }
+
+    delete[] pVertexOffsets;
+    delete[] pIndexOffsets;
+    delete[] pIndexCount;
 }
 
 //Here we implement hr exceptions
