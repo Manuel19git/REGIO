@@ -1,4 +1,4 @@
-﻿#include <iostream>
+#include <iostream>
 #include "d3dclass.h"
 
 #pragma comment(lib, "d3d11.lib")
@@ -56,6 +56,9 @@ void D3DClass::BuildGeometry(const aiScene* pScene)
             vertices[pVertexOffsets[meshId] + vertexId].normal.x = mesh->mNormals[vertexId].x;
             vertices[pVertexOffsets[meshId] + vertexId].normal.y = mesh->mNormals[vertexId].y;
             vertices[pVertexOffsets[meshId] + vertexId].normal.z = mesh->mNormals[vertexId].z;
+
+            vertices[pVertexOffsets[meshId] + vertexId].tex.u = mesh->mTextureCoords[0][vertexId].x;
+            vertices[pVertexOffsets[meshId] + vertexId].tex.v = mesh->mTextureCoords[0][vertexId].y;
         }
 
         for (int faceId = 0; faceId < mesh->mNumFaces; ++faceId)
@@ -102,7 +105,8 @@ void D3DClass::BuildVertexLayout()
     const D3D11_INPUT_ELEMENT_DESC inputLayoutDesc[] =
     {
         {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
-        {"NORMAL", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0}
+        {"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0},
+        {"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0}
     };
     pTechnique->GetPassByIndex(0)->GetDesc(&passDesc);
     GFX_THROW_INFO(pDevice->CreateInputLayout(inputLayoutDesc, std::size(inputLayoutDesc), passDesc.pIAInputSignature, passDesc.IAInputSignatureSize, &pInputLayout));
@@ -191,7 +195,7 @@ bool D3DClass::Initialize(HWND hWnd, const aiScene* pScene)
 
     //Build Effects
     GFX_THROW_INFO(D3DX11CreateEffectFromFile(L"LightEffect.fxo", 0, pDevice.Get(), pEffect.GetAddressOf()));
-    pTechnique = pEffect->GetTechniqueByName("LighTech");
+    pTechnique = pEffect->GetTechniqueByName("LighTechTex");
 
     //Build Vertex Layout
     BuildVertexLayout();
@@ -210,12 +214,29 @@ bool D3DClass::Initialize(HWND hWnd, const aiScene* pScene)
     GFX_THROW_INFO(pDevice->CreateSamplerState(&sampDesc, samplerState.GetAddressOf()));
 
 
-    //Create texture
+    //Create textures
     GFX_THROW_INFO(CreateWICTextureFromFile(
         pDevice.Get(), 
         L"C:\\Users\\Akira\\Desktop\\Proyectos\\REGIO\\output\\Maxwell_cat\\textures\\dingus_nowhiskers.jpg", 
         nullptr, 
-        myTexture.GetAddressOf()));
+        textureMaxwell.GetAddressOf()));
+    GFX_THROW_INFO(CreateWICTextureFromFile(
+        pDevice.Get(), 
+        L"C:\\Users\\Akira\\Desktop\\Proyectos\\REGIO\\output\\Maxwell_cat\\textures\\colors.jpg", 
+        nullptr, 
+        textureMonkey.GetAddressOf()));
+    GFX_THROW_INFO(CreateWICTextureFromFile(
+        pDevice.Get(), 
+        L"C:\\Users\\Akira\\Desktop\\Proyectos\\REGIO\\output\\Maxwell_cat\\textures\\Grass.jpg", 
+        nullptr, 
+        textureGrass.GetAddressOf()));
+    GFX_THROW_INFO(CreateWICTextureFromFile(
+        pDevice.Get(), 
+        L"C:\\Users\\Akira\\Desktop\\Proyectos\\REGIO\\output\\Maxwell_cat\\textures\\sky.jpg", 
+        nullptr, 
+        textureSky.GetAddressOf()));
+
+    shaderResource = pEffect->GetVariableByName("textureObject")->AsShaderResource();
 
 
     //Create light and material
@@ -266,7 +287,7 @@ void D3DClass::DrawScene(const aiScene* scene, float z)
     //Set constant buffers
     DirectX::XMMATRIX transformation = DirectX::XMMatrixTranspose(
             DirectX::XMMatrixTranslation(0.0f, -1.0f, z + 4.0f) *
-            DirectX::XMMatrixPerspectiveLH(1.0f, 3.0f / 4.0f, 0.5f, 10.0f)
+            DirectX::XMMatrixPerspectiveLH(1.0f, 3.0f / 4.0f, 0.5f, 30.0f)
             );
 
     fxDirLight->SetRawValue(&dirLight, 0, sizeof(DirectionalLight));
@@ -292,6 +313,12 @@ void D3DClass::DrawScene(const aiScene* scene, float z)
     {
         for (int meshId = 0; meshId < scene->mNumMeshes; ++meshId)
         {
+            aiString name = scene->mMeshes[meshId]->mName;
+            if (name == aiString("Maxwell")) shaderResource->SetResource(textureMaxwell.Get());
+            else if (name == aiString("Grass_Plane")) shaderResource->SetResource(textureGrass.Get());
+            else if (name == aiString("Monkey")) shaderResource->SetResource(textureMonkey.Get());
+            else if (name == aiString("Sky_Plane")) shaderResource->SetResource(textureSky.Get());
+
             pTechnique->GetPassByIndex(p)->Apply(0, pDeviceContext.Get());
             pDeviceContext->DrawIndexed(pIndexCount[meshId], pIndexOffsets[meshId], pVertexOffsets[meshId]);
         }

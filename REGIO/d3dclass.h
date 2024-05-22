@@ -169,7 +169,12 @@ private:
 
 	//Texture
 	Microsoft::WRL::ComPtr<ID3D11SamplerState> samplerState;
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> myTexture;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> textureMaxwell;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> textureMonkey;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> textureGrass;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> textureSky;
+	Microsoft::WRL::ComPtr<ID3DX11EffectShaderResourceVariable> shaderResource;
+
 
 	//Effects
 	Microsoft::WRL::ComPtr<ID3DX11Effect> pEffect;

@@ -13,16 +13,30 @@ cbuffer cbPerObject
 	Material gMaterial;
 };
 
+//Nonnumeric values cannot be added to a cbuffer
+Texture2D textureObject;
+
+SamplerState objSamplerState
+{
+	Filter = ANISOTROPIC;
+	MaxAnisotropy = 4;
+
+	AddressU = WRAP;
+	AddressV = WRAP;
+};
+
 struct VS_INPUT
 {
 	float3 inPos : POSITION;
 	float3 inNorm : NORMAL;
+	float2 inTex : TEXCOORD;
 };
 
 struct VS_OUTPUT
 {
 	float4 pos : SV_POSITION;
 	float3 norm : NORMAL;
+	float2 tex : TEXCOORD;
 };
 
 VS_OUTPUT VS(VS_INPUT input)
@@ -30,13 +44,24 @@ VS_OUTPUT VS(VS_INPUT input)
 	VS_OUTPUT output;
 	output.pos = mul(float4(input.inPos, 1.0f), gTransform);
 	output.norm = mul(input.inNorm, (float3x3)gTransform);
+	output.tex = input.inTex;
 	return output;
 }
 
-float4 PS(VS_OUTPUT input) : SV_TARGET
+float4 PS(VS_OUTPUT input, uniform bool useTexture) : SV_TARGET
 {
 	input.norm = normalize(input.norm);
 	float3 toEye = normalize(gEyePosW - input.pos.xyz);
+
+	float4 texColor = float4(1, 1, 1, 1);
+	if (useTexture)
+	{
+		texColor = textureObject.Sample(objSamplerState, input.tex);
+	}
+
+	////////////
+	//Lighting//
+	////////////
 
 	//This is what we are going to use to compute pixel color
 	float4 ambient = float4(0.0f, 0.0f, 0.0f, 0.0f);
@@ -51,7 +76,8 @@ float4 PS(VS_OUTPUT input) : SV_TARGET
 	diffuse += D;
 	specular += S;
 
-	float4 litColor = ambient + diffuse + specular;
+	//It seems like texColor only affects ambient and diffuse
+	float4 litColor = texColor * (ambient + diffuse) + specular;
 
 	//Common to take alpha from diffuse material -> Luna's book
 	litColor.a = gMaterial.Diffuse.a;
@@ -64,6 +90,15 @@ technique11 LighTech
 	pass P0
 	{
 		SetVertexShader(CompileShader(vs_5_0, VS()));
-		SetPixelShader(CompileShader(ps_5_0, PS()));
+		SetPixelShader(CompileShader(ps_5_0, PS(false)));
+	}
+}
+
+technique11 LighTechTex
+{
+	pass P0
+	{
+		SetVertexShader(CompileShader(vs_5_0, VS()));
+		SetPixelShader(CompileShader(ps_5_0, PS(true)));
 	}
 }
