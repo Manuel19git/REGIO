@@ -1,4 +1,4 @@
-#include <iostream>
+﻿#include <iostream>
 #include "d3dclass.h"
 
 #pragma comment(lib, "d3d11.lib")
@@ -217,22 +217,22 @@ bool D3DClass::Initialize(HWND hWnd, const aiScene* pScene)
     //Create textures
     GFX_THROW_INFO(CreateWICTextureFromFile(
         pDevice.Get(), 
-        L"C:\\Users\\Akira\\Desktop\\Proyectos\\REGIO\\output\\Maxwell_cat\\textures\\dingus_nowhiskers.jpg", 
+        L"..\\output\\Maxwell_cat\\textures\\dingus_nowhiskers.jpg", 
         nullptr, 
         textureMaxwell.GetAddressOf()));
     GFX_THROW_INFO(CreateWICTextureFromFile(
         pDevice.Get(), 
-        L"C:\\Users\\Akira\\Desktop\\Proyectos\\REGIO\\output\\Maxwell_cat\\textures\\colors.jpg", 
-        nullptr, 
+        L"..\\output\\Maxwell_cat\\textures\\colors.jpg",
+        nullptr,
         textureMonkey.GetAddressOf()));
     GFX_THROW_INFO(CreateWICTextureFromFile(
-        pDevice.Get(), 
-        L"C:\\Users\\Akira\\Desktop\\Proyectos\\REGIO\\output\\Maxwell_cat\\textures\\Grass.jpg", 
-        nullptr, 
+        pDevice.Get(),
+        L"..\\output\\Maxwell_cat\\textures\\Grass.jpg",
+        nullptr,
         textureGrass.GetAddressOf()));
     GFX_THROW_INFO(CreateWICTextureFromFile(
-        pDevice.Get(), 
-        L"C:\\Users\\Akira\\Desktop\\Proyectos\\REGIO\\output\\Maxwell_cat\\textures\\sky.jpg", 
+        pDevice.Get(),
+        L"..\\output\\Maxwell_cat\\textures\\sky.jpg",
         nullptr, 
         textureSky.GetAddressOf()));
 
@@ -270,7 +270,7 @@ void D3DClass::ClearBuffer(float red, float green, float blue)
     pDeviceContext->ClearDepthStencilView(pDepthStencilView.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
 }
 
-void D3DClass::DrawScene(const aiScene* scene, float z)
+void D3DClass::DrawScene(const aiScene* scene, Camera* camera)
 {
     HRESULT hr;
 
@@ -285,13 +285,10 @@ void D3DClass::DrawScene(const aiScene* scene, float z)
     GFX_THROW_INFO_ONLY(pDeviceContext->IASetIndexBuffer(pIndexBuffer.Get(), DXGI_FORMAT_R16_UINT, 0));
 
     //Set constant buffers
-    DirectX::XMMATRIX transformation = DirectX::XMMatrixTranspose(
-            DirectX::XMMatrixTranslation(0.0f, -1.0f, z + 4.0f) *
-            DirectX::XMMatrixPerspectiveLH(1.0f, 3.0f / 4.0f, 0.5f, 30.0f)
-            );
+    XMFLOAT3 eyePos = camera->getPosition();
+    DirectX::XMMATRIX transformation = camera->getTransform();
 
     fxDirLight->SetRawValue(&dirLight, 0, sizeof(DirectionalLight));
-    XMFLOAT3 eyePos = XMFLOAT3(0.0f, 0.0f, 0.0f);
     fxEyePos->SetRawValue(&eyePos, 0, sizeof(XMFLOAT3));
     fxTransform->SetRawValue(&transformation, 0, sizeof(XMMATRIX));
     fxMaterial->SetRawValue(&material, 0, sizeof(Material));

@@ -17,6 +17,7 @@ GraphicsClass::GraphicsClass(const GraphicsClass& other)
 
 GraphicsClass::~GraphicsClass()
 {
+	delete mainCamera;
 }
 
 
@@ -27,7 +28,7 @@ bool GraphicsClass::Initialize(int screenWidth, int screenHeight, HWND hwnd, Inp
 
 	//Read mesh
 	importer = new Assimp::Importer();
-	mScene = importer->ReadFile("C:\\Users\\Akira\\Desktop\\Proyectos\\REGIO\\output\\Maxwell_cat\\source\\maxwell_scene.obj",
+	mScene = importer->ReadFile("..\\output\\Maxwell_cat\\source\\maxwell_scene.obj",
 		aiProcess_Triangulate | aiProcess_ConvertToLeftHanded);
 
 	//Create window
@@ -37,6 +38,10 @@ bool GraphicsClass::Initialize(int screenWidth, int screenHeight, HWND hwnd, Inp
 	{
 		return false;
 	}
+
+	//Initialize camera
+	mainCamera = new Camera();
+
 	return true;
 }
 
@@ -54,8 +59,7 @@ void GraphicsClass::Shutdown()
 bool GraphicsClass::Frame()
 {
 	m_D3D->ClearBuffer(0.0f, 0.0f, 0.0f);
-	m_D3D->DrawScene(mScene,
-			-(mouse->GetPosY() / 300.0f - 1.0f));
+	m_D3D->DrawScene(mScene, mainCamera);
 	m_D3D->EndScene();
 
 	//float color = sin(count);
@@ -73,6 +77,13 @@ bool GraphicsClass::Frame()
 	//	mouse->GetPosX() / 400.0f - 1.0f, 
 	//	-(mouse->GetPosY() / 300.0f - 1.0f));
 	//m_D3D->EndScene();
+
+	return true;
+}
+
+bool GraphicsClass::UpdateCamera(Axis axis, int sign)
+{
+	mainCamera->moveCamera(axis, sign);
 
 	return true;
 }

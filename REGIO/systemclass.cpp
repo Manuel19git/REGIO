@@ -197,6 +197,30 @@ bool SystemClass::Frame()
 	{
 		return false;
 	}
+	if (m_Input->IsKeyDown('W'))
+	{
+		m_Graphics->UpdateCamera(Z, POSITIVE);
+	}
+	else if (m_Input->IsKeyDown('S'))
+	{
+		m_Graphics->UpdateCamera(Z, NEGATIVE);
+	}
+	else if (m_Input->IsKeyDown('D'))
+	{
+		m_Graphics->UpdateCamera(X, POSITIVE);
+	}
+	else if (m_Input->IsKeyDown('A'))
+	{
+		m_Graphics->UpdateCamera(X, NEGATIVE);
+	}
+	else if (m_Input->IsKeyDown('F'))
+	{
+		m_Graphics->UpdateCamera(Y, POSITIVE);
+	}
+	else if (m_Input->IsKeyDown('G'))
+	{
+		m_Graphics->UpdateCamera(Y, NEGATIVE);
+	}
 
 	// Do the frame processing for the graphics object.
 	result = m_Graphics->Frame();

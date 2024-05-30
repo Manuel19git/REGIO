@@ -35,11 +35,15 @@ public:
 	bool Frame();
 	float count = 0;
 
+	bool UpdateCamera(Axis axis, int sign);
+
 private:
 	
 	D3DClass* m_D3D;
 	Mouse* mouse;
 	HWND m_hwnd;
+
+	Camera* mainCamera;
 
 	//Scene and mesh persists as long as the importer
 	Assimp::Importer* importer;

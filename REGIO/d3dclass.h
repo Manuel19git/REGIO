@@ -31,6 +31,8 @@
 #include <chrono>
 #include <Windows.h>
 
+#include "Camera.h"
+
 using namespace DirectX;
 namespace wrl = Microsoft::WRL;
 
@@ -127,7 +129,7 @@ public:
 
 	void BuildGeometry(const aiScene* scene);
 	void BuildVertexLayout();
-	void DrawScene(const aiScene* scene, float z);
+	void DrawScene(const aiScene* scene, Camera* camera);
 	
 	void ClearBuffer(float red, float green, float blue);
 	void EndScene();
