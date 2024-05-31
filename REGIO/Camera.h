@@ -34,6 +34,9 @@ private:
 	DirectX::XMVECTOR lookAtVector;
 	DirectX::XMFLOAT3 position;
 
+	DirectX::XMVECTOR forwardVector;
+	DirectX::XMVECTOR rightVector;
+
 	float yaw;
 	float pitch;
 
