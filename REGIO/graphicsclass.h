@@ -36,6 +36,7 @@ public:
 	float count = 0;
 
 	bool UpdateCamera(Axis axis, int sign);
+	bool UpdateCameraLookAt(float x, float y);
 
 private:
 	

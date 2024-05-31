@@ -222,11 +222,26 @@ bool SystemClass::Frame()
 		m_Graphics->UpdateCamera(Y, NEGATIVE);
 	}
 
+	
+	//Adjust window
+	RECT clientRect = RECT();
+	POINT clientTopLeft = { clientRect.left, clientRect.top };
+	ClientToScreen(m_hwnd, &clientTopLeft);
+
+	int posX = clientTopLeft.x + (width / 2);
+	int posY = clientTopLeft.y + (height / 2);
+	SetCursorPos(posX, posY);
+	
 	// Do the frame processing for the graphics object.
 	result = m_Graphics->Frame();
 	if (!result)
 	{
 		return false;
+	}
+
+	if (m_Input->mouse.GetPosX() != 0 && m_Input->mouse.GetPosY() != 0)
+	{
+		m_Graphics->UpdateCameraLookAt((m_Input->mouse.GetPosX() / (width / 2.0f) - 1.0f), (m_Input->mouse.GetPosY() / (height / 2.0f) - 1.0f));
 	}
 
 	return true;
@@ -279,7 +294,7 @@ void SystemClass::Run()
 			}
 
 			case Mouse::Event::Type::Move:
-				oss << "Mouse moved to (" << e->GetPosX() << "," << e->GetPosY() << ")";
+				oss << "Mouse moved to (" << (e->GetPosX() / (width / 2.0f) - 1.0f) << "," << (e->GetPosY() / (height / 2.0f) - 1.0f) << ")";
 				
 			}
 			SetWindowTextA(m_hwnd, oss.str().c_str());

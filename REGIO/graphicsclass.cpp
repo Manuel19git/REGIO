@@ -17,7 +17,6 @@ GraphicsClass::GraphicsClass(const GraphicsClass& other)
 
 GraphicsClass::~GraphicsClass()
 {
-	delete mainCamera;
 }
 
 
@@ -48,8 +47,18 @@ bool GraphicsClass::Initialize(int screenWidth, int screenHeight, HWND hwnd, Inp
 
 void GraphicsClass::Shutdown()
 {
-	delete importer;
-	delete mScene;
+	if (importer != nullptr)
+	{
+		delete importer;
+	}
+	else if (mScene != nullptr)
+	{
+		delete mScene;
+	}
+	else if (mainCamera != nullptr)
+	{
+		delete mainCamera;
+	}
 
 	m_D3D->Shutdown();
 	return;
@@ -84,6 +93,13 @@ bool GraphicsClass::Frame()
 bool GraphicsClass::UpdateCamera(Axis axis, int sign)
 {
 	mainCamera->moveCamera(axis, sign);
+
+	return true;
+}
+
+bool GraphicsClass::UpdateCameraLookAt(float x, float y)
+{
+	mainCamera->updateYawPitch(x, y);
 
 	return true;
 }

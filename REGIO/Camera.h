@@ -19,16 +19,24 @@ public:
 	Camera();
 
 	void moveCamera(Axis axis, int sign);
+	void updateYawPitch(float x, float y);
 
 	DirectX::XMFLOAT3 getPosition();
 	DirectX::XMMATRIX getTransform();
 
 public:
 	float translationSpeed;
+	float rotationSpeed;
 
 private:
-	DirectX::XMVECTOR lookingAtVector;
+	DirectX::XMVECTOR m_orientation;
+	DirectX::XMVECTOR upVector;
+	DirectX::XMVECTOR lookAtVector;
 	DirectX::XMFLOAT3 position;
+
+	float yaw;
+	float pitch;
+
 	float nearPlane;
 	float farPlane;
 };
