@@ -103,3 +103,9 @@ bool GraphicsClass::UpdateCameraLookAt(float x, float y)
 
 	return true;
 }
+
+bool GraphicsClass::RotateCamera(int sign)
+{
+	mainCamera->updateRoll(sign);
+	return true;
+}

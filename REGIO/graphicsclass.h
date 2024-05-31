@@ -37,6 +37,7 @@ public:
 
 	bool UpdateCamera(Axis axis, int sign);
 	bool UpdateCameraLookAt(float x, float y);
+	bool RotateCamera(int sign);
 
 private:
 	

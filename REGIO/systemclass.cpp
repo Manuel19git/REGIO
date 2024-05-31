@@ -221,6 +221,14 @@ bool SystemClass::Frame()
 	{
 		m_Graphics->UpdateCamera(Y, NEGATIVE);
 	}
+	else if (m_Input->IsKeyDown('Q'))
+	{
+		m_Graphics->RotateCamera(POSITIVE);
+	}
+	else if (m_Input->IsKeyDown('E'))
+	{
+		m_Graphics->RotateCamera(NEGATIVE);
+	}
 
 	
 	//Adjust window

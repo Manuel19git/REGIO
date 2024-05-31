@@ -20,6 +20,7 @@ public:
 
 	void moveCamera(Axis axis, int sign);
 	void updateYawPitch(float x, float y);
+	void updateRoll(int sign);
 
 	DirectX::XMFLOAT3 getPosition();
 	DirectX::XMMATRIX getTransform();
@@ -39,6 +40,7 @@ private:
 
 	float yaw;
 	float pitch;
+	float roll;
 
 	float nearPlane;
 	float farPlane;
