@@ -4,6 +4,7 @@
 cbuffer cbPerFrame
 {
 	DirectionalLight gDirLight;
+    SpotLight gSpotLight;
 	float3 gEyePosW;
 };
 
@@ -35,6 +36,7 @@ struct VS_INPUT
 struct VS_OUTPUT
 {
 	float4 pos : SV_POSITION;
+	float3 posOrig : POSITION;
 	float3 norm : NORMAL;
 	float2 tex : TEXCOORD;
 };
@@ -42,6 +44,7 @@ struct VS_OUTPUT
 VS_OUTPUT VS(VS_INPUT input)
 {
 	VS_OUTPUT output;
+    output.posOrig = input.inPos;
 	output.pos = mul(float4(input.inPos, 1.0f), gTransform);
 	output.norm = mul(input.inNorm, (float3x3)gTransform);
 	output.tex = input.inTex;
@@ -71,11 +74,15 @@ float4 PS(VS_OUTPUT input, uniform bool useTexture) : SV_TARGET
 	//This is the ambient,diffuse,specular values computed
 	float4 A, D, S;
 
-	ComputeDirectionalLight(gMaterial, gDirLight, input.norm, toEye, A, D, S);
-	ambient += A;
-	diffuse += D;
-	specular += S;
-
+    ComputeDirectionalLight(gMaterial, gDirLight, input.norm, toEye, A, D, S);
+    ambient += A;
+    diffuse += D;
+    specular += S;
+    ComputeSpotLight(gMaterial, gSpotLight, input.posOrig, input.norm, toEye, A, D, S);
+    ambient += A;
+    diffuse += D;
+    specular += S;
+	
 	//It seems like texColor only affects ambient and diffuse
 	float4 litColor = texColor * (ambient + diffuse) + specular;
 

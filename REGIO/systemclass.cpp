@@ -134,7 +134,7 @@ void SystemClass::InitializeWindows(int& screenWidth, int& screenHeight)
 	SetFocus(m_hwnd);
 
 	// Show the mouse cursor.
-	ShowCursor(true);
+	ShowCursor(false);
 
 	return;
 

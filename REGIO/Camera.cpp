@@ -5,7 +5,7 @@ using namespace DirectX;
 Camera::Camera()
 {
     translationSpeed = 0.5f;
-	rotationSpeed = 0.05f;
+	rotationSpeed = 0.005f;
 
 	yaw = 0.0f;
 	pitch = 0.0f;
@@ -13,7 +13,7 @@ Camera::Camera()
 
 
 	m_orientation = DirectX::XMQuaternionIdentity();
-    position = DirectX::XMFLOAT3(0.0f, 1.0f, -4.0f);
+    position = DirectX::XMFLOAT3(0.5f, 2.0f, -4.0f);
 	lookAtVector = DirectX::XMVectorSet(0.0f, 0.0f, 20.0f, 1.0f);
 
 	forwardVector = DirectX::XMVectorSet(0.0f, 0.0f, 1.0f, 1.0f);
@@ -65,6 +65,11 @@ DirectX::XMFLOAT3 Camera::getPosition()
 	return position;
 }
 
+DirectX::XMVECTOR Camera::getLookAt()
+{
+	return forwardVector;
+}
+	
 DirectX::XMMATRIX Camera::getTransform()
 {
 	DirectX::XMVECTOR posVector = DirectX::XMLoadFloat3(&position);

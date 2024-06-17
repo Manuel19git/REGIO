@@ -245,11 +245,19 @@ bool D3DClass::Initialize(HWND hWnd, const aiScene* pScene)
     dirLight.Specular   = XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f);
     dirLight.Direction  = XMFLOAT3(0.57735f, -0.57735f, 0.57735f);
 
+    spotLight.Ambient   = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+    spotLight.Diffuse   = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+    spotLight.Specular  = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+    spotLight.Att       = XMFLOAT3(1.0f, 0.0f, 0.0f);
+    spotLight.Range     = 1000.0f;
+    spotLight.Spot      = 40.0f;
+
     material.Ambient    = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
     material.Diffuse    = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
     material.Specular   = XMFLOAT4(0.2f, 0.2f, 0.2f, 1.0f);
 
     fxDirLight  = pEffect->GetVariableByName("gDirLight");
+    fxSpotLight = pEffect->GetVariableByName("gSpotLight");
     fxEyePos    = pEffect->GetVariableByName("gEyePosW");
     fxTransform = pEffect->GetVariableByName("gTransform");
     fxMaterial  = pEffect->GetVariableByName("gMaterial");
@@ -288,6 +296,9 @@ void D3DClass::DrawScene(const aiScene* scene, Camera* camera)
     XMFLOAT3 eyePos = camera->getPosition();
     DirectX::XMMATRIX transformation = camera->getTransform();
 
+    spotLight.Position = eyePos;
+    XMStoreFloat3(&spotLight.Direction, XMVector3Normalize(camera->getLookAt()));
+    fxSpotLight->SetRawValue(&spotLight, 0, sizeof(SpotLight));
     fxDirLight->SetRawValue(&dirLight, 0, sizeof(DirectionalLight));
     fxEyePos->SetRawValue(&eyePos, 0, sizeof(XMFLOAT3));
     fxTransform->SetRawValue(&transformation, 0, sizeof(XMMATRIX));
@@ -344,6 +355,8 @@ void D3DClass::EndScene()
         fpsCounter = 0;
         start = std::chrono::system_clock::now();
     }
+
+    //wst = std::to_wstring(spotLight.Position.x) + L"," + std::to_wstring(spotLight.Position.y) + L"," + std::to_wstring(spotLight.Position.z);
      
     const wchar_t* value = wst.c_str();
 

@@ -23,6 +23,7 @@ public:
 	void updateRoll(int sign);
 
 	DirectX::XMFLOAT3 getPosition();
+	DirectX::XMVECTOR getLookAt();
 	DirectX::XMMATRIX getTransform();
 
 public:

@@ -185,10 +185,12 @@ private:
 
 	//Temporal place to save lights and materials for the scene
 	Microsoft::WRL::ComPtr<ID3DX11EffectVariable> fxDirLight;
+	Microsoft::WRL::ComPtr<ID3DX11EffectVariable> fxSpotLight;
 	Microsoft::WRL::ComPtr<ID3DX11EffectVariable> fxEyePos;
 	Microsoft::WRL::ComPtr<ID3DX11EffectVariable> fxTransform;
 	Microsoft::WRL::ComPtr<ID3DX11EffectVariable> fxMaterial;
 	DirectionalLight dirLight;
+	SpotLight spotLight;
 	Material material;
 
 	//Show fps
