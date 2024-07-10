@@ -4,6 +4,7 @@
 cbuffer cbPerFrame
 {
 	DirectionalLight gDirLight;
+    PointLight gPointLight;
     SpotLight gSpotLight;
 	float3 gEyePosW;
 };
@@ -75,6 +76,10 @@ float4 PS(VS_OUTPUT input, uniform bool useTexture) : SV_TARGET
 	float4 A, D, S;
 
     ComputeDirectionalLight(gMaterial, gDirLight, input.norm, toEye, A, D, S);
+    ambient += A;
+    diffuse += D;
+    specular += S;
+	ComputePointLight(gMaterial, gPointLight, input.posOrig, input.norm, toEye, A, D, S);
     ambient += A;
     diffuse += D;
     specular += S;

@@ -22,7 +22,24 @@ struct DirectionalLight
 	DirectX::XMFLOAT4 Diffuse;
 	DirectX::XMFLOAT4 Specular;
 	DirectX::XMFLOAT3 Direction;
-	float Pad;
+	float Intensity;
+	
+};
+
+struct PointLight
+{
+	//Zero memory initializes to zero this struct
+	PointLight() { ZeroMemory(this, sizeof(this)); }
+
+	DirectX::XMFLOAT4 Ambient;
+	DirectX::XMFLOAT4 Diffuse;
+	DirectX::XMFLOAT4 Specular;
+
+	DirectX::XMFLOAT3 Position;
+	float Range;
+
+	DirectX::XMFLOAT3 Att;
+	float Intensity;
 };
 
 struct SpotLight
@@ -41,5 +58,5 @@ struct SpotLight
 	float Spot;
 
 	DirectX::XMFLOAT3 Att;
-	float Pad;
+	float Intensity;
 };

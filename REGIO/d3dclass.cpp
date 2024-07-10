@@ -244,23 +244,33 @@ bool D3DClass::Initialize(HWND hWnd, const aiScene* pScene)
     dirLight.Diffuse    = XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f);
     dirLight.Specular   = XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f);
     dirLight.Direction  = XMFLOAT3(0.57735f, -0.57735f, 0.57735f);
+    dirLight.Intensity  = 0.0f;
 
     spotLight.Ambient   = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-    spotLight.Diffuse   = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+    spotLight.Diffuse   = XMFLOAT4(1.0f, 1.0f, 0.0f, 1.0f);
     spotLight.Specular  = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-    spotLight.Att       = XMFLOAT3(1.0f, 0.0f, 0.0f);
+    spotLight.Att       = XMFLOAT3(1.0f, 0.8f, 0.0f);
     spotLight.Range     = 1000.0f;
     spotLight.Spot      = 40.0f;
+    spotLight.Intensity = 0.0f;
+
+    pointLight.Ambient   = XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f);
+    pointLight.Diffuse   = XMFLOAT4(0.7f, 0.7f, 0.7f, 1.0f);
+    pointLight.Specular  = XMFLOAT4(0.7f, 0.7f, 0.7f, 1.0f);
+    pointLight.Att       = XMFLOAT3(1.0f, 0.1f, 0.01f);
+    pointLight.Range     = 1000.0f;
+    pointLight.Intensity = 2.0f;
 
     material.Ambient    = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
     material.Diffuse    = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
     material.Specular   = XMFLOAT4(0.2f, 0.2f, 0.2f, 1.0f);
 
-    fxDirLight  = pEffect->GetVariableByName("gDirLight");
-    fxSpotLight = pEffect->GetVariableByName("gSpotLight");
-    fxEyePos    = pEffect->GetVariableByName("gEyePosW");
-    fxTransform = pEffect->GetVariableByName("gTransform");
-    fxMaterial  = pEffect->GetVariableByName("gMaterial");
+    fxDirLight      = pEffect->GetVariableByName("gDirLight");
+    fxPointLight    = pEffect->GetVariableByName("gPointLight");
+    fxSpotLight     = pEffect->GetVariableByName("gSpotLight");
+    fxEyePos        = pEffect->GetVariableByName("gEyePosW");
+    fxTransform     = pEffect->GetVariableByName("gTransform");
+    fxMaterial      = pEffect->GetVariableByName("gMaterial");
 
     //Initialize sprint font and batch to render text
     spriteBatch = std::make_unique<SpriteBatch>(pDeviceContext.Get());
@@ -297,8 +307,10 @@ void D3DClass::DrawScene(const aiScene* scene, Camera* camera)
     DirectX::XMMATRIX transformation = camera->getTransform();
 
     spotLight.Position = eyePos;
+    pointLight.Position = eyePos;
     XMStoreFloat3(&spotLight.Direction, XMVector3Normalize(camera->getLookAt()));
     fxSpotLight->SetRawValue(&spotLight, 0, sizeof(SpotLight));
+    fxPointLight->SetRawValue(&pointLight, 0, sizeof(PointLight));
     fxDirLight->SetRawValue(&dirLight, 0, sizeof(DirectionalLight));
     fxEyePos->SetRawValue(&eyePos, 0, sizeof(XMFLOAT3));
     fxTransform->SetRawValue(&transformation, 0, sizeof(XMMATRIX));
