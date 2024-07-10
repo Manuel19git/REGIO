@@ -47,7 +47,8 @@ VS_OUTPUT VS(VS_INPUT input)
 	VS_OUTPUT output;
     output.posOrig = input.inPos;
 	output.pos = mul(float4(input.inPos, 1.0f), gTransform);
-	output.norm = mul(input.inNorm, (float3x3)gTransform);
+    output.norm = input.inNorm;
+    //output.norm = mul(input.inNorm, (float3x3)gTransform);
 	output.tex = input.inTex;
 	return output;
 }
@@ -55,7 +56,7 @@ VS_OUTPUT VS(VS_INPUT input)
 float4 PS(VS_OUTPUT input, uniform bool useTexture) : SV_TARGET
 {
 	input.norm = normalize(input.norm);
-	float3 toEye = normalize(gEyePosW - input.pos.xyz);
+	float3 toEye = normalize(gEyePosW - input.posOrig.xyz);
 
 	float4 texColor = float4(1, 1, 1, 1);
 	if (useTexture)
