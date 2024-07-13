@@ -201,44 +201,51 @@ bool SystemClass::Frame()
 	{
 		m_Graphics->UpdateCamera(Z, POSITIVE);
 	}
-	else if (m_Input->IsKeyDown('S'))
+	if (m_Input->IsKeyDown('S'))
 	{
 		m_Graphics->UpdateCamera(Z, NEGATIVE);
 	}
-	else if (m_Input->IsKeyDown('D'))
+	if (m_Input->IsKeyDown('D'))
 	{
 		m_Graphics->UpdateCamera(X, POSITIVE);
 	}
-	else if (m_Input->IsKeyDown('A'))
+	if (m_Input->IsKeyDown('A'))
 	{
 		m_Graphics->UpdateCamera(X, NEGATIVE);
 	}
-	else if (m_Input->IsKeyDown('F'))
+	if (m_Input->IsKeyDown('F'))
 	{
 		m_Graphics->UpdateCamera(Y, POSITIVE);
 	}
-	else if (m_Input->IsKeyDown('G'))
+	if (m_Input->IsKeyDown('G'))
 	{
 		m_Graphics->UpdateCamera(Y, NEGATIVE);
 	}
-	else if (m_Input->IsKeyDown('Q'))
+	if (m_Input->IsKeyDown('Q'))
 	{
 		m_Graphics->RotateCamera(POSITIVE);
 	}
-	else if (m_Input->IsKeyDown('E'))
+	if (m_Input->IsKeyDown('E'))
 	{
 		m_Graphics->RotateCamera(NEGATIVE);
 	}
 
 	
-	//Adjust window
+	// Adjust window
 	RECT clientRect = RECT();
 	POINT clientTopLeft = { clientRect.left, clientRect.top };
 	ClientToScreen(m_hwnd, &clientTopLeft);
 
 	int posX = clientTopLeft.x + (width / 2);
 	int posY = clientTopLeft.y + (height / 2);
-	SetCursorPos(posX, posY);
+	
+	// SetCursorPos is quite slow, so only use if necessary
+	POINT cursorPos;
+	GetCursorPos(&cursorPos);
+	if (cursorPos.x != posX || cursorPos.y != posY)
+	{
+		SetCursorPos(posX, posY);
+	}
 	
 	// Do the frame processing for the graphics object.
 	result = m_Graphics->Frame();

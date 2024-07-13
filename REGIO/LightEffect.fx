@@ -37,8 +37,8 @@ struct VS_INPUT
 struct VS_OUTPUT
 {
 	float4 pos : SV_POSITION;
-	float3 posOrig : POSITION;
-	float3 norm : NORMAL;
+	float3 posOrig : POSITION; //World Space
+	float3 norm : NORMAL; //World Space
 	float2 tex : TEXCOORD;
 };
 
