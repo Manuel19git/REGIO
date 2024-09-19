@@ -13,6 +13,7 @@ void DirectXError(HRESULT hr, const std::string& Msg, const std::string& File, i
 {
 }
 
+// Build the vertex and index buffer in an efficient way (every object vertex is in the same buffer)
 void D3DClass::BuildGeometry(const aiScene* pScene)
 {
     HRESULT hr;
@@ -108,8 +109,37 @@ void D3DClass::BuildVertexLayout()
         {"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0},
         {"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0}
     };
-    pTechnique->GetPassByIndex(0)->GetDesc(&passDesc);
+    pTechniqueLight->GetPassByIndex(0)->GetDesc(&passDesc);
     GFX_THROW_INFO(pDevice->CreateInputLayout(inputLayoutDesc, std::size(inputLayoutDesc), passDesc.pIAInputSignature, passDesc.IAInputSignatureSize, &pInputLayout));
+}
+
+
+
+void D3DClass::BuildTextures(const aiScene* pScene)
+{
+    HRESULT hr;
+
+    pTextures.resize(pScene->mNumMaterials);
+    for (int i = 0; i < pScene->mNumMaterials; ++i)
+	{
+        aiString texturePath;
+        pScene->mMaterials[i]->GetTexture(aiTextureType_DIFFUSE, 0, &texturePath);
+        
+        if (texturePath.length != 0)
+        {
+            // Convert the string to the right type before feeding it to the following function
+            const size_t pathSize = strlen(texturePath.C_Str()) + 1;
+            wchar_t* pathWideString = new wchar_t[pathSize];
+            size_t retVal;
+            mbstowcs_s(&retVal, pathWideString, pathSize, texturePath.C_Str(), pathSize - 1);
+
+            GFX_THROW_INFO(CreateWICTextureFromFile(
+                pDevice.Get(),
+                pathWideString,
+                nullptr,
+                pTextures[i].GetAddressOf()));
+        }
+    }
 }
 
 bool D3DClass::Initialize(HWND hWnd, const aiScene* pScene)
@@ -204,7 +234,8 @@ bool D3DClass::Initialize(HWND hWnd, const aiScene* pScene)
 
     //Build Effects
     GFX_THROW_INFO(D3DX11CreateEffectFromFile(L"LightEffect.fxo", 0, pDevice.Get(), pEffect.GetAddressOf()));
-    pTechnique = pEffect->GetTechniqueByName("LighTechTex");
+    pTechniqueLight = pEffect->GetTechniqueByName("LighTech");
+    pTechniqueLightTex = pEffect->GetTechniqueByName("LighTechTex");
     pTechniqueSimple = pEffect->GetTechniqueByName("Simple");
 
 
@@ -226,6 +257,7 @@ bool D3DClass::Initialize(HWND hWnd, const aiScene* pScene)
 
 
     //Create textures
+    BuildTextures(pScene);
     GFX_THROW_INFO(CreateWICTextureFromFile(
         pDevice.Get(), 
         L"..\\output\\Maxwell_cat\\textures\\dingus_nowhiskers.jpg", 
@@ -340,23 +372,41 @@ void D3DClass::DrawScene(const aiScene* scene, Camera* camera)
     //Rasterizer State
     //pDeviceContext->RSSetState(pNoCullRS.Get());
 
-    D3DX11_TECHNIQUE_DESC techDesc;
-    pTechnique->GetDesc(&techDesc);
-    for (UINT32 p = 0; p < techDesc.Passes; ++p)
-    {
-        for (int meshId = 0; meshId < scene->mNumMeshes; ++meshId)
+	for (int meshId = 0; meshId < scene->mNumMeshes; ++meshId)
+	{
+        if (pTextures[scene->mMeshes[meshId]->mMaterialIndex] != nullptr)
         {
-            aiString name = scene->mMeshes[meshId]->mName;
-            if (name == aiString("Maxwell")) shaderResource->SetResource(textureMaxwell.Get());
-            else if (name == aiString("Grass_Plane")) shaderResource->SetResource(textureGrass.Get());
-            else if (name == aiString("Monkey")) shaderResource->SetResource(textureMonkey.Get());
-            else if (name == aiString("Sky_Plane")) shaderResource->SetResource(textureSky.Get());
+            D3DX11_TECHNIQUE_DESC techDesc;
+            pTechniqueLightTex->GetDesc(&techDesc);
+            for (UINT32 p = 0; p < techDesc.Passes; ++p)
+            {
+                aiString name = scene->mMaterials[scene->mMeshes[meshId]->mMaterialIndex]->GetName();
+                scene->mMeshes[meshId]->mName;
+                // Gotta test this
+                shaderResource->SetResource(pTextures[scene->mMeshes[meshId]->mMaterialIndex].Get());
 
-            pTechnique->GetPassByIndex(p)->Apply(0, pDeviceContext.Get());
-            pDeviceContext->DrawIndexed(pIndexCount[meshId], pIndexOffsets[meshId], pVertexOffsets[meshId]);
+                //aiString name = scene->mMeshes[meshId]->mName;
+                //if (name == aiString("Maxwell")) shaderResource->SetResource(textureMaxwell.Get());
+                //else if (name == aiString("Grass_Plane")) shaderResource->SetResource(textureGrass.Get());
+                //else if (name == aiString("Monkey")) shaderResource->SetResource(textureMonkey.Get());
+                //else if (name == aiString("Sky_Plane")) shaderResource->SetResource(textureSky.Get());
+
+                pTechniqueLightTex->GetPassByIndex(p)->Apply(0, pDeviceContext.Get());
+                pDeviceContext->DrawIndexed(pIndexCount[meshId], pIndexOffsets[meshId], pVertexOffsets[meshId]);
+            }
         }
-        
-    }
+        else
+        {
+			D3DX11_TECHNIQUE_DESC techDesc;
+			pTechniqueLight->GetDesc(&techDesc);
+			for (UINT32 p = 0; p < techDesc.Passes; ++p)
+			{
+				pTechniqueLight->GetPassByIndex(p)->Apply(0, pDeviceContext.Get());
+				pDeviceContext->DrawIndexed(pIndexCount[meshId], pIndexOffsets[meshId], pVertexOffsets[meshId]);
+
+			}
+        }
+	}
 }
 
 //Method to draw anything to debug

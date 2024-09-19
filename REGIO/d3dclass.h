@@ -129,6 +129,7 @@ public:
 
 	void BuildGeometry(const aiScene* scene);
 	void BuildVertexLayout();
+	void BuildTextures(const aiScene* scene);
 	void DrawScene(const aiScene* scene, Camera* camera);
 	void DrawDebug(const aiScene* scene, Camera* camera);
 	
@@ -173,6 +174,7 @@ private:
 
 	//Texture
 	Microsoft::WRL::ComPtr<ID3D11SamplerState> samplerState;
+	std::vector<Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>> pTextures;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> textureMaxwell;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> textureMonkey;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> textureGrass;
@@ -182,7 +184,8 @@ private:
 
 	//Effects
 	Microsoft::WRL::ComPtr<ID3DX11Effect> pEffect;
-	Microsoft::WRL::ComPtr<ID3DX11EffectTechnique> pTechnique;
+	Microsoft::WRL::ComPtr<ID3DX11EffectTechnique> pTechniqueLight;
+	Microsoft::WRL::ComPtr<ID3DX11EffectTechnique> pTechniqueLightTex;
 	Microsoft::WRL::ComPtr<ID3DX11EffectTechnique> pTechniqueSimple;
 	D3DX11_PASS_DESC passDesc;
 
