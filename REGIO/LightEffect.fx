@@ -94,8 +94,38 @@ float4 PS(VS_OUTPUT input, uniform bool useTexture) : SV_TARGET
 
 	//Common to take alpha from diffuse material -> Luna's book
 	litColor.a = gMaterial.Diffuse.a;
-
+    float3 lightVec = gPointLight.Position - input.posOrig;
+    float distance = length(lightVec);
+    //litColor = float4(distance / gPointLight.Range , distance /gPointLight.Range, distance / gPointLight.Range, 1.0f);
+    //litColor = ambient;
 	return litColor;
+}
+
+struct VS_SIMPLE_INPUT
+{
+	float4 inPos : POSITION;
+	float4 inColor : COLOR;
+};
+
+struct PS_SIMPLE_INPUT
+{
+	float4 pos : SV_POSITION;
+	float4 color : COLOR;
+};
+
+PS_SIMPLE_INPUT VS_Simple(VS_SIMPLE_INPUT input)
+{
+    PS_SIMPLE_INPUT output;
+    //output.pos = input.inPos;
+	output.pos = mul(input.inPos, gTransform);
+    output.color = input.inColor;
+	
+    return output;
+}
+
+float4 PS_Simple(PS_SIMPLE_INPUT input) : SV_TARGET
+{
+    return input.color;
 }
 
 technique11 LighTech
@@ -114,4 +144,13 @@ technique11 LighTechTex
 		SetVertexShader(CompileShader(vs_5_0, VS()));
 		SetPixelShader(CompileShader(ps_5_0, PS(true)));
 	}
+}
+
+technique11 Simple
+{
+	pass P0
+	{
+		SetVertexShader(CompileShader(vs_5_0, VS_Simple()));
+        SetPixelShader(CompileShader(ps_5_0, PS_Simple()));
+    }
 }

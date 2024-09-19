@@ -27,7 +27,11 @@ bool GraphicsClass::Initialize(int screenWidth, int screenHeight, HWND hwnd, Inp
 
 	//Read mesh
 	importer = new Assimp::Importer();
-	mScene = importer->ReadFile("..\\output\\Maxwell_cat\\source\\maxwell_scene.obj",
+	//mScene = importer->ReadFile("..\\output\\NIER\\Props\\turnstile_wall.usdc", //USD is not fully supported by assimp yet
+	//	aiProcess_Triangulate | aiProcess_ConvertToLeftHanded);
+	//mScene = importer->ReadFile("..\\output\\Maxwell_cat\\source\\maxwell_scene_test.obj",
+	//	aiProcess_Triangulate | aiProcess_ConvertToLeftHanded);
+	mScene = importer->ReadFile("..\\output\\NIER\\nier_park.obj",
 		aiProcess_Triangulate | aiProcess_ConvertToLeftHanded);
 
 	//Create window
@@ -44,31 +48,11 @@ bool GraphicsClass::Initialize(int screenWidth, int screenHeight, HWND hwnd, Inp
 	return true;
 }
 
-
-void GraphicsClass::Shutdown()
-{
-	if (importer != nullptr)
-	{
-		delete importer;
-	}
-	else if (mScene != nullptr)
-	{
-		delete mScene;
-	}
-	else if (mainCamera != nullptr)
-	{
-		delete mainCamera;
-	}
-
-	m_D3D->Shutdown();
-	return;
-}
-
-
 bool GraphicsClass::Frame()
 {
 	m_D3D->ClearBuffer(0.0f, 0.0f, 0.0f);
 	m_D3D->DrawScene(mScene, mainCamera);
+	//m_D3D->DrawDebug(mScene, mainCamera);
 	m_D3D->EndScene();
 
 	//float color = sin(count);
@@ -109,3 +93,23 @@ bool GraphicsClass::RotateCamera(int sign)
 	mainCamera->updateRoll(sign);
 	return true;
 }
+
+void GraphicsClass::Shutdown()
+{
+	if (importer != nullptr)
+	{
+		delete importer;
+	}
+	else if (mScene != nullptr)
+	{
+		delete mScene;
+	}
+	else if (mainCamera != nullptr)
+	{
+		delete mainCamera;
+	}
+
+	m_D3D->Shutdown();
+	return;
+}
+

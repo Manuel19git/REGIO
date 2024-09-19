@@ -130,6 +130,7 @@ public:
 	void BuildGeometry(const aiScene* scene);
 	void BuildVertexLayout();
 	void DrawScene(const aiScene* scene, Camera* camera);
+	void DrawDebug(const aiScene* scene, Camera* camera);
 	
 	void ClearBuffer(float red, float green, float blue);
 	void EndScene();
@@ -157,6 +158,7 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11DepthStencilView> pDepthStencilView;
 
 	//Initialize depth stencil buffer
+	Microsoft::WRL::ComPtr<ID3D11RasterizerState> pNoCullRS;
 	Microsoft::WRL::ComPtr<ID3D11DepthStencilState> pDepthBuffer;
 	Microsoft::WRL::ComPtr<ID3D11Texture2D> pDepthTexture;
 
@@ -181,6 +183,7 @@ private:
 	//Effects
 	Microsoft::WRL::ComPtr<ID3DX11Effect> pEffect;
 	Microsoft::WRL::ComPtr<ID3DX11EffectTechnique> pTechnique;
+	Microsoft::WRL::ComPtr<ID3DX11EffectTechnique> pTechniqueSimple;
 	D3DX11_PASS_DESC passDesc;
 
 	//Temporal place to save lights and materials for the scene

@@ -24,6 +24,11 @@ public:
 
 	DirectX::XMFLOAT3 getPosition();
 	DirectX::XMVECTOR getLookAt();
+	DirectX::XMVECTOR getForward();
+	DirectX::XMVECTOR getRight();
+	DirectX::XMVECTOR getUp();
+	float getNear();
+	float getFar();
 	DirectX::XMMATRIX getTransform();
 
 public:

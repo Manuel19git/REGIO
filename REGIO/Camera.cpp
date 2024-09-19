@@ -11,7 +11,6 @@ Camera::Camera()
 	pitch = 0.0f;
 	roll = 0.0f;
 
-
 	m_orientation = DirectX::XMQuaternionIdentity();
     position = DirectX::XMFLOAT3(0.5f, 2.0f, -4.0f);
 	lookAtVector = DirectX::XMVectorSet(0.0f, 0.0f, 20.0f, 1.0f);
@@ -21,7 +20,7 @@ Camera::Camera()
 	upVector = DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 1.0f);
 
 	nearPlane = 0.5f;
-	farPlane = 100.0;
+	farPlane = 1000.0;
 }
 
 void Camera::moveCamera(Axis axis, int sign)
@@ -67,9 +66,32 @@ DirectX::XMFLOAT3 Camera::getPosition()
 
 DirectX::XMVECTOR Camera::getLookAt()
 {
+	return lookAtVector;
+}
+
+DirectX::XMVECTOR Camera::getForward()
+{
 	return forwardVector;
 }
-	
+
+DirectX::XMVECTOR Camera::getRight()
+{
+	return rightVector;
+}
+DirectX::XMVECTOR Camera::getUp()
+{
+	return upVector;
+}
+
+
+float Camera::getNear()
+{
+	return nearPlane;
+}
+float Camera::getFar()
+{
+	return farPlane;
+}
 DirectX::XMMATRIX Camera::getTransform()
 {
 	DirectX::XMVECTOR posVector = DirectX::XMLoadFloat3(&position);
