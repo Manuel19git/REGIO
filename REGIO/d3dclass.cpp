@@ -43,7 +43,7 @@ void D3DClass::BuildGeometry(const aiScene* pScene)
     
     //Fill vertices and index array with data from each mesh
     Vertex* vertices = new Vertex[totalVertexCount];
-    u_short* indices = new u_short[totalIndexCount];
+    UINT* indices = new UINT[totalIndexCount];
     for (int meshId = 0; meshId < pScene->mNumMeshes; ++meshId)
     {
         aiMesh* mesh = pScene->mMeshes[meshId];
@@ -84,12 +84,12 @@ void D3DClass::BuildGeometry(const aiScene* pScene)
 
     D3D11_BUFFER_DESC indexDesc = {};
     //indexDesc.ByteWidth = sizeof(aiFace) * mesh->mNumFaces;
-    indexDesc.ByteWidth = sizeof(u_short) * totalIndexCount;
+    indexDesc.ByteWidth = sizeof(UINT) * totalIndexCount;
     indexDesc.Usage = D3D11_USAGE_DEFAULT;
     indexDesc.BindFlags = D3D10_BIND_INDEX_BUFFER;
     indexDesc.CPUAccessFlags = 0;
     indexDesc.MiscFlags = 0;
-    indexDesc.StructureByteStride = sizeof(u_short);
+    indexDesc.StructureByteStride = sizeof(UINT);
     D3D11_SUBRESOURCE_DATA isd;
     isd.pSysMem = indices;
     GFX_THROW_INFO(pDevice->CreateBuffer(&indexDesc, &isd, &pIndexBuffer));
@@ -343,7 +343,7 @@ void D3DClass::DrawScene(const aiScene* scene, Camera* camera)
     const UINT strides = sizeof(Vertex);
     const UINT offset = 0;
     GFX_THROW_INFO_ONLY(pDeviceContext->IASetVertexBuffers(0, 1, pVertexBuffer.GetAddressOf(), &strides, &offset));
-    GFX_THROW_INFO_ONLY(pDeviceContext->IASetIndexBuffer(pIndexBuffer.Get(), DXGI_FORMAT_R16_UINT, 0));
+    GFX_THROW_INFO_ONLY(pDeviceContext->IASetIndexBuffer(pIndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0));
 
     //Set constant buffers
     XMFLOAT3 eyePos = camera->getPosition();
