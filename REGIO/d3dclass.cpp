@@ -58,8 +58,11 @@ void D3DClass::BuildGeometry(const aiScene* pScene)
             vertices[pVertexOffsets[meshId] + vertexId].normal.y = mesh->mNormals[vertexId].y;
             vertices[pVertexOffsets[meshId] + vertexId].normal.z = mesh->mNormals[vertexId].z;
 
-            vertices[pVertexOffsets[meshId] + vertexId].tex.u = mesh->mTextureCoords[0][vertexId].x;
-            vertices[pVertexOffsets[meshId] + vertexId].tex.v = mesh->mTextureCoords[0][vertexId].y;
+            if (mesh->HasTextureCoords(0)) // Check if it has at least one texture coord
+            {
+                vertices[pVertexOffsets[meshId] + vertexId].tex.u = mesh->mTextureCoords[0][vertexId].x;
+                vertices[pVertexOffsets[meshId] + vertexId].tex.v = mesh->mTextureCoords[0][vertexId].y;
+            }
         }
 
         for (int faceId = 0; faceId < mesh->mNumFaces; ++faceId)
