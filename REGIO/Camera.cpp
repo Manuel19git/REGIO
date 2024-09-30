@@ -20,7 +20,7 @@ Camera::Camera()
 	upVector = DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 1.0f);
 
 	nearPlane = 0.5f;
-	farPlane = 1000.0;
+	farPlane = 10000.0;
 }
 
 void Camera::moveCamera(Axis axis, int sign)
@@ -83,6 +83,19 @@ DirectX::XMVECTOR Camera::getUp()
 	return upVector;
 }
 
+DirectX::XMMATRIX Camera::getViewMatrix()
+{
+	updateTransform();
+	XMMATRIX viewMatrix = DirectX::XMMatrixLookAtLH(DirectX::XMLoadFloat3(&position), lookAtVector, upVector);
+	viewMatrix.r[3] = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
+	return viewMatrix;
+}
+
+DirectX::XMMATRIX Camera::getProjectionMatrix()
+{
+	updateTransform();
+	return DirectX::XMMatrixPerspectiveLH(1.0f, 3.0f / 4.0f, nearPlane, farPlane);
+}
 
 float Camera::getNear()
 {
@@ -92,6 +105,7 @@ float Camera::getFar()
 {
 	return farPlane;
 }
+
 DirectX::XMMATRIX Camera::getTransform()
 {
 	DirectX::XMVECTOR posVector = DirectX::XMLoadFloat3(&position);
@@ -117,5 +131,26 @@ DirectX::XMMATRIX Camera::getTransform()
 		DirectX::XMMatrixLookAtLH(posVector, lookAtVector, upVector) *
 		DirectX::XMMatrixPerspectiveLH(1.0f, 3.0f / 4.0f, nearPlane, farPlane)
 	);
+}
 
+void Camera::updateTransform()
+{
+	DirectX::XMVECTOR posVector = DirectX::XMLoadFloat3(&position);
+
+	DirectX::XMVECTOR yawQuat = DirectX::XMQuaternionRotationAxis(DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 1.0f), yaw);
+	DirectX::XMVECTOR pitchQuat = DirectX::XMQuaternionRotationAxis(DirectX::XMVectorSet(1.0f, 0.0f, 0.0f, 1.0f), pitch);
+	DirectX::XMVECTOR rollQuat = DirectX::XMQuaternionRotationAxis(DirectX::XMVectorSet(0.0f, 0.0f, 1.0f, 1.0f), roll);
+	roll = 0.0;
+
+	// Combine the new rotations with the current orientation
+	m_orientation = DirectX::XMQuaternionMultiply(pitchQuat, m_orientation);
+	m_orientation = DirectX::XMQuaternionMultiply(yawQuat, m_orientation);
+	m_orientation = DirectX::XMQuaternionMultiply(rollQuat, m_orientation);
+
+	lookAtVector = DirectX::XMVector3Rotate(DirectX::XMVectorSet(0.0f, 0.0f, 20.0f, 1.0f), m_orientation);
+	lookAtVector += posVector;
+
+	forwardVector = DirectX::XMVector3Rotate(DirectX::XMVectorSet(0.0f, 0.0f, 1.0f, 1.0f), m_orientation);
+	rightVector = DirectX::XMVector3Rotate(DirectX::XMVectorSet(1.0f, 0.0f, 0.0f, 1.0f), m_orientation);
+	upVector = DirectX::XMVector3Rotate(DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 1.0f), m_orientation);
 }

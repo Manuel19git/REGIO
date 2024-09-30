@@ -27,9 +27,12 @@ public:
 	DirectX::XMVECTOR getForward();
 	DirectX::XMVECTOR getRight();
 	DirectX::XMVECTOR getUp();
+	DirectX::XMMATRIX getViewMatrix();
+	DirectX::XMMATRIX getProjectionMatrix();
 	float getNear();
 	float getFar();
 	DirectX::XMMATRIX getTransform();
+	void updateTransform();
 
 public:
 	float translationSpeed;

@@ -12,11 +12,13 @@ cbuffer cbPerFrame
 cbuffer cbPerObject
 {
 	matrix gTransform; //matrix is 4x4
+    matrix gTransformSkybox;
 	Material gMaterial;
 };
 
 //Nonnumeric values cannot be added to a cbuffer
 Texture2D textureObject;
+TextureCube textureCubemap;
 
 SamplerState objSamplerState
 {
@@ -101,6 +103,12 @@ float4 PS(VS_OUTPUT input, uniform bool useTexture) : SV_TARGET
 	return litColor;
 }
 
+DepthStencilState lessEqualDSS
+{
+    DepthFunc = LESS_EQUAL;
+};
+
+
 struct VS_SIMPLE_INPUT
 {
 	float4 inPos : POSITION;
@@ -128,6 +136,22 @@ float4 PS_Simple(PS_SIMPLE_INPUT input) : SV_TARGET
     return input.color;
 }
 
+VS_OUTPUT VS_Skybox(VS_INPUT input)
+{
+    VS_OUTPUT output;
+    output.posOrig = input.inPos;
+    output.pos = mul(float4(input.inPos, 1.0f), gTransformSkybox);
+    output.norm = input.inNorm;
+	output.tex = input.inTex;
+	return output;
+}
+
+
+float4 PS_Skybox(VS_OUTPUT input) : SV_TARGET
+{
+    return textureCubemap.Sample(samTriLinearSam, input.posOrig);
+}
+
 technique11 LighTech
 {
 	pass P0
@@ -152,5 +176,16 @@ technique11 Simple
 	{
 		SetVertexShader(CompileShader(vs_5_0, VS_Simple()));
         SetPixelShader(CompileShader(ps_5_0, PS_Simple()));
+    }
+}
+
+technique11 Sky
+{
+	pass P0
+	{
+		SetVertexShader(CompileShader(vs_5_0, VS_Skybox()));
+        SetPixelShader(CompileShader(ps_5_0, PS_Skybox()));
+        //SetDepthStencilState(lessEqualDSS, 0);
+
     }
 }

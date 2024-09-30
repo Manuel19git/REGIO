@@ -52,6 +52,7 @@ bool GraphicsClass::Frame()
 {
 	m_D3D->ClearBuffer(0.0f, 0.0f, 0.0f);
 	m_D3D->DrawScene(mScene, mainCamera);
+	m_D3D->DrawSky(mScene, mainCamera);
 	//m_D3D->DrawDebug(mScene, mainCamera);
 	m_D3D->EndScene();
 

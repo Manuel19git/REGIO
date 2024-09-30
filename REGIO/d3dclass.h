@@ -23,6 +23,7 @@
 #include <assimp/postprocess.h>
 
 #include <WICTextureLoader.h>
+#include "DDSTextureLoader.h"
 
 //Light and material structs
 #include "LightHelper.h"
@@ -130,7 +131,9 @@ public:
 	void BuildGeometry(const aiScene* scene);
 	void BuildVertexLayout();
 	void BuildTextures(const aiScene* scene);
+	void BuildSkymap();
 	void DrawScene(const aiScene* scene, Camera* camera);
+	void DrawSky(const aiScene* scene, Camera* camera);
 	void DrawDebug(const aiScene* scene, Camera* camera);
 	
 	void ClearBuffer(float red, float green, float blue);
@@ -175,6 +178,7 @@ private:
 	//Texture
 	Microsoft::WRL::ComPtr<ID3D11SamplerState> samplerState;
 	std::vector<Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>> pTextures;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> cubemapTexture;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> textureMaxwell;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> textureMonkey;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> textureGrass;
@@ -187,6 +191,7 @@ private:
 	Microsoft::WRL::ComPtr<ID3DX11EffectTechnique> pTechniqueLight;
 	Microsoft::WRL::ComPtr<ID3DX11EffectTechnique> pTechniqueLightTex;
 	Microsoft::WRL::ComPtr<ID3DX11EffectTechnique> pTechniqueSimple;
+	Microsoft::WRL::ComPtr<ID3DX11EffectTechnique> pTechniqueSky;
 	D3DX11_PASS_DESC passDesc;
 
 	//Temporal place to save lights and materials for the scene
@@ -195,6 +200,7 @@ private:
 	Microsoft::WRL::ComPtr<ID3DX11EffectVariable> fxSpotLight;
 	Microsoft::WRL::ComPtr<ID3DX11EffectVariable> fxEyePos;
 	Microsoft::WRL::ComPtr<ID3DX11EffectVariable> fxTransform;
+	Microsoft::WRL::ComPtr<ID3DX11EffectVariable> fxTransformSkybox;
 	Microsoft::WRL::ComPtr<ID3DX11EffectVariable> fxMaterial;
 	DirectionalLight dirLight;
 	PointLight pointLight;

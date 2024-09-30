@@ -145,6 +145,19 @@ void D3DClass::BuildTextures(const aiScene* pScene)
     }
 }
 
+void D3DClass::BuildSkymap()
+{
+    HRESULT hr;
+
+    // CreateDDSTextureFromFile sets automatically description and its properties. 
+    // From the DDS file it should read metadata and wether it is a cubemap or not 
+	GFX_THROW_INFO(CreateDDSTextureFromFile(
+		pDevice.Get(),
+		L"..\\output\\NIER\\Props\\textures\\otro_cielo.dds",
+		nullptr,
+		cubemapTexture.GetAddressOf()));
+}
+
 bool D3DClass::Initialize(HWND hWnd, const aiScene* pScene)
 {
     //Configure Swap Chain
@@ -240,6 +253,7 @@ bool D3DClass::Initialize(HWND hWnd, const aiScene* pScene)
     pTechniqueLight = pEffect->GetTechniqueByName("LighTech");
     pTechniqueLightTex = pEffect->GetTechniqueByName("LighTechTex");
     pTechniqueSimple = pEffect->GetTechniqueByName("Simple");
+    pTechniqueSky = pEffect->GetTechniqueByName("Sky");
 
 
     //Build Vertex Layout
@@ -284,6 +298,9 @@ bool D3DClass::Initialize(HWND hWnd, const aiScene* pScene)
 
     shaderResource = pEffect->GetVariableByName("textureObject")->AsShaderResource();
 
+    //Create skymap
+    BuildSkymap();
+    pEffect->GetVariableByName("textureCubemap")->AsShaderResource()->SetResource(cubemapTexture.Get());
 
     //Create light and material
     dirLight.Ambient    = XMFLOAT4(0.2f, 0.2f, 0.2f, 1.0f);
@@ -316,6 +333,7 @@ bool D3DClass::Initialize(HWND hWnd, const aiScene* pScene)
     fxSpotLight     = pEffect->GetVariableByName("gSpotLight");
     fxEyePos        = pEffect->GetVariableByName("gEyePosW");
     fxTransform     = pEffect->GetVariableByName("gTransform");
+    fxTransformSkybox = pEffect->GetVariableByName("gTransformSkybox");
     fxMaterial      = pEffect->GetVariableByName("gMaterial");
 
     //Initialize sprint font and batch to render text
@@ -411,6 +429,147 @@ void D3DClass::DrawScene(const aiScene* scene, Camera* camera)
         }
 	}
 }
+
+//Method to draw the sky
+void D3DClass::DrawSky(const aiScene* scene, Camera* camera)
+{
+	HRESULT hr;
+
+    float scale = 1000.0f;
+	struct Vertex {
+		XMFLOAT3 position;
+		XMFLOAT3 normal;
+		XMFLOAT2 uv;
+	};
+
+	// Cube vertices data
+	Vertex vertices[] = {
+		// Front Face
+		{ XMFLOAT3(-1.0f * scale, -1.0f * scale, -1.0f * scale), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT2(0.0f, 1.0f) },
+		{ XMFLOAT3(1.0f * scale, -1.0f * scale, -1.0f * scale), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT2(1.0f, 1.0f) },
+		{ XMFLOAT3(1.0f * scale,  1.0f * scale, -1.0f * scale), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT2(1.0f, 0.0f) },
+		{ XMFLOAT3(-1.0f * scale,  1.0f * scale, -1.0f * scale), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT2(0.0f, 0.0f) },
+
+		// Back Face
+		{ XMFLOAT3(-1.0f * scale, -1.0f * scale,  1.0f * scale), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT2(0.0f, 1.0f) },
+		{ XMFLOAT3(1.0f * scale, -1.0f * scale,  1.0f * scale), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT2(1.0f, 1.0f) },
+		{ XMFLOAT3(1.0f * scale,  1.0f * scale,  1.0f * scale), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT2(1.0f, 0.0f) },
+		{ XMFLOAT3(-1.0f * scale,  1.0f * scale,  1.0f * scale), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT2(0.0f, 0.0f) },
+
+		// Left Face
+		{ XMFLOAT3(-1.0f * scale, -1.0f * scale,  1.0f * scale), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT2(0.0f, 1.0f) },
+		{ XMFLOAT3(-1.0f * scale, -1.0f * scale, -1.0f * scale), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT2(1.0f, 1.0f) },
+		{ XMFLOAT3(-1.0f * scale,  1.0f * scale, -1.0f * scale), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT2(1.0f, 0.0f) },
+		{ XMFLOAT3(-1.0f * scale,  1.0f * scale,  1.0f * scale), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT2(0.0f, 0.0f) },
+
+		// Right Face
+		{ XMFLOAT3(1.0f * scale, -1.0f * scale,  1.0f * scale), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT2(0.0f, 1.0f) },
+		{ XMFLOAT3(1.0f * scale, -1.0f * scale, -1.0f * scale), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT2(1.0f, 1.0f) },
+		{ XMFLOAT3(1.0f * scale,  1.0f * scale, -1.0f * scale), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT2(1.0f, 0.0f) },
+		{ XMFLOAT3(1.0f * scale,  1.0f * scale,  1.0f * scale), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT2(0.0f, 0.0f) },
+
+		// Top Face
+		{ XMFLOAT3(-1.0f * scale,  1.0f * scale, -1.0f * scale), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT2(0.0f, 1.0f) },
+		{ XMFLOAT3(1.0f * scale,  1.0f * scale, -1.0f * scale), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT2(1.0f, 1.0f) },
+		{ XMFLOAT3(1.0f * scale,  1.0f * scale,  1.0f * scale), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT2(1.0f, 0.0f) },
+		{ XMFLOAT3(-1.0f * scale,  1.0f * scale,  1.0f * scale), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT2(0.0f, 0.0f) },
+
+
+		// Bottom Face
+		{ XMFLOAT3(-1.0f * scale, -1.0f * scale, -1.0f * scale), XMFLOAT3(0.0f, -1.0f, 0.0f), XMFLOAT2(0.0f, 1.0f) },
+		{ XMFLOAT3(1.0f * scale, -1.0f * scale, -1.0f * scale), XMFLOAT3(0.0f, -1.0f, 0.0f), XMFLOAT2(1.0f, 1.0f) },
+		{ XMFLOAT3(1.0f * scale, -1.0f * scale,  1.0f * scale), XMFLOAT3(0.0f, -1.0f, 0.0f), XMFLOAT2(1.0f, 0.0f) },
+		{ XMFLOAT3(-1.0f * scale, -1.0f * scale,  1.0f * scale), XMFLOAT3(0.0f, -1.0f, 0.0f), XMFLOAT2(0.0f, 0.0f) },
+	};
+
+	//Set constant buffers
+    DirectX::XMMATRIX viewMatrix = camera->getViewMatrix();
+    DirectX::XMMATRIX projectionMatrix = camera->getProjectionMatrix();
+    DirectX::XMMATRIX transformSkybox = DirectX::XMMatrixTranspose(viewMatrix * projectionMatrix);
+    fxTransformSkybox->SetRawValue(&transformSkybox, 0, sizeof(XMMATRIX));
+
+	unsigned int indices[] = {
+		// Front Face
+		0, 1, 2,
+		0, 2, 3,
+
+		// Back Face
+		4, 5, 6,
+		4, 6, 7,
+
+		// Left Face
+		8, 9, 10,
+		8, 10, 11,
+
+		// Right Face
+		12, 13, 14,
+		12, 14, 15,
+
+		// Top Face
+		16, 17, 18,
+		16, 18, 19,
+
+		// Bottom Face
+		20, 21, 22,
+		20, 22, 23
+	};
+
+	// Vertex buffer description
+	D3D11_BUFFER_DESC vertexBufferDesc = {};
+	vertexBufferDesc.Usage = D3D11_USAGE_DEFAULT;
+	vertexBufferDesc.ByteWidth = sizeof(vertices);
+	vertexBufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+	vertexBufferDesc.CPUAccessFlags = 0;
+	D3D11_SUBRESOURCE_DATA vertexData = {};
+	vertexData.pSysMem = vertices;
+
+	// Create the vertex buffer
+	ID3D11Buffer* vertexBuffer;
+	pDevice->CreateBuffer(&vertexBufferDesc, &vertexData, &vertexBuffer);
+
+	// Index buffer description
+	D3D11_BUFFER_DESC indexBufferDesc = {};
+	indexBufferDesc.Usage = D3D11_USAGE_DEFAULT;
+	indexBufferDesc.ByteWidth = sizeof(indices);
+	indexBufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
+	indexBufferDesc.CPUAccessFlags = 0;
+    D3D11_SUBRESOURCE_DATA indexData = {};
+    indexData.pSysMem = indices;
+
+    // Create the index buffer
+    ID3D11Buffer* indexBuffer;
+    pDevice->CreateBuffer(&indexBufferDesc, &indexData, &indexBuffer);
+
+    // Set the vertex buffer
+    UINT stride = sizeof(Vertex);
+    UINT offset = 0;
+    pDeviceContext->IASetVertexBuffers(0, 1, &vertexBuffer, &stride, &offset);
+
+    // Set the index buffer
+    pDeviceContext->IASetIndexBuffer(indexBuffer, DXGI_FORMAT_R32_UINT, 0);
+
+
+    // Set the primitive topology (triangle list)
+    pDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+    // Set the input layout (assuming you have created an input layout for the shader)
+    wrl::ComPtr<ID3D11InputLayout> pInputLayoutSky;
+    const D3D11_INPUT_ELEMENT_DESC inputLayoutDesc[] =
+    {
+        {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
+        {"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0},
+        {"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0}
+    };
+    pTechniqueSky->GetPassByIndex(0)->GetDesc(&passDesc);
+    GFX_THROW_INFO(pDevice->CreateInputLayout(inputLayoutDesc, std::size(inputLayoutDesc), passDesc.pIAInputSignature, passDesc.IAInputSignatureSize, &pInputLayoutSky));
+
+    pDeviceContext->IASetInputLayout(pInputLayoutSky.Get());
+
+	// Draw the quad
+	pTechniqueSky->GetPassByIndex(0)->Apply(0, pDeviceContext.Get());
+    pDeviceContext->DrawIndexed(36, 0, 0);
+}
+
 
 //Method to draw anything to debug
 void D3DClass::DrawDebug(const aiScene* scene, Camera* camera)
