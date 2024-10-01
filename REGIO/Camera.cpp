@@ -4,7 +4,7 @@ using namespace DirectX;
 
 Camera::Camera()
 {
-    translationSpeed = 0.5f;
+    translationSpeed = 0.1f;
 	rotationSpeed = 0.005f;
 
 	yaw = 0.0f;
@@ -50,8 +50,15 @@ void Camera::moveCamera(Axis axis, int sign)
 
 void Camera::updateYawPitch(float x, float y)
 {
-	yaw = x;
-	pitch = y;
+	float speed = 0.5f;
+	if (abs(x) > 0.001 )
+		yaw = x * speed;
+	else
+		yaw = 0;
+	if (abs(y) > 0.001)
+		pitch = y * speed;
+	else
+		pitch = 0;
 }
 
 void Camera::updateRoll(int sign)
@@ -108,6 +115,11 @@ float Camera::getFar()
 
 DirectX::XMMATRIX Camera::getTransform()
 {
+	// Save previous orientation to ensure camera doesn't turn around 180� when pitching (gimball lock)
+	XMVECTOR prevOrientationMatrix = m_orientation;
+	XMVECTOR prevForwardVector = forwardVector;
+
+	position.y = 3.0f;
 	DirectX::XMVECTOR posVector = DirectX::XMLoadFloat3(&position);
 
 	DirectX::XMVECTOR yawQuat = DirectX::XMQuaternionRotationAxis(DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 1.0f), yaw);
@@ -120,21 +132,36 @@ DirectX::XMMATRIX Camera::getTransform()
 	m_orientation = DirectX::XMQuaternionMultiply(yawQuat, m_orientation);
 	m_orientation = DirectX::XMQuaternionMultiply(rollQuat, m_orientation);
 
-	lookAtVector = DirectX::XMVector3Rotate(DirectX::XMVectorSet(0.0f, 0.0f, 20.0f, 1.0f), m_orientation);
-	lookAtVector += posVector;
-
 	forwardVector = DirectX::XMVector3Rotate(DirectX::XMVectorSet(0.0f, 0.0f, 1.0f, 1.0f), m_orientation);
-	rightVector = DirectX::XMVector3Rotate(DirectX::XMVectorSet(1.0f, 0.0f, 0.0f, 1.0f), m_orientation);
-	upVector = DirectX::XMVector3Rotate(DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 1.0f), m_orientation);
+	if (fabs(DirectX::XMVectorGetY(forwardVector)) > 0.95f)
+	{
+		m_orientation = prevOrientationMatrix;
+		forwardVector = prevForwardVector;
+	}
+
+	// Calculate rightVector and upVector without any limitations
+	//rightVector = DirectX::XMVector3Rotate(DirectX::XMVectorSet(1.0f, 0.0f, 0.0f, 1.0f), m_orientation);
+	//upVector = DirectX::XMVector3Rotate(DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 1.0f), m_orientation);
+
+	// Calculate rightVector and upVector here to ensure right vector stays on XZ plane
+	rightVector = DirectX::XMVector3Normalize(DirectX::XMVector3Cross(DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 1.0f), forwardVector));
+	upVector = DirectX::XMVector3Cross(forwardVector, rightVector);
+
+	lookAtVector = XMVectorAdd(posVector, forwardVector);
 
     return DirectX::XMMatrixTranspose(
 		DirectX::XMMatrixLookAtLH(posVector, lookAtVector, upVector) *
 		DirectX::XMMatrixPerspectiveLH(1.0f, 3.0f / 4.0f, nearPlane, farPlane)
 	);
 }
-
+// updateTransform has to be the same as getTransform
 void Camera::updateTransform()
 {
+	// Save previous orientation to ensure camera doesn't turn around 180� when pitching (gimball lock)
+	XMVECTOR prevOrientationMatrix = m_orientation;
+	XMVECTOR prevForwardVector = forwardVector;
+
+	position.y = 3.0f;
 	DirectX::XMVECTOR posVector = DirectX::XMLoadFloat3(&position);
 
 	DirectX::XMVECTOR yawQuat = DirectX::XMQuaternionRotationAxis(DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 1.0f), yaw);
@@ -147,10 +174,19 @@ void Camera::updateTransform()
 	m_orientation = DirectX::XMQuaternionMultiply(yawQuat, m_orientation);
 	m_orientation = DirectX::XMQuaternionMultiply(rollQuat, m_orientation);
 
-	lookAtVector = DirectX::XMVector3Rotate(DirectX::XMVectorSet(0.0f, 0.0f, 20.0f, 1.0f), m_orientation);
-	lookAtVector += posVector;
-
 	forwardVector = DirectX::XMVector3Rotate(DirectX::XMVectorSet(0.0f, 0.0f, 1.0f, 1.0f), m_orientation);
-	rightVector = DirectX::XMVector3Rotate(DirectX::XMVectorSet(1.0f, 0.0f, 0.0f, 1.0f), m_orientation);
-	upVector = DirectX::XMVector3Rotate(DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 1.0f), m_orientation);
+	if (fabs(DirectX::XMVectorGetY(forwardVector)) > 0.95f)
+	{
+		m_orientation = prevOrientationMatrix;
+		forwardVector = prevForwardVector;
+	}
+	// Calculate rightVector and upVector without any limitations
+	//rightVector = DirectX::XMVector3Rotate(DirectX::XMVectorSet(1.0f, 0.0f, 0.0f, 1.0f), m_orientation);
+	//upVector = DirectX::XMVector3Rotate(DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 1.0f), m_orientation);
+
+	// Calculate rightVector and upVector here to ensure right vector stays on XZ plane
+	rightVector = DirectX::XMVector3Normalize(DirectX::XMVector3Cross(DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 1.0f), forwardVector));
+	upVector = DirectX::XMVector3Cross(forwardVector, rightVector);
+
+	lookAtVector = XMVectorAdd(posVector, forwardVector);
 }
