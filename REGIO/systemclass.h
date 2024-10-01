@@ -69,6 +69,7 @@ private:
 
 	int width;
 	int height;
+	bool isPause = false;
 };
 
 /////////////////////////

@@ -192,11 +192,34 @@ bool SystemClass::Frame()
 {
 	bool result;
 
+	// Adjust window
+	RECT clientRect = RECT();
+	POINT clientTopLeft = { clientRect.left, clientRect.top };
+	ClientToScreen(m_hwnd, &clientTopLeft);
+
+	int centerX = clientTopLeft.x + (width / 2);
+	int centerY = clientTopLeft.y + (height / 2);
+
+
 	// Check if the user pressed escape and wants to exit the application.
 	if (m_Input->IsKeyDown(VK_ESCAPE))
 	{
 		return false;
 	}
+	if (m_Input->IsKeyDown('P'))
+	{
+		isPause = true;
+		ShowCursor(true);
+	}
+	if (m_Input->IsKeyDown(VK_RETURN))
+	{
+		isPause = false;
+		SetCursorPos(centerX, centerY);
+		while (ShowCursor(false) >= 0) {} //ShowCursor keeps count for everytime it was called
+	}
+	if (isPause)
+		return true;
+
 	if (m_Input->IsKeyDown('W'))
 	{
 		m_Graphics->UpdateCamera(Z, POSITIVE);
@@ -229,22 +252,13 @@ bool SystemClass::Frame()
 	{
 		m_Graphics->RotateCamera(NEGATIVE);
 	}
-
-	
-	// Adjust window
-	RECT clientRect = RECT();
-	POINT clientTopLeft = { clientRect.left, clientRect.top };
-	ClientToScreen(m_hwnd, &clientTopLeft);
-
-	int posX = clientTopLeft.x + (width / 2);
-	int posY = clientTopLeft.y + (height / 2);
 	
 	// SetCursorPos is quite slow, so only use if necessary
 	POINT cursorPos;
 	GetCursorPos(&cursorPos);
-	if (cursorPos.x != posX || cursorPos.y != posY)
+	if (cursorPos.x != centerX || cursorPos.y != centerY)
 	{
-		SetCursorPos(posX, posY);
+		SetCursorPos(centerX, centerY);
 	}
 	
 	// Do the frame processing for the graphics object.
@@ -344,6 +358,9 @@ LRESULT CALLBACK SystemClass::MessageHandler(HWND hwnd, UINT umsg, WPARAM wparam
 	//CHECK MOUSE MESSAGES
 	case WM_MOUSEMOVE:
 	{
+		// This here stops windows queue from registering mouse moves when in pause
+		if (isPause)
+			break;
 		const POINTS pt = MAKEPOINTS(lparam);
 		if (pt.x >= 0 && pt.x < width && pt.y >= 0 && pt.y < height)
 		{
