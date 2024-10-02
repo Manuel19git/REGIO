@@ -50,12 +50,13 @@ void Camera::moveCamera(Axis axis, int sign)
 
 void Camera::updateYawPitch(float x, float y)
 {
-	float speed = 0.5f;
-	if (abs(x) > 0.001 )
+	float speed = 1.0f;
+	float error = 0.0035f; //Sweet spot
+	if (abs(x) > error )
 		yaw = x * speed;
 	else
 		yaw = 0;
-	if (abs(y) > 0.001)
+	if (abs(y) > error)
 		pitch = y * speed;
 	else
 		pitch = 0;
@@ -125,6 +126,8 @@ DirectX::XMMATRIX Camera::getTransform()
 	DirectX::XMVECTOR yawQuat = DirectX::XMQuaternionRotationAxis(DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 1.0f), yaw);
 	DirectX::XMVECTOR pitchQuat = DirectX::XMQuaternionRotationAxis(DirectX::XMVectorSet(1.0f, 0.0f, 0.0f, 1.0f), pitch);
 	DirectX::XMVECTOR rollQuat = DirectX::XMQuaternionRotationAxis(DirectX::XMVectorSet(0.0f, 0.0f, 1.0f, 1.0f), roll);
+	yaw = 0.0;
+	pitch = 0.0;
 	roll = 0.0;
 
 	// Combine the new rotations with the current orientation
