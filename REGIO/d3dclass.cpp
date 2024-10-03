@@ -304,11 +304,12 @@ bool D3DClass::Initialize(HWND hWnd, const aiScene* pScene, Camera* mainCamera)
     pEffect->GetVariableByName("textureCubemap")->AsShaderResource()->SetResource(cubemapTexture.Get());
 
     //Create light and material
-    dirLight.Ambient    = XMFLOAT4(0.2f, 0.2f, 0.2f, 1.0f);
+    float down = 10.0f;
+    dirLight.Ambient    = XMFLOAT4(0.6156f/down, 0.3568f/down, 0.6392f/down, 1.0f);
     dirLight.Diffuse    = XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f);
     dirLight.Specular   = XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f);
-    dirLight.Direction  = XMFLOAT3(0.57735f, -0.57735f, 0.57735f);
-    dirLight.Intensity  = 0.0f;
+    dirLight.Direction  = XMFLOAT3(0.57735f, -0.57735f, -0.57735f);
+    dirLight.Intensity  = 1.0f;
 
     spotLight.Ambient   = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
     spotLight.Diffuse   = XMFLOAT4(1.0f, 1.0f, 0.0f, 1.0f);
@@ -317,13 +318,22 @@ bool D3DClass::Initialize(HWND hWnd, const aiScene* pScene, Camera* mainCamera)
     spotLight.Range     = 1000.0f;
     spotLight.Spot      = 40.0f;
     spotLight.Intensity = 0.0f;
-
-    pointLight.Ambient   = XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f);
-    pointLight.Diffuse   = XMFLOAT4(0.7f, 0.7f, 0.7f, 1.0f);
-    pointLight.Specular  = XMFLOAT4(0.7f, 0.7f, 0.7f, 1.0f);
-    pointLight.Att       = XMFLOAT3(1.0f, 0.1f, 0.01f);
-    pointLight.Range     = 1000.0f;
-    pointLight.Intensity = 2.0f;
+    
+    for (int i = 0; i < 6; ++i)
+    {
+        pointLights[i].Ambient = XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f);
+        pointLights[i].Diffuse = XMFLOAT4(0.7f, 0.7f, 0.7f, 1.0f);
+        pointLights[i].Specular = XMFLOAT4(0.7f, 0.7f, 0.7f, 1.0f);
+        pointLights[i].Att = XMFLOAT3(1.0f, 0.1f, 0.01f);
+        pointLights[i].Range = 1000.0f;
+        pointLights[i].Intensity = 1.0f;
+    }
+    pointLights[0].Position = XMFLOAT3(-32.2553, 1.85, -38.189022);
+    pointLights[1].Position = XMFLOAT3(-32.2553, 1.85, -81.722275);
+    pointLights[2].Position = XMFLOAT3(-32.2553, 1.85, -113.461594);
+    pointLights[3].Position = XMFLOAT3(32.2553, 1.85, -38.189022);
+    pointLights[4].Position = XMFLOAT3(32.2553, 1.85, -81.722275);
+    pointLights[5].Position = XMFLOAT3(32.2553, 1.85, -113.461594);
 
     material.Ambient    = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
     material.Diffuse    = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
@@ -336,6 +346,9 @@ bool D3DClass::Initialize(HWND hWnd, const aiScene* pScene, Camera* mainCamera)
     fxTransform     = pEffect->GetVariableByName("gTransform");
     fxTransformSkybox = pEffect->GetVariableByName("gTransformSkybox");
     fxMaterial      = pEffect->GetVariableByName("gMaterial");
+    fxPointLights   = pEffect->GetVariableByName("gPointLights");
+
+    fxPointLights->SetRawValue(&pointLights, 0, sizeof(PointLight) * 6);
 
     //Initialize sprint font and batch to render text
     spriteBatch = std::make_unique<SpriteBatch>(pDeviceContext.Get());

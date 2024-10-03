@@ -20,6 +20,9 @@ cbuffer cbPerObject
 Texture2D textureObject;
 TextureCube textureCubemap;
 
+// Array of point lights
+PointLight gPointLights[6];
+
 SamplerState objSamplerState
 {
 	Filter = ANISOTROPIC;
@@ -27,6 +30,13 @@ SamplerState objSamplerState
 
 	AddressU = WRAP;
 	AddressV = WRAP;
+};
+
+SamplerState samTriLinearSam
+{
+    Filter = MIN_MAG_MIP_LINEAR;
+    AddressU = WRAP;
+    AddressV = WRAP;
 };
 
 struct VS_INPUT
@@ -108,6 +118,53 @@ DepthStencilState lessEqualDSS
     DepthFunc = LESS_EQUAL;
 };
 
+float4 PS_multilight(VS_OUTPUT input, uniform bool useTexture) : SV_TARGET
+{
+	input.norm = normalize(input.norm);
+	float3 toEye = normalize(gEyePosW - input.posOrig.xyz);
+
+	float4 texColor = float4(1, 1, 1, 1);
+	if (useTexture)
+	{
+        texColor = textureObject.Sample(samTriLinearSam, input.tex);
+	}
+	
+	////////////
+	//Lighting//
+	////////////
+
+	//This is what we are going to use to compute pixel color
+	float4 ambient = float4(0.0f, 0.0f, 0.0f, 0.0f);
+	float4 diffuse = float4(0.0f, 0.0f, 0.0f, 0.0f);
+	float4 specular = float4(0.0f, 0.0f, 0.0f, 0.0f);
+
+	//This is the ambient,diffuse,specular values computed
+	float4 A, D, S;
+
+    ComputeDirectionalLight(gMaterial, gDirLight, input.norm, toEye, A, D, S);
+    ambient += A;
+    diffuse += D;
+    specular += S;
+    for (int i = 0; i < 6; ++i)
+    {
+        ComputePointLight(gMaterial, gPointLights[i], input.posOrig, input.norm, toEye, A, D, S);
+        ambient += A;
+        diffuse += D;
+        specular += S;
+    }
+    ComputeSpotLight(gMaterial, gSpotLight, input.posOrig, input.norm, toEye, A, D, S);
+    ambient += A;
+    diffuse += D;
+    specular += S;
+	
+	//It seems like texColor only affects ambient and diffuse
+	float4 litColor = texColor * (ambient + diffuse) + specular;
+
+	//Common to take alpha from diffuse material -> Luna's book
+	litColor.a = gMaterial.Diffuse.a;
+	return litColor;
+}
+
 
 struct VS_SIMPLE_INPUT
 {
@@ -157,8 +214,8 @@ technique11 LighTech
 	pass P0
 	{
 		SetVertexShader(CompileShader(vs_5_0, VS()));
-		SetPixelShader(CompileShader(ps_5_0, PS(false)));
-	}
+		SetPixelShader(CompileShader(ps_5_0, PS_multilight(false)));
+    }
 }
 
 technique11 LighTechTex
@@ -166,7 +223,7 @@ technique11 LighTechTex
 	pass P0
 	{
 		SetVertexShader(CompileShader(vs_5_0, VS()));
-		SetPixelShader(CompileShader(ps_5_0, PS(true)));
+		SetPixelShader(CompileShader(ps_5_0, PS_multilight(true)));
 	}
 }
 

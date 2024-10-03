@@ -204,8 +204,10 @@ private:
 	Microsoft::WRL::ComPtr<ID3DX11EffectVariable> fxTransform;
 	Microsoft::WRL::ComPtr<ID3DX11EffectVariable> fxTransformSkybox;
 	Microsoft::WRL::ComPtr<ID3DX11EffectVariable> fxMaterial;
+	Microsoft::WRL::ComPtr<ID3DX11EffectVariable> fxPointLights;
 	DirectionalLight dirLight;
 	PointLight pointLight;
+	PointLight pointLights[6];
 	SpotLight spotLight;
 	Material material;
 
