@@ -116,8 +116,6 @@ void D3DClass::BuildVertexLayout()
     GFX_THROW_INFO(pDevice->CreateInputLayout(inputLayoutDesc, std::size(inputLayoutDesc), passDesc.pIAInputSignature, passDesc.IAInputSignatureSize, &pInputLayout));
 }
 
-
-
 void D3DClass::BuildTextures(const aiScene* pScene)
 {
     HRESULT hr;
@@ -158,7 +156,7 @@ void D3DClass::BuildSkymap()
 		cubemapTexture.GetAddressOf()));
 }
 
-bool D3DClass::Initialize(HWND hWnd, const aiScene* pScene)
+bool D3DClass::Initialize(HWND hWnd, const aiScene* pScene, Camera* mainCamera)
 {
     //Configure Swap Chain
     DXGI_SWAP_CHAIN_DESC desc = {};
@@ -225,9 +223,12 @@ bool D3DClass::Initialize(HWND hWnd, const aiScene* pScene)
     GFX_THROW_INFO(pDevice->CreateDepthStencilState(&depthStencilDesc, &pDepthBuffer));
     
     //Create Depth Stencil Texture
+    camera = mainCamera;
+    screenWidth = camera->getResolution().first;
+    screenHeight = camera->getResolution().second;
     D3D11_TEXTURE2D_DESC depthTextureDesc = {};
-    depthTextureDesc.Width = 800; //Width has to be the same as swap chain
-    depthTextureDesc.Height = 600; //Height has to be the same as swap chain
+    depthTextureDesc.Width = screenWidth; //Width has to be the same as swap chain
+    depthTextureDesc.Height = screenHeight; //Height has to be the same as swap chain
     depthTextureDesc.MipLevels = 1;
     depthTextureDesc.ArraySize = 1;
     depthTextureDesc.Format = DXGI_FORMAT_D32_FLOAT; //Each element of buffer has 32 bits of float type to store depth
@@ -382,8 +383,8 @@ void D3DClass::DrawScene(const aiScene* scene, Camera* camera)
 
     //Viewport
     D3D11_VIEWPORT viewport;
-    viewport.Width = 800;
-    viewport.Height = 600;
+    viewport.Width = screenWidth;
+    viewport.Height = screenHeight;
     viewport.TopLeftX = 0;
     viewport.TopLeftY = 0;
     viewport.MinDepth = 0;

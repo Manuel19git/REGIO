@@ -34,16 +34,19 @@ bool GraphicsClass::Initialize(int screenWidth, int screenHeight, HWND hwnd, Inp
 	mScene = importer->ReadFile("..\\output\\NIER\\nier_park.obj",
 		aiProcess_Triangulate | aiProcess_ConvertToLeftHanded);
 
+	//Initialize camera before directX
+	mainCamera = new Camera();
+	mainCamera->setResolution(screenWidth, screenHeight);
+
 	//Create window
 	m_D3D = new D3DClass();
-	bool result = m_D3D->Initialize(hwnd, mScene);
+	bool result = m_D3D->Initialize(hwnd, mScene, mainCamera);
 	if (!result)
 	{
 		return false;
 	}
 
-	//Initialize camera
-	mainCamera = new Camera();
+
 
 	return true;
 }

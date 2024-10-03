@@ -67,9 +67,9 @@ private:
 	InputClass* m_Input;
 	GraphicsClass* m_Graphics;
 
-	int width;
-	int height;
 	bool isPause = false;
+	int screenWidth;
+	int screenHeight;
 };
 
 /////////////////////////

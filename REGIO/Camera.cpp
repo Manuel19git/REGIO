@@ -21,6 +21,9 @@ Camera::Camera()
 
 	nearPlane = 0.5f;
 	farPlane = 10000.0;
+
+	screenWidth = 0.0f;
+	screenHeight = 0.0f;
 }
 
 void Camera::moveCamera(Axis axis, int sign)
@@ -50,7 +53,7 @@ void Camera::moveCamera(Axis axis, int sign)
 
 void Camera::updateYawPitch(float x, float y)
 {
-	float speed = 1.0f;
+	float speed = (screenWidth < 2000 && screenHeight < 1000) ? 0.6f : 2.0f;
 	float error = 0.0035f; //Sweet spot
 	if (abs(x) > error )
 		yaw = x * speed;
@@ -61,6 +64,18 @@ void Camera::updateYawPitch(float x, float y)
 	else
 		pitch = 0;
 }
+
+void Camera::setResolution(const float width, const float height)
+{
+	screenWidth = width;
+	screenHeight = height;
+}
+
+std::pair<float, float> Camera::getResolution()
+{
+	return std::make_pair(screenWidth, screenHeight);
+}
+
 
 void Camera::updateRoll(int sign)
 {
@@ -154,7 +169,8 @@ DirectX::XMMATRIX Camera::getTransform()
 
     return DirectX::XMMatrixTranspose(
 		DirectX::XMMatrixLookAtLH(posVector, lookAtVector, upVector) *
-		DirectX::XMMatrixPerspectiveLH(1.0f, 3.0f / 4.0f, nearPlane, farPlane)
+		//DirectX::XMMatrixPerspectiveLH(1.0f, 3.0f / 4.0f, nearPlane, farPlane)     //800x600 screen size
+		DirectX::XMMatrixPerspectiveLH(1.0f, screenHeight / screenWidth, nearPlane, farPlane) //2048x1133 screen size
 	);
 }
 // updateTransform has to be the same as getTransform

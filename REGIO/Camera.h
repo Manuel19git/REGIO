@@ -21,6 +21,8 @@ public:
 	void moveCamera(Axis axis, int sign);
 	void updateYawPitch(float x, float y);
 	void updateRoll(int sign);
+	void setResolution(const float width, const float height);
+	std::pair<float, float> getResolution();
 
 	DirectX::XMFLOAT3 getPosition();
 	DirectX::XMVECTOR getLookAt();
@@ -53,4 +55,6 @@ private:
 
 	float nearPlane;
 	float farPlane;
+	float screenWidth;
+	float screenHeight;
 };

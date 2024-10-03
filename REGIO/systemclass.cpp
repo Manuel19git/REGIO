@@ -21,13 +21,7 @@ SystemClass::~SystemClass()
 
 bool SystemClass::Initialize()
 {
-	int screenWidth, screenHeight;
 	bool result;
-
-
-	// Initialize the width and height of the screen to zero before sending the variables into the function.
-	screenWidth = 0;
-	screenHeight = 0;
 
 	// Initialize the windows api.
 	InitializeWindows(screenWidth, screenHeight);
@@ -47,6 +41,17 @@ bool SystemClass::Initialize()
 	}
 
 	return true;
+}
+
+void GetMonitorRealResolution(HMONITOR monitor, int* pixelsWidth, int* pixelsHeight)
+{
+    MONITORINFOEX info = { sizeof(MONITORINFOEX) };
+    GetMonitorInfo(monitor, &info);
+    DEVMODE devmode = {};
+    devmode.dmSize = sizeof(DEVMODE);
+    EnumDisplaySettings(info.szDevice, ENUM_CURRENT_SETTINGS, &devmode);
+    *pixelsWidth = devmode.dmPelsWidth;
+    *pixelsHeight = devmode.dmPelsHeight;
 }
 
 void SystemClass::InitializeWindows(int& screenWidth, int& screenHeight)
@@ -81,9 +86,10 @@ void SystemClass::InitializeWindows(int& screenWidth, int& screenHeight)
 	// Register the window class.
 	RegisterClassEx(&wc);
 
-	// Determine the resolution of the clients desktop screen.
-	screenWidth = GetSystemMetrics(SM_CXSCREEN);
-	screenHeight = GetSystemMetrics(SM_CYSCREEN);
+	// I just want to get the screen size my guy, why was it so hard ToT
+	POINT pt = { 0, 0 };
+	HMONITOR monitor = MonitorFromPoint(pt, MONITOR_DEFAULTTONEAREST);
+	GetMonitorRealResolution(monitor, &screenWidth, &screenHeight);
 
 	// Setup the screen settings depending on whether it is running in full screen or in windowed mode.
 	if (FULL_SCREEN)
@@ -98,35 +104,40 @@ void SystemClass::InitializeWindows(int& screenWidth, int& screenHeight)
 
 		// Change the display settings to full screen.
 		ChangeDisplaySettings(&dmScreenSettings, CDS_FULLSCREEN);
+		
+		// Place the window in the middle of the screen.
+		posX = screenWidth / 2;
+		posY = screenHeight / 2;
+		m_hwnd = CreateWindowEx(0, m_applicationName, m_applicationName, WS_POPUP,
+                0, 0, screenWidth, screenHeight, NULL, NULL, m_hinstance, NULL);
 
-		// Set the position of the window to the top left corner.
-		posX = posY = 0;
 	}
 	else
 	{
 		// If windowed then set it to 800x600 resolution.
 		screenWidth = 800;
 		screenHeight = 600;
+
+		//Adjust window
+		RECT wr;
+		wr.left = 100;
+		wr.right = screenWidth + wr.left;
+		wr.top = 100;
+		wr.bottom = screenHeight + wr.top;
+		AdjustWindowRect(&wr, WS_CAPTION | WS_MINIMIZEBOX | WS_SYSMENU, FALSE);
+
+		// Place the window in the middle of the screen.
+		posX = (GetSystemMetrics(SM_CXSCREEN) - (wr.right - wr.left)) / 2;
+		posY = (GetSystemMetrics(SM_CYSCREEN) - (wr.bottom - wr.top)) / 2;
+
+		// Create the window with the screen settings and get the handle to it.
+		m_hwnd = CreateWindowEx(0, m_applicationName, m_applicationName, WS_CAPTION | WS_MINIMIZEBOX | WS_SYSMENU,
+			posX, posY, (wr.right - wr.left), (wr.bottom - wr.top), NULL, NULL, m_hinstance, NULL);
 	}
 
-	width = screenWidth;
-	height = screenHeight;
-
-	//Adjust window
-	RECT wr;
-	wr.left = 100;
-	wr.right = screenWidth + wr.left;
-	wr.top = 100;
-	wr.bottom = screenHeight + wr.top;
-	AdjustWindowRect(&wr, WS_CAPTION | WS_MINIMIZEBOX | WS_SYSMENU, FALSE);
-
-	// Place the window in the middle of the screen.
-	posX = (GetSystemMetrics(SM_CXSCREEN) - (wr.right - wr.left)) / 2;
-	posY = (GetSystemMetrics(SM_CYSCREEN) - (wr.bottom - wr.top)) / 2;
-
-	// Create the window with the screen settings and get the handle to it.
-	m_hwnd = CreateWindowEx(0, m_applicationName, m_applicationName, WS_CAPTION | WS_MINIMIZEBOX | WS_SYSMENU,
-				posX, posY, (wr.right - wr.left), (wr.bottom - wr.top), NULL, NULL, m_hinstance, NULL);
+	// If I don't put this here, the scale of the monitor could mess with other operations. 
+	// Because I am going to be using the standard screen size and not the scaled one
+	SetProcessDPIAware();
 
 	// Bring the window up on the screen and set it as main focus.
 	ShowWindow(m_hwnd, SW_SHOW);
@@ -197,8 +208,8 @@ bool SystemClass::Frame()
 	POINT clientTopLeft = { clientRect.left, clientRect.top };
 	ClientToScreen(m_hwnd, &clientTopLeft);
 
-	int centerX = clientTopLeft.x + (width / 2);
-	int centerY = clientTopLeft.y + (height / 2);
+	int centerX = clientTopLeft.x + (screenWidth / 2);
+	int centerY = clientTopLeft.y + (screenHeight / 2);
 
 
 	// Check if the user pressed escape and wants to exit the application.
@@ -270,7 +281,7 @@ bool SystemClass::Frame()
 
 	if (m_Input->mouse.GetPosX() != 0 && m_Input->mouse.GetPosY() != 0)
 	{
-		m_Graphics->UpdateCameraLookAt((m_Input->mouse.GetPosX() / (width / 2.0f) - 1.0f), (m_Input->mouse.GetPosY() / (height / 2.0f) - 1.0f));
+		m_Graphics->UpdateCameraLookAt((m_Input->mouse.GetPosX() / (screenWidth / 2.0f) - 1.0f), (m_Input->mouse.GetPosY() / (screenHeight / 2.0f) - 1.0f));
 	}
 
 	return true;
@@ -362,7 +373,7 @@ LRESULT CALLBACK SystemClass::MessageHandler(HWND hwnd, UINT umsg, WPARAM wparam
 		if (isPause)
 			break;
 		const POINTS pt = MAKEPOINTS(lparam);
-		if (pt.x >= 0 && pt.x < width && pt.y >= 0 && pt.y < height)
+		if (pt.x >= 0 && pt.x < screenWidth && pt.y >= 0 && pt.y < screenHeight)
 		{
 			m_Input->mouse.OnMouseMove(pt.x, pt.y);
 			if (!m_Input->mouse.IsInWindow())

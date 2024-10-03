@@ -125,7 +125,7 @@ public:
 	D3DClass(const D3DClass&) = delete;
 	~D3DClass();
 
-	bool Initialize(HWND hWnd, const aiScene* pScene);
+	bool Initialize(HWND hWnd, const aiScene* pScene, Camera* mainCamera);
 	void Shutdown();
 
 	void BuildGeometry(const aiScene* scene);
@@ -149,6 +149,8 @@ public:
 
 	void GetVideoCardInfo(char*, int&);
 
+	//For debugging
+	Camera* camera;
 
 private:
 #ifndef NDEBUG
@@ -211,6 +213,10 @@ private:
 	std::unique_ptr<SpriteFont> spriteFont;
 	std::unique_ptr <SpriteBatch> spriteBatch;
 	std::chrono::time_point<std::chrono::system_clock> start;
+
+	//Window
+	float screenWidth;
+	float screenHeight;
 };
 
 
