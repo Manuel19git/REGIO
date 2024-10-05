@@ -13,6 +13,10 @@
 *.vcxproj
 *.cso
 *.fxo
+*.sln
+*.vcxproj
+*.txt
+*.$Diagrama_clases.drawio.bkp
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
