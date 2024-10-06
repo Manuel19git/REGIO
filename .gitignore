@@ -15,6 +15,7 @@
 *.fxo
 *.sln
 *.vcxproj
+*.filters
 *.txt
 *.$Diagrama_clases.drawio.bkp
 

@@ -1,9 +1,9 @@
 [submodule "DirectXTK"]
-	path = DirectXTK
+	path = external/DirectXTK
 	url = https://github.com/microsoft/DirectXTK.git
 [submodule "assimp"]
-	path = assimp
+	path = external/assimp
 	url = https://github.com/assimp/assimp.git
 [submodule "FX11"]
-	path = FX11
+	path = external/FX11
 	url = https://github.com/microsoft/FX11.git
