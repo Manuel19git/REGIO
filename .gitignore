@@ -16,8 +16,13 @@
 *.sln
 *.vcxproj
 *.filters
-*.txt
 *.$Diagrama_clases.drawio.bkp
+
+# Folders
+Data/
+Images/
+output/
+build/
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
