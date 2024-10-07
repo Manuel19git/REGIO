@@ -250,7 +250,7 @@ bool D3DClass::Initialize(HWND hWnd, const aiScene* pScene, Camera* mainCamera)
     BuildGeometry(pScene);
 
     //Build Effects
-    GFX_THROW_INFO(D3DX11CreateEffectFromFile(L"LightEffect.fxo", 0, pDevice.Get(), pEffect.GetAddressOf()));
+    GFX_THROW_INFO(D3DX11CreateEffectFromFile(L"../build/effects/LightEffect.fxo", 0, pDevice.Get(), pEffect.GetAddressOf()));
     pTechniqueLight = pEffect->GetTechniqueByName("LighTech");
     pTechniqueLightTex = pEffect->GetTechniqueByName("LighTechTex");
     pTechniqueSimple = pEffect->GetTechniqueByName("Simple");

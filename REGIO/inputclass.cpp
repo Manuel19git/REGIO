@@ -236,6 +236,10 @@ void InputClass::Initialize()
 		m_keys[i] = false;
 	}
 
+	// This avoids the the camera looking god knows where
+	mouse.x = 0;
+	mouse.y = 0;
+
 	return;
 }
 

@@ -369,7 +369,7 @@ LRESULT CALLBACK SystemClass::MessageHandler(HWND hwnd, UINT umsg, WPARAM wparam
 	//CHECK MOUSE MESSAGES
 	case WM_MOUSEMOVE:
 	{
-		// This here stops windows queue from registering mouse moves when in pause
+		// isPause stops windows queue from registering mouse moves when in pause
 		if (isPause)
 			break;
 		const POINTS pt = MAKEPOINTS(lparam);
