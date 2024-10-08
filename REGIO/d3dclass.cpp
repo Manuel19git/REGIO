@@ -458,42 +458,42 @@ void D3DClass::DrawSky(const aiScene* scene, Camera* camera)
 
 	// Cube vertices data
 	Vertex vertices[] = {
-		// Front Face
-		{ XMFLOAT3(-1.0f * scale, -1.0f * scale, -1.0f * scale), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT2(0.0f, 1.0f) },
-		{ XMFLOAT3(1.0f * scale, -1.0f * scale, -1.0f * scale), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT2(1.0f, 1.0f) },
-		{ XMFLOAT3(1.0f * scale,  1.0f * scale, -1.0f * scale), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT2(1.0f, 0.0f) },
-		{ XMFLOAT3(-1.0f * scale,  1.0f * scale, -1.0f * scale), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT2(0.0f, 0.0f) },
-
 		// Back Face
-		{ XMFLOAT3(-1.0f * scale, -1.0f * scale,  1.0f * scale), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT2(0.0f, 1.0f) },
-		{ XMFLOAT3(1.0f * scale, -1.0f * scale,  1.0f * scale), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT2(1.0f, 1.0f) },
-		{ XMFLOAT3(1.0f * scale,  1.0f * scale,  1.0f * scale), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT2(1.0f, 0.0f) },
-		{ XMFLOAT3(-1.0f * scale,  1.0f * scale,  1.0f * scale), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT2(0.0f, 0.0f) },
+		{ XMFLOAT3(-1.0f * scale, -1.0f * scale, -1.0f * scale), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT2(0.0f, 1.0f) },
+		{ XMFLOAT3(1.0f * scale, -1.0f * scale, -1.0f * scale), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT2(1.0f, 1.0f) },
+		{ XMFLOAT3(1.0f * scale,  1.0f * scale, -1.0f * scale), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT2(1.0f, 0.0f) },
+		{ XMFLOAT3(-1.0f * scale,  1.0f * scale, -1.0f * scale), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT2(0.0f, 0.0f) },
+
+		// Front Face
+		{ XMFLOAT3(-1.0f * scale, -1.0f * scale,  1.0f * scale), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT2(0.0f, 1.0f) },
+		{ XMFLOAT3(1.0f * scale, -1.0f * scale,  1.0f * scale), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT2(1.0f, 1.0f) },
+		{ XMFLOAT3(1.0f * scale,  1.0f * scale,  1.0f * scale), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT2(1.0f, 0.0f) },
+		{ XMFLOAT3(-1.0f * scale,  1.0f * scale,  1.0f * scale), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT2(0.0f, 0.0f) },
 
 		// Left Face
-		{ XMFLOAT3(-1.0f * scale, -1.0f * scale,  1.0f * scale), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT2(0.0f, 1.0f) },
-		{ XMFLOAT3(-1.0f * scale, -1.0f * scale, -1.0f * scale), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT2(1.0f, 1.0f) },
-		{ XMFLOAT3(-1.0f * scale,  1.0f * scale, -1.0f * scale), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT2(1.0f, 0.0f) },
-		{ XMFLOAT3(-1.0f * scale,  1.0f * scale,  1.0f * scale), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT2(0.0f, 0.0f) },
+		{ XMFLOAT3(-1.0f * scale, -1.0f * scale,  1.0f * scale), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT2(0.0f, 1.0f) },
+		{ XMFLOAT3(-1.0f * scale, -1.0f * scale, -1.0f * scale), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT2(1.0f, 1.0f) },
+		{ XMFLOAT3(-1.0f * scale,  1.0f * scale, -1.0f * scale), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT2(1.0f, 0.0f) },
+		{ XMFLOAT3(-1.0f * scale,  1.0f * scale,  1.0f * scale), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT2(0.0f, 0.0f) },
 
 		// Right Face
-		{ XMFLOAT3(1.0f * scale, -1.0f * scale,  1.0f * scale), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT2(0.0f, 1.0f) },
-		{ XMFLOAT3(1.0f * scale, -1.0f * scale, -1.0f * scale), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT2(1.0f, 1.0f) },
-		{ XMFLOAT3(1.0f * scale,  1.0f * scale, -1.0f * scale), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT2(1.0f, 0.0f) },
-		{ XMFLOAT3(1.0f * scale,  1.0f * scale,  1.0f * scale), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT2(0.0f, 0.0f) },
+		{ XMFLOAT3(1.0f * scale, -1.0f * scale,  1.0f * scale), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT2(0.0f, 1.0f) },
+		{ XMFLOAT3(1.0f * scale, -1.0f * scale, -1.0f * scale), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT2(1.0f, 1.0f) },
+		{ XMFLOAT3(1.0f * scale,  1.0f * scale, -1.0f * scale), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT2(1.0f, 0.0f) },
+		{ XMFLOAT3(1.0f * scale,  1.0f * scale,  1.0f * scale), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT2(0.0f, 0.0f) },
 
 		// Top Face
-		{ XMFLOAT3(-1.0f * scale,  1.0f * scale, -1.0f * scale), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT2(0.0f, 1.0f) },
-		{ XMFLOAT3(1.0f * scale,  1.0f * scale, -1.0f * scale), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT2(1.0f, 1.0f) },
-		{ XMFLOAT3(1.0f * scale,  1.0f * scale,  1.0f * scale), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT2(1.0f, 0.0f) },
-		{ XMFLOAT3(-1.0f * scale,  1.0f * scale,  1.0f * scale), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT2(0.0f, 0.0f) },
+		{ XMFLOAT3(-1.0f * scale,  1.0f * scale, -1.0f * scale), XMFLOAT3(0.0f, -1.0f, 0.0f), XMFLOAT2(0.0f, 1.0f) },
+		{ XMFLOAT3(1.0f * scale,  1.0f * scale, -1.0f * scale), XMFLOAT3(0.0f, -1.0f, 0.0f), XMFLOAT2(1.0f, 1.0f) },
+		{ XMFLOAT3(1.0f * scale,  1.0f * scale,  1.0f * scale), XMFLOAT3(0.0f, -1.0f, 0.0f), XMFLOAT2(1.0f, 0.0f) },
+		{ XMFLOAT3(-1.0f * scale,  1.0f * scale,  1.0f * scale), XMFLOAT3(0.0f, -1.0f, 0.0f), XMFLOAT2(0.0f, 0.0f) },
 
 
 		// Bottom Face
-		{ XMFLOAT3(-1.0f * scale, -1.0f * scale, -1.0f * scale), XMFLOAT3(0.0f, -1.0f, 0.0f), XMFLOAT2(0.0f, 1.0f) },
-		{ XMFLOAT3(1.0f * scale, -1.0f * scale, -1.0f * scale), XMFLOAT3(0.0f, -1.0f, 0.0f), XMFLOAT2(1.0f, 1.0f) },
-		{ XMFLOAT3(1.0f * scale, -1.0f * scale,  1.0f * scale), XMFLOAT3(0.0f, -1.0f, 0.0f), XMFLOAT2(1.0f, 0.0f) },
-		{ XMFLOAT3(-1.0f * scale, -1.0f * scale,  1.0f * scale), XMFLOAT3(0.0f, -1.0f, 0.0f), XMFLOAT2(0.0f, 0.0f) },
+		{ XMFLOAT3(-1.0f * scale, -1.0f * scale, -1.0f * scale), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT2(0.0f, 1.0f) },
+		{ XMFLOAT3(1.0f * scale, -1.0f * scale, -1.0f * scale), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT2(1.0f, 1.0f) },
+		{ XMFLOAT3(1.0f * scale, -1.0f * scale,  1.0f * scale), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT2(1.0f, 0.0f) },
+		{ XMFLOAT3(-1.0f * scale, -1.0f * scale,  1.0f * scale), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT2(0.0f, 0.0f) },
 	};
 
 	//Set constant buffers
@@ -503,29 +503,29 @@ void D3DClass::DrawSky(const aiScene* scene, Camera* camera)
     fxTransformSkybox->SetRawValue(&transformSkybox, 0, sizeof(XMMATRIX));
 
 	unsigned int indices[] = {
-		// Front Face
+		// Back Face
 		0, 1, 2,
 		0, 2, 3,
 
-		// Back Face
-		4, 5, 6,
-		4, 6, 7,
+		// Front Face
+		4, 6, 5,
+		4, 7, 6,
 
 		// Left Face
 		8, 9, 10,
 		8, 10, 11,
 
 		// Right Face
-		12, 13, 14,
-		12, 14, 15,
+		12, 14, 13,
+		12, 15, 14,
 
 		// Top Face
 		16, 17, 18,
 		16, 18, 19,
 
 		// Bottom Face
-		20, 21, 22,
-		20, 22, 23
+		20, 22, 21,
+		20, 23, 22
 	};
 
 	// Vertex buffer description
