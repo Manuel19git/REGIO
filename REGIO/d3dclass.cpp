@@ -158,6 +158,12 @@ void D3DClass::BuildSkymap()
 
 bool D3DClass::Initialize(HWND hWnd, const aiScene* pScene, Camera* mainCamera)
 {
+
+    // Camera
+    camera = mainCamera;
+    screenWidth = camera->getResolution().first;
+    screenHeight = camera->getResolution().second;
+
     //Configure Swap Chain
     DXGI_SWAP_CHAIN_DESC desc = {};
     ZeroMemory(&desc, sizeof(DXGI_SWAP_CHAIN_DESC));
@@ -223,9 +229,6 @@ bool D3DClass::Initialize(HWND hWnd, const aiScene* pScene, Camera* mainCamera)
     GFX_THROW_INFO(pDevice->CreateDepthStencilState(&depthStencilDesc, &pDepthBuffer));
     
     //Create Depth Stencil Texture
-    camera = mainCamera;
-    screenWidth = camera->getResolution().first;
-    screenHeight = camera->getResolution().second;
     D3D11_TEXTURE2D_DESC depthTextureDesc = {};
     depthTextureDesc.Width = screenWidth; //Width has to be the same as swap chain
     depthTextureDesc.Height = screenHeight; //Height has to be the same as swap chain
@@ -276,27 +279,6 @@ bool D3DClass::Initialize(HWND hWnd, const aiScene* pScene, Camera* mainCamera)
 
     //Create textures
     BuildTextures(pScene);
-    GFX_THROW_INFO(CreateWICTextureFromFile(
-        pDevice.Get(), 
-        L"..\\output\\Maxwell_cat\\textures\\dingus_nowhiskers.jpg", 
-        nullptr, 
-        textureMaxwell.GetAddressOf()));
-    GFX_THROW_INFO(CreateWICTextureFromFile(
-        pDevice.Get(), 
-        L"..\\output\\Maxwell_cat\\textures\\colors.jpg",
-        nullptr,
-        textureMonkey.GetAddressOf()));
-    GFX_THROW_INFO(CreateWICTextureFromFile(
-        pDevice.Get(),
-        L"..\\output\\Maxwell_cat\\textures\\Grass.jpg",
-        nullptr,
-        textureGrass.GetAddressOf()));
-    GFX_THROW_INFO(CreateWICTextureFromFile(
-        pDevice.Get(),
-        L"..\\output\\Maxwell_cat\\textures\\sky.jpg",
-        nullptr, 
-        textureSky.GetAddressOf()));
-
     shaderResource = pEffect->GetVariableByName("textureObject")->AsShaderResource();
 
     //Create skymap
@@ -802,110 +784,3 @@ void D3DClass::Shutdown()
     delete[] pIndexOffsets;
     delete[] pIndexCount;
 }
-
-//Here we implement hr exceptions
-D3DClass::HrException::HrException(int line, const char* file, HRESULT hr, std::vector<std::string> infoMsgs)
-    :
-    MyException(line, file),
-    hr(hr)
-{
-    //join messages
-    for (const auto& m : infoMsgs)
-    {
-        info += m;
-        info.push_back('\n');
-    }
-    //remove final line if exists
-    if (!info.empty())
-    {
-        info.pop_back();
-    }
-}
-
-const char* D3DClass::HrException::what() const
-{
-    std::ostringstream oss;
-    oss << GetType() << std::endl
-        << "[Error Code] 0x" << std::hex << std::uppercase << GetErrorCode()
-        << std::dec << "(" << (unsigned long)GetErrorCode() << ")" << std::endl
-        << "[Error String] " << GetErrorString() << std::endl
-        << "[Error Description] " << GetErrorDescription() << std::endl;
-    if (!info.empty())
-    {
-        oss << "\n[Error Info]\n" << GetErrorInfo() << std::endl;
-    }
-    oss << GetOriginString();
-    whatBuffer = oss.str();
-    return whatBuffer.c_str();
-}
-
-const char* D3DClass::HrException::GetType() const
-{
-    return "My Graphics Exception";
-}
-HRESULT D3DClass::HrException::GetErrorCode() const
-{
-    return hr;
-}
-std::string D3DClass::HrException::GetErrorString() const
-{
-    return DXGetErrorStringA(hr);
-}
-std::string D3DClass::HrException::GetErrorDescription() const
-{
-    char buf[512];
-    DXGetErrorDescriptionA(hr, buf, sizeof(buf));
-    return buf;
-}
-std::string D3DClass::HrException::GetErrorInfo() const
-{
-    return info;
-}
-
-D3DClass::InfoException::InfoException(int line, const char* file, std::vector<std::string> infoMsgs)
-    :
-    MyException(line, file)
-{
-    //join messages
-    for (const auto& m : infoMsgs)
-    {
-        info += m;
-        info.push_back('\n');
-    }
-    //remove final line if exists
-    if (!info.empty())
-    {
-        info.pop_back();
-    }
-}
-
-const char* D3DClass::InfoException::what() const
-{
-    std::ostringstream oss;
-    oss << GetType() << std::endl;
-    if (!info.empty())
-    {
-        oss << "\n[Error Info]\n" << GetErrorInfo() << std::endl;
-    }
-    oss << GetOriginString();
-    whatBuffer = oss.str();
-    return whatBuffer.c_str();
-}
-
-const char* D3DClass::InfoException::GetType() const
-{
-    return "Output Info Only Exception";
-}
-
-std::string D3DClass::InfoException::GetErrorInfo() const
-{
-    return info;
-}
-
-
-const char* D3DClass::DeviceRemovedException::GetType() const
-{
-    return "My Graphics Exception [Device Removed] DXGI_ERROR_DEVICE_REMOVED";
-}
-
-

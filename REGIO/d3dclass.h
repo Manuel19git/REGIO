@@ -33,25 +33,11 @@
 #include <Windows.h>
 
 #include "Camera.h"
+#include "Macros.h"
+#include "ShadowMap.h"
 
 using namespace DirectX;
 namespace wrl = Microsoft::WRL;
-
-#define GFX_EXCEPT_NOINFO(hr) D3DClass::HrException( __LINE__,__FILE__,(hr) );
-#define GFX_THROW_NOINFO(hrcall) if( FAILED( hr = (hrcall) ) ) throw D3DClass::HrException( __LINE__,__FILE__,hr );
-
-#ifndef NDEBUG
-#define GFX_EXCEPT(hr) D3DClass::HrException( __LINE__,__FILE__,(hr),infoManager.GetMessages() )
-#define GFX_THROW_INFO(hrcall) infoManager.Set(); if( FAILED( hr = (hrcall) ) ) throw GFX_EXCEPT(hr)
-#define GFX_THROW_INFO_ONLY(call) infoManager.Set(); (call); {auto v = infoManager.GetMessages(); if(!v.empty()) {throw D3DClass::InfoException( __LINE__,__FILE__,v );}}
-#define GFX_DEVICE_REMOVED_EXCEPT(hr) D3DClass::DeviceRemovedException( __LINE__,__FILE__,(hr),infoManager.GetMessages() )
-#else
-#define GFX_EXCEPT(hr) D3DClass::HrException( __LINE__,__FILE__,(hr) )
-#define GFX_THROW_INFO(hrcall) GFX_THROW_NOINFO(hrcall)
-#define GFX_THROW_INFO_ONLY(call) (call)
-#define GFX_DEVICE_REMOVED_EXCEPT(hr) D3DClass::DeviceRemovedException( __LINE__,__FILE__,(hr) )
-#endif
-
 
 /////////////
 // STRUCTS //
@@ -86,40 +72,6 @@ struct Vertex
 ////////////////////////////////////////////////////////////////////////////////
 class D3DClass
 {
-public:
-	class HrException : public MyException
-	{
-	public:
-		HrException(int line, const char* file, HRESULT hr, std::vector<std::string> infoMsgs = {});
-		const char* what() const override;
-		const char* GetType() const override;
-		HRESULT GetErrorCode() const;
-		std::string GetErrorString() const;
-		std::string GetErrorDescription() const;
-		std::string GetErrorInfo() const;
-
-	private:
-		HRESULT hr;
-		std::string info;
-	};
-	class InfoException : public MyException
-	{
-	public:
-		InfoException(int line, const char* file, std::vector<std::string> infoMsgs = {});
-		const char* what() const override;
-		const char* GetType() const override;
-		std::string GetErrorInfo() const;
-
-	private:
-		std::string info;
-	};
-	class DeviceRemovedException : public HrException
-	{
-		using HrException::HrException;
-	public:
-		const char* GetType() const override;
-	};
-
 public:
 	D3DClass();
 	D3DClass(const D3DClass&) = delete;
