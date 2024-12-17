@@ -25,20 +25,24 @@ bool GraphicsClass::Initialize(int screenWidth, int screenHeight, HWND hwnd, Inp
 	mouse = &m_Input->mouse;
 	m_hwnd = hwnd;
 
-	//Read mesh
+	// Read mesh
 	importer = new Assimp::Importer();
 	//mScene = importer->ReadFile("..\\output\\NIER\\Props\\turnstile_wall.usdc", //USD is not fully supported by assimp yet
 	//	aiProcess_Triangulate | aiProcess_ConvertToLeftHanded);
-	//mScene = importer->ReadFile("..\\output\\Maxwell_cat\\source\\maxwell_scene_test.obj",
-	//	aiProcess_Triangulate | aiProcess_ConvertToLeftHanded);
-	mScene = importer->ReadFile("..\\output\\NIER\\nier_park.obj",
+	mScene = importer->ReadFile("..\\output\\Maxwell_cat\\source\\maxwell_scene.obj",
 		aiProcess_Triangulate | aiProcess_ConvertToLeftHanded);
+	//mScene = importer->ReadFile("..\\output\\NIER\\nier_park.obj",
+	//	aiProcess_Triangulate | aiProcess_ConvertToLeftHanded);
+	//mScene = importer->ReadFile("..\\output\\NIER\\nier_park.glb",
+	//	aiProcess_Triangulate | aiProcess_ConvertToLeftHanded);
 
-	//Initialize camera before directX
-	mainCamera = new Camera();
+	// Initialize player camera before directX
+	XMFLOAT3 startPosition = XMFLOAT3(0.5f, 2.0f, -4.0f);
+	XMVECTOR startForward = XMVectorSet(0.0f, 0.0f, 1.0f, 1.0f);
+	mainCamera = new Camera(startPosition, startForward);
 	mainCamera->setResolution(screenWidth, screenHeight);
 
-	//Create window
+	// Create window
 	m_D3D = new D3DClass();
 	bool result = m_D3D->Initialize(hwnd, mScene, mainCamera);
 	if (!result)
@@ -46,17 +50,22 @@ bool GraphicsClass::Initialize(int screenWidth, int screenHeight, HWND hwnd, Inp
 		return false;
 	}
 
-
-
 	return true;
 }
 
 bool GraphicsClass::Frame()
 {
+	// In the future I may want to dynamically change sun position, hence we create sunCamera here :)
+	XMFLOAT3 sunPosition = XMFLOAT3(0.5f, 2.0f, -4.0f);
+	XMVECTOR sunDirection = XMVector3Normalize(XMVectorSubtract(XMVectorZero(), XMLoadFloat3(&sunPosition)));
+	Camera* sunCamera = new Camera(sunPosition, sunDirection);
+	m_D3D->sunCamera = sunCamera;
+
 	m_D3D->ClearBuffer(0.0f, 0.0f, 0.0f);
+	//m_D3D->DrawShadowMap(mScene, sunCamera);
 	m_D3D->DrawScene(mScene, mainCamera);
 	m_D3D->DrawSky(mScene, mainCamera);
-	//m_D3D->DrawDebug(mScene, mainCamera);
+	m_D3D->DrawDebug(mScene, mainCamera);
 	m_D3D->EndScene();
 
 	//float color = sin(count);

@@ -16,7 +16,7 @@ enum Axis
 class Camera
 {
 public:
-	Camera();
+	Camera(DirectX::XMFLOAT3 &startPosition, DirectX::XMVECTOR &startForward);
 
 	void moveCamera(Axis axis, int sign);
 	void updateYawPitch(float x, float y);
@@ -33,7 +33,9 @@ public:
 	DirectX::XMMATRIX getProjectionMatrix();
 	float getNear();
 	float getFar();
-	DirectX::XMMATRIX getTransform();
+	float getYaw();
+	float getPitch();
+	DirectX::XMMATRIX getTransform(bool isOrthographic = false);
 	void updateTransform();
 
 public:

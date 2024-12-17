@@ -212,6 +212,8 @@ bool D3DClass::Initialize(HWND hWnd, const aiScene* pScene, Camera* mainCamera)
         &pTarget
     ));
 
+    pShadowMap = new ShadowMap(pDevice.Get(), screenWidth, screenHeight);
+
     //Create rasterizer state
     D3D11_RASTERIZER_DESC rasterizerDesc = {};
     ZeroMemory(&rasterizerDesc, sizeof(D3D11_RASTERIZER_DESC));
@@ -256,8 +258,9 @@ bool D3DClass::Initialize(HWND hWnd, const aiScene* pScene, Camera* mainCamera)
     GFX_THROW_INFO(D3DX11CreateEffectFromFile(L"../build/effects/LightEffect.fxo", 0, pDevice.Get(), pEffect.GetAddressOf()));
     pTechniqueLight = pEffect->GetTechniqueByName("LighTech");
     pTechniqueLightTex = pEffect->GetTechniqueByName("LighTechTex");
-    pTechniqueSimple = pEffect->GetTechniqueByName("Simple");
+    pTechniqueDebug = pEffect->GetTechniqueByName("DebugTexture");
     pTechniqueSky = pEffect->GetTechniqueByName("Sky");
+    pTechniqueShadow = pEffect->GetTechniqueByName("ShadowMap");
 
 
     //Build Vertex Layout
@@ -327,6 +330,7 @@ bool D3DClass::Initialize(HWND hWnd, const aiScene* pScene, Camera* mainCamera)
     fxEyePos        = pEffect->GetVariableByName("gEyePosW");
     fxTransform     = pEffect->GetVariableByName("gTransform");
     fxTransformSkybox = pEffect->GetVariableByName("gTransformSkybox");
+    fxTransformSun  = pEffect->GetVariableByName("gTransformSun");
     fxMaterial      = pEffect->GetVariableByName("gMaterial");
     fxPointLights   = pEffect->GetVariableByName("gPointLights");
 
@@ -348,6 +352,24 @@ void D3DClass::ClearBuffer(float red, float green, float blue)
     pDeviceContext->ClearDepthStencilView(pDepthStencilView.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
 }
 
+// I may not need it
+void D3DClass::DrawShadowMap(const aiScene* scene, Camera* sunCamera)
+{
+    HRESULT hr;
+
+    //Bind Vertex Layout and Primitive Topology
+    pDeviceContext->IASetInputLayout(pInputLayout.Get());
+    pDeviceContext->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+    //Bind Vertex and Index buffer
+    const UINT strides = sizeof(Vertex);
+    const UINT offset = 0;
+    GFX_THROW_INFO_ONLY(pDeviceContext->IASetVertexBuffers(0, 1, pVertexBuffer.GetAddressOf(), &strides, &offset));
+    GFX_THROW_INFO_ONLY(pDeviceContext->IASetIndexBuffer(pIndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0));
+
+
+}
+
 void D3DClass::DrawScene(const aiScene* scene, Camera* camera)
 {
     HRESULT hr;
@@ -365,6 +387,7 @@ void D3DClass::DrawScene(const aiScene* scene, Camera* camera)
     //Set constant buffers
     XMFLOAT3 eyePos = camera->getPosition();
     DirectX::XMMATRIX transformation = camera->getTransform();
+    DirectX::XMMATRIX transformationSun = sunCamera->getTransform(true); // true means orthographic camera
 
     spotLight.Position = eyePos;
     pointLight.Position = eyePos;
@@ -374,6 +397,7 @@ void D3DClass::DrawScene(const aiScene* scene, Camera* camera)
     fxDirLight->SetRawValue(&dirLight, 0, sizeof(DirectionalLight));
     fxEyePos->SetRawValue(&eyePos, 0, sizeof(XMFLOAT3));
     fxTransform->SetRawValue(&transformation, 0, sizeof(XMMATRIX));
+    fxTransformSun->SetRawValue(&transformationSun, 0, sizeof(Material));
     fxMaterial->SetRawValue(&material, 0, sizeof(Material));
 
     //Viewport
@@ -389,6 +413,18 @@ void D3DClass::DrawScene(const aiScene* scene, Camera* camera)
     //Rasterizer State
     //pDeviceContext->RSSetState(pNoCullRS.Get());
 
+    // Shadow map pass
+	pShadowMap->BindDSVandNullTarget(pDeviceContext.Get());
+	pTechniqueLight->GetPassByIndex(0)->Apply(0, pDeviceContext.Get());
+    for (int meshId = 0; meshId < scene->mNumMeshes; ++meshId)
+    {
+		// Draw Scene
+		pDeviceContext->DrawIndexed(pIndexCount[meshId], pIndexOffsets[meshId], pVertexOffsets[meshId]);
+    }
+	// Restore
+	pDeviceContext->OMSetRenderTargets(1, pTarget.GetAddressOf(), pDepthStencilView.Get());
+
+
 	for (int meshId = 0; meshId < scene->mNumMeshes; ++meshId)
 	{
         if (pTextures[scene->mMeshes[meshId]->mMaterialIndex] != nullptr)
@@ -397,20 +433,14 @@ void D3DClass::DrawScene(const aiScene* scene, Camera* camera)
             pTechniqueLightTex->GetDesc(&techDesc);
             for (UINT32 p = 0; p < techDesc.Passes; ++p)
             {
-                aiString name = scene->mMaterials[scene->mMeshes[meshId]->mMaterialIndex]->GetName();
-                scene->mMeshes[meshId]->mName;
-                // Gotta test this
-                shaderResource->SetResource(pTextures[scene->mMeshes[meshId]->mMaterialIndex].Get());
+				aiString name = scene->mMaterials[scene->mMeshes[meshId]->mMaterialIndex]->GetName();
+				scene->mMeshes[meshId]->mName;
+				// Gotta test this
+				shaderResource->SetResource(pTextures[scene->mMeshes[meshId]->mMaterialIndex].Get());
 
-                //aiString name = scene->mMeshes[meshId]->mName;
-                //if (name == aiString("Maxwell")) shaderResource->SetResource(textureMaxwell.Get());
-                //else if (name == aiString("Grass_Plane")) shaderResource->SetResource(textureGrass.Get());
-                //else if (name == aiString("Monkey")) shaderResource->SetResource(textureMonkey.Get());
-                //else if (name == aiString("Sky_Plane")) shaderResource->SetResource(textureSky.Get());
-
-                pTechniqueLightTex->GetPassByIndex(p)->Apply(0, pDeviceContext.Get());
-                pDeviceContext->DrawIndexed(pIndexCount[meshId], pIndexOffsets[meshId], pVertexOffsets[meshId]);
-            }
+				pTechniqueLightTex->GetPassByIndex(p)->Apply(0, pDeviceContext.Get());
+				pDeviceContext->DrawIndexed(pIndexCount[meshId], pIndexOffsets[meshId], pVertexOffsets[meshId]);
+			}
         }
         else
         {
@@ -418,8 +448,25 @@ void D3DClass::DrawScene(const aiScene* scene, Camera* camera)
 			pTechniqueLight->GetDesc(&techDesc);
 			for (UINT32 p = 0; p < techDesc.Passes; ++p)
 			{
-				pTechniqueLight->GetPassByIndex(p)->Apply(0, pDeviceContext.Get());
-				pDeviceContext->DrawIndexed(pIndexCount[meshId], pIndexOffsets[meshId], pVertexOffsets[meshId]);
+                if (p == 0)
+                {
+     //               pShadowMap->BindDSVandNullTarget(pDeviceContext.Get());
+
+     //               // Draw Scene
+					//pTechniqueLightTex->GetPassByIndex(p)->Apply(0, pDeviceContext.Get());
+					//pDeviceContext->DrawIndexed(pIndexCount[meshId], pIndexOffsets[meshId], pVertexOffsets[meshId]);
+
+     //               // Restore
+     //               pDeviceContext->RSSetState(0);
+				 //   pDeviceContext->OMSetRenderTargets(1, pTarget.GetAddressOf(), pDepthStencilView.Get());
+     //               pDeviceContext->RSSetViewports(1, &viewport); // Right now this doesn't make sense because shadow map viewport is the same as this one
+
+                }
+				else
+                {
+                    pTechniqueLight->GetPassByIndex(p)->Apply(0, pDeviceContext.Get());
+                    pDeviceContext->DrawIndexed(pIndexCount[meshId], pIndexOffsets[meshId], pVertexOffsets[meshId]);
+                }
 
 			}
         }
@@ -480,6 +527,7 @@ void D3DClass::DrawSky(const aiScene* scene, Camera* camera)
 
 	//Set constant buffers
     DirectX::XMMATRIX viewMatrix = camera->getViewMatrix();
+	viewMatrix.r[3] = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f); // Remove translation part of matrix
     DirectX::XMMATRIX projectionMatrix = camera->getProjectionMatrix();
     DirectX::XMMATRIX transformSkybox = DirectX::XMMatrixTranspose(viewMatrix * projectionMatrix);
     fxTransformSkybox->SetRawValue(&transformSkybox, 0, sizeof(XMMATRIX));
@@ -572,11 +620,16 @@ void D3DClass::DrawDebug(const aiScene* scene, Camera* camera)
 {
 	HRESULT hr;
 
-    // Vertex structure
-    struct Vertex
+    //// Vertex structure
+    //struct Vertex
+    //{
+    //    DirectX::XMFLOAT3 position;
+    //    DirectX::XMFLOAT4 color;
+    //};
+    struct TexVertex
     {
-        DirectX::XMFLOAT3 position;
-        DirectX::XMFLOAT4 color;
+		DirectX::XMFLOAT3 position;
+        DirectX::XMFLOAT2 uv;
     };
 
 
@@ -584,71 +637,95 @@ void D3DClass::DrawDebug(const aiScene* scene, Camera* camera)
     float farPlane = camera->getFar() - 10.0f;
 
     float cameraZ = camera->getPosition().z;
-    float scale = 10.0f;
-	// Assuming you have the camera's position and direction, and far plane distance
-	DirectX::XMFLOAT3 cameraPosition = camera->getPosition(); // Camera position in world space
-    DirectX::XMFLOAT3 cameraForward;
-    XMStoreFloat3(&cameraForward, camera->getForward());   // Camera forward direction (view direction)
-    DirectX::XMFLOAT3 cameraRight;
-    XMStoreFloat3(&cameraRight, camera->getRight());       // Camera right direction (strafe)
-    DirectX::XMFLOAT3 cameraUp;
-    XMStoreFloat3(&cameraUp, camera->getUp());             // Camera up direction
+    float scale = 1.0f;
+    float distance = 1.5f;
+	//// Assuming you have the camera's position and direction, and far plane distance
+	//DirectX::XMFLOAT3 cameraPosition = camera->getPosition(); // Camera position in world space
+ //   DirectX::XMFLOAT3 cameraForward;
+ //   XMStoreFloat3(&cameraForward, camera->getForward());   // Camera forward direction (view direction)
+ //   DirectX::XMFLOAT3 cameraRight;
+ //   XMStoreFloat3(&cameraRight, camera->getRight());       // Camera right direction (strafe)
+ //   DirectX::XMFLOAT3 cameraUp;
+ //   XMStoreFloat3(&cameraUp, camera->getUp());             // Camera up direction
 
-	float farPlaneDistance = camera->getFar() - 10.0f; // Distance to the far plane
+	//float farPlaneDistance = camera->getFar() - 10.0f; // Distance to the far plane
 
-	// Define the scale for the quad size (how large the far plane should appear)
-	float quadScale = 10.0f; // Adjust based on how large you want the quad to be
+	//// Define the scale for the quad size (how large the far plane should appear)
+	//float quadScale = 10.0f; // Adjust based on how large you want the quad to be
 
-	// Calculate the center position of the far plane
-	DirectX::XMFLOAT3 farPlaneCenter =
-	{
-		cameraPosition.x + cameraForward.x * farPlaneDistance,
-		cameraPosition.y + cameraForward.y * farPlaneDistance,
-		cameraPosition.z + cameraForward.z * farPlaneDistance
-	};
+	//// Calculate the center position of the far plane
+	//DirectX::XMFLOAT3 farPlaneCenter =
+	//{
+	//	cameraPosition.x + cameraForward.x * farPlaneDistance,
+	//	cameraPosition.y + cameraForward.y * farPlaneDistance,
+	//	cameraPosition.z + cameraForward.z * farPlaneDistance
+	//};
 
-	// Define the vertices for the quad, oriented relative to the camera's right and up directions
-	Vertex vertices[] =
-	{
-		// Top-left
-		{ DirectX::XMFLOAT3(farPlaneCenter.x - cameraRight.x * quadScale + cameraUp.x * quadScale,
-							farPlaneCenter.y - cameraRight.y * quadScale + cameraUp.y * quadScale,
-							farPlaneCenter.z - cameraRight.z * quadScale + cameraUp.z * quadScale),
-							DirectX::XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f) }, // Red color
+	//// Define the vertices for the quad, oriented relative to the camera's right and up directions
+	//Vertex vertices[] =
+	//{
+	//	// Top-left
+	//	{ DirectX::XMFLOAT3(farPlaneCenter.x - cameraRight.x * quadScale + cameraUp.x * quadScale,
+	//						farPlaneCenter.y - cameraRight.y * quadScale + cameraUp.y * quadScale,
+	//						farPlaneCenter.z - cameraRight.z * quadScale + cameraUp.z * quadScale),
+	//						DirectX::XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f) }, // Red color
 
-					// Bottom-left
-					{ DirectX::XMFLOAT3(farPlaneCenter.x - cameraRight.x * quadScale - cameraUp.x * quadScale,
-										farPlaneCenter.y - cameraRight.y * quadScale - cameraUp.y * quadScale,
-										farPlaneCenter.z - cameraRight.z * quadScale - cameraUp.z * quadScale),
-										DirectX::XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f) }, // Red color
+	//				// Bottom-left
+	//				{ DirectX::XMFLOAT3(farPlaneCenter.x - cameraRight.x * quadScale - cameraUp.x * quadScale,
+	//									farPlaneCenter.y - cameraRight.y * quadScale - cameraUp.y * quadScale,
+	//									farPlaneCenter.z - cameraRight.z * quadScale - cameraUp.z * quadScale),
+	//									DirectX::XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f) }, // Red color
 
-											// Bottom-right
-											{ DirectX::XMFLOAT3(farPlaneCenter.x + cameraRight.x * quadScale - cameraUp.x * quadScale,
-																farPlaneCenter.y + cameraRight.y * quadScale - cameraUp.y * quadScale,
-																farPlaneCenter.z + cameraRight.z * quadScale - cameraUp.z * quadScale),
-																DirectX::XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f) }, // Red color
+	//										// Bottom-right
+	//										{ DirectX::XMFLOAT3(farPlaneCenter.x + cameraRight.x * quadScale - cameraUp.x * quadScale,
+	//															farPlaneCenter.y + cameraRight.y * quadScale - cameraUp.y * quadScale,
+	//															farPlaneCenter.z + cameraRight.z * quadScale - cameraUp.z * quadScale),
+	//															DirectX::XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f) }, // Red color
 
-																// Top-right
-																{ DirectX::XMFLOAT3(farPlaneCenter.x + cameraRight.x * quadScale + cameraUp.x * quadScale,
-																					farPlaneCenter.y + cameraRight.y * quadScale + cameraUp.y * quadScale,
-																					farPlaneCenter.z + cameraRight.z * quadScale + cameraUp.z * quadScale),
-																					DirectX::XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f) }, // Red color
-	};
+	//															// Top-right
+	//															{ DirectX::XMFLOAT3(farPlaneCenter.x + cameraRight.x * quadScale + cameraUp.x * quadScale,
+	//																				farPlaneCenter.y + cameraRight.y * quadScale + cameraUp.y * quadScale,
+	//																				farPlaneCenter.z + cameraRight.z * quadScale + cameraUp.z * quadScale),
+	//																				DirectX::XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f) }, // Red color
+	//};
+    float factor = screenWidth / screenHeight;
+    TexVertex quadVertices[] =
+    {
+        // Bottom-left corner of the screen (in NDC space) with correct texture coordinates
+        { DirectX::XMFLOAT3(-1.4f, -1.0f, distance), DirectX::XMFLOAT2(0.0f, 1.0f) },  // Bottom-left
+        { DirectX::XMFLOAT3(-0.9f, -1.0f, distance), DirectX::XMFLOAT2(1.0f, 1.0f) },  // Bottom-right
+        { DirectX::XMFLOAT3(-1.4f, -0.5f, distance), DirectX::XMFLOAT2(0.0f, 0.0f) },  // Top-left
+        { DirectX::XMFLOAT3(-0.9f, -0.5f, distance), DirectX::XMFLOAT2(1.0f, 0.0f) },  // Top-right
+    };
 
 	unsigned int indices[] =
 	{
-		0, 1, 2,  // First triangle (top-left, bottom-left, bottom-right)
-		0, 2, 3   // Second triangle (top-left, bottom-right, top-right)
+		0, 2, 1,  // First triangle (top-left, bottom-left, bottom-right)
+		1, 2, 3   // Second triangle (top-left, bottom-right, top-right)
 	};
+
+	//unsigned int indices[] =
+
+	//{
+	//	0, 1, 2,  // First triangle (top-left, bottom-left, bottom-right)
+	//	0, 2, 3   // Second triangle (top-left, bottom-right, top-right)
+	//};
+    //Create Stencil Buffer
+	Microsoft::WRL::ComPtr<ID3D11DepthStencilState> noDepthBuffer;
+    D3D11_DEPTH_STENCIL_DESC depthStencilDesc = {};
+    depthStencilDesc.DepthEnable = FALSE; 
+    depthStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
+    depthStencilDesc.DepthFunc = D3D11_COMPARISON_ALWAYS;
+    GFX_THROW_INFO(pDevice->CreateDepthStencilState(&depthStencilDesc, &noDepthBuffer));
 
 	// Vertex buffer description
 	D3D11_BUFFER_DESC vertexBufferDesc = {};
 	vertexBufferDesc.Usage = D3D11_USAGE_DEFAULT;
-	vertexBufferDesc.ByteWidth = sizeof(vertices);
+	vertexBufferDesc.ByteWidth = sizeof(quadVertices) ;
 	vertexBufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 	vertexBufferDesc.CPUAccessFlags = 0;
 	D3D11_SUBRESOURCE_DATA vertexData = {};
-	vertexData.pSysMem = vertices;
+	vertexData.pSysMem = quadVertices;
 
 	// Create the vertex buffer
 	ID3D11Buffer* vertexBuffer;
@@ -668,7 +745,7 @@ void D3DClass::DrawDebug(const aiScene* scene, Camera* camera)
     pDevice->CreateBuffer(&indexBufferDesc, &indexData, &indexBuffer);
 
     // Set the vertex buffer
-    UINT stride = sizeof(Vertex);
+    UINT stride = sizeof(TexVertex);
     UINT offset = 0;
     pDeviceContext->IASetVertexBuffers(0, 1, &vertexBuffer, &stride, &offset);
 
@@ -676,37 +753,29 @@ void D3DClass::DrawDebug(const aiScene* scene, Camera* camera)
     pDeviceContext->IASetIndexBuffer(indexBuffer, DXGI_FORMAT_R32_UINT, 0);
 
     //Set constant buffers
-    XMFLOAT3 eyePos = camera->getPosition();
-    DirectX::XMMATRIX transformation = camera->getTransform();
-
-    spotLight.Position = eyePos;
-    pointLight.Position = eyePos;
-    XMStoreFloat3(&spotLight.Direction, XMVector3Normalize(camera->getLookAt()));
-    fxSpotLight->SetRawValue(&spotLight, 0, sizeof(SpotLight));
-    fxPointLight->SetRawValue(&pointLight, 0, sizeof(PointLight));
-    fxDirLight->SetRawValue(&dirLight, 0, sizeof(DirectionalLight));
-    fxEyePos->SetRawValue(&eyePos, 0, sizeof(XMFLOAT3));
-    fxTransform->SetRawValue(&transformation, 0, sizeof(XMMATRIX));
-    fxMaterial->SetRawValue(&material, 0, sizeof(Material));
-
-
-    // Set the primitive topology (triangle list)
-    pDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    DirectX::XMMATRIX projectionMatrix = camera->getProjectionMatrix();
+    DirectX::XMMATRIX transformSkybox = DirectX::XMMatrixTranspose(projectionMatrix);
+    fxTransformSkybox->SetRawValue(&transformSkybox, 0, sizeof(XMMATRIX));
 
     // Set the input layout (assuming you have created an input layout for the shader)
     wrl::ComPtr<ID3D11InputLayout> pInputLayoutSimple;
     const D3D11_INPUT_ELEMENT_DESC inputLayoutDesc[] =
     {
         {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
-        {"COLOR", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0}
+        {"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0}
     };
-    pTechniqueSimple->GetPassByIndex(0)->GetDesc(&passDesc);
+
+    pEffect->GetVariableByName("shadowMap")->AsShaderResource()->SetResource(pShadowMap->pShaderResourceView.Get());
+    pTechniqueDebug->GetPassByIndex(0)->GetDesc(&passDesc);
     GFX_THROW_INFO(pDevice->CreateInputLayout(inputLayoutDesc, std::size(inputLayoutDesc), passDesc.pIAInputSignature, passDesc.IAInputSignatureSize, &pInputLayoutSimple));
 
     pDeviceContext->IASetInputLayout(pInputLayoutSimple.Get());
 
+    // I put this here because its the last draw call, meaning that everything will be set as it was in the EndScene call
+    GFX_THROW_INFO_ONLY(pDeviceContext->OMSetDepthStencilState(noDepthBuffer.Get(), 1u)); // Don't take into account this quad in the depth texture
+
 	// Draw the quad
-	pTechniqueSimple->GetPassByIndex(0)->Apply(0, pDeviceContext.Get());
+	pTechniqueDebug->GetPassByIndex(0)->Apply(0, pDeviceContext.Get());
     pDeviceContext->DrawIndexed(6, 0, 0);
     
 }
@@ -733,9 +802,13 @@ void D3DClass::EndScene()
         fpsCounter = 0;
         start = std::chrono::system_clock::now();
     }
-
     //wst = std::to_wstring(spotLight.Position.x) + L"," + std::to_wstring(spotLight.Position.y) + L"," + std::to_wstring(spotLight.Position.z);
-     
+    
+    //XMFLOAT3 forward;
+    //XMStoreFloat3(&forward, camera->getForward());
+    //wst = std::to_wstring(forward.x) + L"," + std::to_wstring(forward.y) + L"," + std::to_wstring(forward.z);
+    //if (std::chrono::duration_cast<std::chrono::milliseconds>(now).count() > 10)
+		//wst = std::to_wstring(camera->getYaw()) + L"," + std::to_wstring(camera->getPitch());
     const wchar_t* value = wst.c_str();
 
     spriteBatch->Begin();

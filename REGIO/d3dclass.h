@@ -4,7 +4,7 @@
 #ifndef _D3DCLASS_H_
 #define _D3DCLASS_H_
 
-//Unless we define this NOMINMAX, whenever we includ winowds.h its going to give an error
+// Unless we define this NOMINMAX, whenever we includ winowds.h its going to give an error
 #define NOMINMAX 
 
 #include <d3d11_2.h>
@@ -25,7 +25,7 @@
 #include <WICTextureLoader.h>
 #include "DDSTextureLoader.h"
 
-//Light and material structs
+// Light and material structs
 #include "LightHelper.h"
 
 #include "SpriteFont.h"
@@ -84,6 +84,7 @@ public:
 	void BuildVertexLayout();
 	void BuildTextures(const aiScene* scene);
 	void BuildSkymap();
+	void DrawShadowMap(const aiScene* scene, Camera* sunCamera);
 	void DrawScene(const aiScene* scene, Camera* camera);
 	void DrawSky(const aiScene* scene, Camera* camera);
 	void DrawDebug(const aiScene* scene, Camera* camera);
@@ -101,8 +102,9 @@ public:
 
 	void GetVideoCardInfo(char*, int&);
 
-	//For debugging
+	// For debugging
 	Camera* camera;
+	Camera* sunCamera;
 
 private:
 #ifndef NDEBUG
@@ -115,12 +117,12 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11RenderTargetView> pTarget;
 	Microsoft::WRL::ComPtr<ID3D11DepthStencilView> pDepthStencilView;
 
-	//Initialize depth stencil buffer
+	// Initialize depth stencil buffer
 	Microsoft::WRL::ComPtr<ID3D11RasterizerState> pNoCullRS;
 	Microsoft::WRL::ComPtr<ID3D11DepthStencilState> pDepthBuffer;
 	Microsoft::WRL::ComPtr<ID3D11Texture2D> pDepthTexture;
 
-	//Scene offset for efficient use of vertex/index buffers
+	// Scene offset for efficient use of vertex/index buffers
 	UINT* pVertexOffsets;
 	UINT* pIndexOffsets;
 	UINT* pIndexCount;
@@ -129,7 +131,7 @@ private:
 	wrl::ComPtr<ID3D11Buffer> pIndexBuffer;
 	wrl::ComPtr<ID3D11InputLayout> pInputLayout;
 
-	//Texture
+	// Texture
 	Microsoft::WRL::ComPtr<ID3D11SamplerState> samplerState;
 	std::vector<Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>> pTextures;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> cubemapTexture;
@@ -140,21 +142,23 @@ private:
 	Microsoft::WRL::ComPtr<ID3DX11EffectShaderResourceVariable> shaderResource;
 
 
-	//Effects
+	// Effects
 	Microsoft::WRL::ComPtr<ID3DX11Effect> pEffect;
 	Microsoft::WRL::ComPtr<ID3DX11EffectTechnique> pTechniqueLight;
 	Microsoft::WRL::ComPtr<ID3DX11EffectTechnique> pTechniqueLightTex;
-	Microsoft::WRL::ComPtr<ID3DX11EffectTechnique> pTechniqueSimple;
+	Microsoft::WRL::ComPtr<ID3DX11EffectTechnique> pTechniqueDebug;
 	Microsoft::WRL::ComPtr<ID3DX11EffectTechnique> pTechniqueSky;
+	Microsoft::WRL::ComPtr<ID3DX11EffectTechnique> pTechniqueShadow;
 	D3DX11_PASS_DESC passDesc;
 
-	//Temporal place to save lights and materials for the scene
+	// Temporal place to save lights and materials for the scene
 	Microsoft::WRL::ComPtr<ID3DX11EffectVariable> fxDirLight;
 	Microsoft::WRL::ComPtr<ID3DX11EffectVariable> fxPointLight;
 	Microsoft::WRL::ComPtr<ID3DX11EffectVariable> fxSpotLight;
 	Microsoft::WRL::ComPtr<ID3DX11EffectVariable> fxEyePos;
 	Microsoft::WRL::ComPtr<ID3DX11EffectVariable> fxTransform;
 	Microsoft::WRL::ComPtr<ID3DX11EffectVariable> fxTransformSkybox;
+	Microsoft::WRL::ComPtr<ID3DX11EffectVariable> fxTransformSun;
 	Microsoft::WRL::ComPtr<ID3DX11EffectVariable> fxMaterial;
 	Microsoft::WRL::ComPtr<ID3DX11EffectVariable> fxPointLights;
 	DirectionalLight dirLight;
@@ -163,12 +167,15 @@ private:
 	SpotLight spotLight;
 	Material material;
 
-	//Show fps
+	// Show fps
 	std::unique_ptr<SpriteFont> spriteFont;
 	std::unique_ptr <SpriteBatch> spriteBatch;
 	std::chrono::time_point<std::chrono::system_clock> start;
 
-	//Window
+	// Shadow map
+	ShadowMap* pShadowMap;
+
+	// Window
 	float screenWidth;
 	float screenHeight;
 };

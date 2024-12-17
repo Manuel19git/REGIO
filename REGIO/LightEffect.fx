@@ -13,11 +13,13 @@ cbuffer cbPerObject
 {
 	matrix gTransform; //matrix is 4x4
     matrix gTransformSkybox;
+    matrix gTransformSun;
 	Material gMaterial;
 };
 
 //Nonnumeric values cannot be added to a cbuffer
 Texture2D textureObject;
+Texture2D shadowMap;
 TextureCube textureCubemap;
 
 // Array of point lights
@@ -118,6 +120,13 @@ DepthStencilState lessEqualDSS
     DepthFunc = LESS_EQUAL;
 };
 
+RasterizerState Depth
+{
+    DepthBias = 10000;
+    DepthBiasClamp = 0.0f;
+    SlopeScaledDepthBias = 1.0f;
+};
+
 float4 PS_multilight(VS_OUTPUT input, uniform bool useTexture) : SV_TARGET
 {
 	input.norm = normalize(input.norm);
@@ -166,31 +175,32 @@ float4 PS_multilight(VS_OUTPUT input, uniform bool useTexture) : SV_TARGET
 }
 
 
-struct VS_SIMPLE_INPUT
+struct VS_TEXTURE_INPUT
 {
-	float4 inPos : POSITION;
-	float4 inColor : COLOR;
+	float3 pos : POSITION;
+	float2 tex : TEXCOORD;
 };
-
-struct PS_SIMPLE_INPUT
+struct VS_TEXTURE_OUTPUT
 {
 	float4 pos : SV_POSITION;
-	float4 color : COLOR;
+	float2 tex : TEXCOORD;
 };
 
-PS_SIMPLE_INPUT VS_Simple(VS_SIMPLE_INPUT input)
+
+VS_TEXTURE_OUTPUT VS_Texture(VS_TEXTURE_INPUT input)
 {
-    PS_SIMPLE_INPUT output;
-    //output.pos = input.inPos;
-	output.pos = mul(input.inPos, gTransform);
-    output.color = input.inColor;
+    VS_TEXTURE_OUTPUT output;
+    //output.pos = input.pos;
+    output.pos = mul(float4(input.pos, 1.0f), gTransformSkybox);
+    output.tex = input.tex;
 	
     return output;
 }
 
-float4 PS_Simple(PS_SIMPLE_INPUT input) : SV_TARGET
+float4 PS_Texture(VS_TEXTURE_OUTPUT input) : SV_TARGET
 {
-    return input.color;
+    float depth = shadowMap.Sample(objSamplerState, input.tex).r;
+    return float4(depth, depth, depth, 1.0f);
 }
 
 VS_OUTPUT VS_Skybox(VS_INPUT input)
@@ -209,9 +219,25 @@ float4 PS_Skybox(VS_OUTPUT input) : SV_TARGET
     return textureCubemap.Sample(samTriLinearSam, input.posOrig);
 }
 
+VS_OUTPUT VS_Sun(VS_INPUT input)
+{
+    VS_OUTPUT output;
+    output.pos = mul(float4(input.inPos, 1.0f), gTransform);
+    //output.pos = mul(float4(input.inPos, 1.0f), gTransformSun);
+	output.tex = input.inTex;
+	return output;
+}
+
 technique11 LighTech
 {
-	pass P0
+	// Try creating a previous pass for getting the shadow map
+    pass P0
+    {
+        SetVertexShader(CompileShader(vs_5_0, VS_Sun()));
+        SetPixelShader(NULL);
+        SetRasterizerState(Depth);
+    }
+	pass P1
 	{
 		SetVertexShader(CompileShader(vs_5_0, VS()));
 		SetPixelShader(CompileShader(ps_5_0, PS_multilight(false)));
@@ -220,19 +246,27 @@ technique11 LighTech
 
 technique11 LighTechTex
 {
-	pass P0
+  //  pass P0
+  //  {
+		//SetVertexShader(CompileShader(vs_5_0, VS_Sun()));
+  //      SetPixelShader(NULL);
+		
+  //      SetRasterizerState(Depth);
+  //  }
+
+	pass P1
 	{
 		SetVertexShader(CompileShader(vs_5_0, VS()));
 		SetPixelShader(CompileShader(ps_5_0, PS_multilight(true)));
 	}
 }
 
-technique11 Simple
+technique11 DebugTexture
 {
 	pass P0
 	{
-		SetVertexShader(CompileShader(vs_5_0, VS_Simple()));
-        SetPixelShader(CompileShader(ps_5_0, PS_Simple()));
+		SetVertexShader(CompileShader(vs_5_0, VS_Texture()));
+        SetPixelShader(CompileShader(ps_5_0, PS_Texture()));
     }
 }
 
@@ -242,7 +276,7 @@ technique11 Sky
 	{
 		SetVertexShader(CompileShader(vs_5_0, VS_Skybox()));
         SetPixelShader(CompileShader(ps_5_0, PS_Skybox()));
-        //SetDepthStencilState(lessEqualDSS, 0);
+        SetDepthStencilState(lessEqualDSS, 0); // I need this to work with shadow maps
 
     }
 }

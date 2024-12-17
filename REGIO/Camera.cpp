@@ -2,7 +2,7 @@
 
 using namespace DirectX;
 
-Camera::Camera()
+Camera::Camera(DirectX::XMFLOAT3 &startPosition, DirectX::XMVECTOR &startForward)
 {
     translationSpeed = 0.1f;
 	rotationSpeed = 0.005f;
@@ -12,10 +12,12 @@ Camera::Camera()
 	roll = 0.0f;
 
 	m_orientation = DirectX::XMQuaternionIdentity();
-    position = DirectX::XMFLOAT3(0.5f, 2.0f, -4.0f);
+	position = startPosition;
+	forwardVector = startForward;
+    //position = DirectX::XMFLOAT3(0.5f, 2.0f, -4.0f);
 	lookAtVector = DirectX::XMVectorSet(0.0f, 0.0f, 20.0f, 1.0f);
 
-	forwardVector = DirectX::XMVectorSet(0.0f, 0.0f, 1.0f, 1.0f);
+	//forwardVector = DirectX::XMVectorSet(0.0f, 0.0f, 1.0f, 1.0f);
 	rightVector = DirectX::XMVectorSet(1.0f, 0.0f, 0.0f, 1.0f);
 	upVector = DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 1.0f);
 
@@ -109,9 +111,7 @@ DirectX::XMVECTOR Camera::getUp()
 DirectX::XMMATRIX Camera::getViewMatrix()
 {
 	updateTransform();
-	XMMATRIX viewMatrix = DirectX::XMMatrixLookAtLH(DirectX::XMLoadFloat3(&position), lookAtVector, upVector);
-	viewMatrix.r[3] = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
-	return viewMatrix;
+	return DirectX::XMMatrixLookAtLH(DirectX::XMLoadFloat3(&position), lookAtVector, upVector);
 }
 
 DirectX::XMMATRIX Camera::getProjectionMatrix()
@@ -129,15 +129,26 @@ float Camera::getFar()
 	return farPlane;
 }
 
-DirectX::XMMATRIX Camera::getTransform()
+float Camera::getYaw()
+{
+	return yaw;
+}
+
+float Camera::getPitch()
+{
+	return pitch;
+}
+
+DirectX::XMMATRIX Camera::getTransform(bool isOrthographic)
 {
 	// Save previous orientation to ensure camera doesn't turn around 180� when pitching (gimball lock)
 	XMVECTOR prevOrientationMatrix = m_orientation;
 	XMVECTOR prevForwardVector = forwardVector;
 
+	// I want to simulate the player having a determined height
 	position.y = 3.0f;
-	DirectX::XMVECTOR posVector = DirectX::XMLoadFloat3(&position);
 
+	DirectX::XMVECTOR posVector = DirectX::XMLoadFloat3(&position);
 	DirectX::XMVECTOR yawQuat = DirectX::XMQuaternionRotationAxis(DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 1.0f), yaw);
 	DirectX::XMVECTOR pitchQuat = DirectX::XMQuaternionRotationAxis(DirectX::XMVectorSet(1.0f, 0.0f, 0.0f, 1.0f), pitch);
 	DirectX::XMVECTOR rollQuat = DirectX::XMQuaternionRotationAxis(DirectX::XMVectorSet(0.0f, 0.0f, 1.0f, 1.0f), roll);
@@ -167,10 +178,15 @@ DirectX::XMMATRIX Camera::getTransform()
 
 	lookAtVector = XMVectorAdd(posVector, forwardVector);
 
+	// Right now orthographic is only used for shadow maps
+	XMMATRIX perspectiveMatrix = (isOrthographic) ?
+		XMMatrixOrthographicLH(1.0f, screenHeight / screenWidth, nearPlane, farPlane) :
+		XMMatrixPerspectiveLH(1.0f, screenHeight / screenWidth, nearPlane, farPlane);
+
     return DirectX::XMMatrixTranspose(
-		DirectX::XMMatrixLookAtLH(posVector, lookAtVector, upVector) *
+		XMMatrixLookAtLH(posVector, lookAtVector, upVector) *
 		//DirectX::XMMatrixPerspectiveLH(1.0f, 3.0f / 4.0f, nearPlane, farPlane)     //800x600 screen size
-		DirectX::XMMatrixPerspectiveLH(1.0f, screenHeight / screenWidth, nearPlane, farPlane) //2048x1133 screen size
+		perspectiveMatrix //2048x1133 screen size
 	);
 }
 // updateTransform has to be the same as getTransform
