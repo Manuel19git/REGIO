@@ -44,6 +44,34 @@ ShadowMap::ShadowMap(ID3D11Device* device, float width, float height) : width(wi
     shaderResourceViewDesc.Texture2D.MipLevels = depthTextureDesc.MipLevels;
     shaderResourceViewDesc.Texture2D.MostDetailedMip = 0;
     GFX_THROW_INFO(device->CreateShaderResourceView(pDepthTexture.Get(), &shaderResourceViewDesc, &pShaderResourceView));
+
+
+	// Create Sun view target texture
+    D3D11_TEXTURE2D_DESC textureDesc = {};
+    textureDesc.Width = width; 
+    textureDesc.Height = height; 
+    textureDesc.MipLevels = 1;
+    textureDesc.ArraySize = 1;
+    textureDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM; 
+    textureDesc.SampleDesc.Count = 1;
+    textureDesc.SampleDesc.Quality = 0;
+    textureDesc.Usage = D3D11_USAGE_DEFAULT;
+    textureDesc.BindFlags = D3D11_BIND_RENDER_TARGET |
+                                 D3D11_BIND_SHADER_RESOURCE;
+
+    Microsoft::WRL::ComPtr<ID3D11Texture2D> pSunTargetTexture;
+    GFX_THROW_INFO(device->CreateTexture2D(&textureDesc, nullptr, &pSunTargetTexture));
+
+    // Create render target view
+    GFX_THROW_INFO(device->CreateRenderTargetView(pSunTargetTexture.Get(), nullptr, &pSunTarget));
+
+	// Create shader resource view
+	D3D11_SHADER_RESOURCE_VIEW_DESC sunShaderResourceViewDesc = {};
+	sunShaderResourceViewDesc.Format = textureDesc.Format;
+	sunShaderResourceViewDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+	sunShaderResourceViewDesc.Texture2D.MostDetailedMip = 0;
+	sunShaderResourceViewDesc.Texture2D.MipLevels = 1;
+	GFX_THROW_INFO(device->CreateShaderResourceView(pSunTargetTexture.Get(), &sunShaderResourceViewDesc, &pSunShaderResourceView));
 }
 
 void ShadowMap::BindDSVandNullTarget(ID3D11DeviceContext* deviceContext)
@@ -51,8 +79,11 @@ void ShadowMap::BindDSVandNullTarget(ID3D11DeviceContext* deviceContext)
     deviceContext->RSSetViewports(1, &viewport);
 
     // We set pTargets to null because we are not going to render anything. We are only going to write to the depth buffer texture
-    ID3D11RenderTargetView* pTargets[1] = {0};
-    GFX_THROW_INFO_ONLY(deviceContext->OMSetRenderTargets(1, pTargets, pDepthStencilView.Get()));
+    //ID3D11RenderTargetView* pTargets[1] = {0};
+
+    // Setting pTarget
+    ID3D11RenderTargetView* pTargets[1] = {pSunTarget.Get()};
+    GFX_THROW_INFO_ONLY(deviceContext->OMSetRenderTargets(1, pSunTarget.GetAddressOf(), pDepthStencilView.Get()));
 
     deviceContext->ClearDepthStencilView(pDepthStencilView.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
 }

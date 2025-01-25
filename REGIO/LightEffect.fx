@@ -254,7 +254,7 @@ technique11 LighTechTex
   //      SetRasterizerState(Depth);
   //  }
 
-	pass P1
+	pass P0
 	{
 		SetVertexShader(CompileShader(vs_5_0, VS()));
 		SetPixelShader(CompileShader(ps_5_0, PS_multilight(true)));
@@ -276,7 +276,7 @@ technique11 Sky
 	{
 		SetVertexShader(CompileShader(vs_5_0, VS_Skybox()));
         SetPixelShader(CompileShader(ps_5_0, PS_Skybox()));
-        SetDepthStencilState(lessEqualDSS, 0); // I need this to work with shadow maps
+        SetDepthStencilState(lessEqualDSS, 0); // I need this to work with sky maps
 
     }
 }

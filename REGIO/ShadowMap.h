@@ -22,6 +22,9 @@ public:
 	Microsoft::WRL::ComPtr<ID3D11DepthStencilView> pDepthStencilView;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> pShaderResourceView;
 
+	Microsoft::WRL::ComPtr<ID3D11RenderTargetView> pSunTarget;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> pSunShaderResourceView;
+
 	DxgiInfoManager infoManager;
 
 };

@@ -385,8 +385,8 @@ void D3DClass::DrawScene(const aiScene* scene, Camera* camera)
     GFX_THROW_INFO_ONLY(pDeviceContext->IASetIndexBuffer(pIndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0));
 
     //Set constant buffers
-    XMFLOAT3 eyePos = camera->getPosition();
-    DirectX::XMMATRIX transformation = camera->getTransform();
+    XMFLOAT3 eyePos = sunCamera->getPosition();
+    DirectX::XMMATRIX transformation = sunCamera->getTransform(true);
     DirectX::XMMATRIX transformationSun = sunCamera->getTransform(true); // true means orthographic camera
 
     spotLight.Position = eyePos;
@@ -415,7 +415,7 @@ void D3DClass::DrawScene(const aiScene* scene, Camera* camera)
 
     // Shadow map pass
 	pShadowMap->BindDSVandNullTarget(pDeviceContext.Get());
-	pTechniqueLight->GetPassByIndex(0)->Apply(0, pDeviceContext.Get());
+	pTechniqueLight->GetPassByIndex(1)->Apply(0, pDeviceContext.Get()); // 1 is the shadow map pass fix in the future to something more readable
     for (int meshId = 0; meshId < scene->mNumMeshes; ++meshId)
     {
 		// Draw Scene
@@ -424,6 +424,22 @@ void D3DClass::DrawScene(const aiScene* scene, Camera* camera)
 	// Restore
 	pDeviceContext->OMSetRenderTargets(1, pTarget.GetAddressOf(), pDepthStencilView.Get());
 
+
+    //Set constant buffers
+    eyePos = camera->getPosition();
+    transformation = camera->getTransform();
+    transformationSun = sunCamera->getTransform(true); // true means orthographic camera
+
+    spotLight.Position = eyePos;
+    pointLight.Position = eyePos;
+    XMStoreFloat3(&spotLight.Direction, XMVector3Normalize(camera->getLookAt()));
+    fxSpotLight->SetRawValue(&spotLight, 0, sizeof(SpotLight));
+    fxPointLight->SetRawValue(&pointLight, 0, sizeof(PointLight));
+    fxDirLight->SetRawValue(&dirLight, 0, sizeof(DirectionalLight));
+    fxEyePos->SetRawValue(&eyePos, 0, sizeof(XMFLOAT3));
+    fxTransform->SetRawValue(&transformation, 0, sizeof(XMMATRIX));
+    fxTransformSun->SetRawValue(&transformationSun, 0, sizeof(Material));
+    fxMaterial->SetRawValue(&material, 0, sizeof(Material));
 
 	for (int meshId = 0; meshId < scene->mNumMeshes; ++meshId)
 	{
@@ -766,6 +782,7 @@ void D3DClass::DrawDebug(const aiScene* scene, Camera* camera)
     };
 
     pEffect->GetVariableByName("shadowMap")->AsShaderResource()->SetResource(pShadowMap->pShaderResourceView.Get());
+    //pEffect->GetVariableByName("shadowMap")->AsShaderResource()->SetResource(pShadowMap->pSunShaderResourceView.Get());
     pTechniqueDebug->GetPassByIndex(0)->GetDesc(&passDesc);
     GFX_THROW_INFO(pDevice->CreateInputLayout(inputLayoutDesc, std::size(inputLayoutDesc), passDesc.pIAInputSignature, passDesc.IAInputSignatureSize, &pInputLayoutSimple));
 

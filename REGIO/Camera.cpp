@@ -14,6 +14,7 @@ Camera::Camera(DirectX::XMFLOAT3 &startPosition, DirectX::XMVECTOR &startForward
 	m_orientation = DirectX::XMQuaternionIdentity();
 	position = startPosition;
 	forwardVector = startForward;
+	startForwardVector = startForward;
     //position = DirectX::XMFLOAT3(0.5f, 2.0f, -4.0f);
 	lookAtVector = DirectX::XMVectorSet(0.0f, 0.0f, 20.0f, 1.0f);
 
@@ -146,7 +147,8 @@ DirectX::XMMATRIX Camera::getTransform(bool isOrthographic)
 	XMVECTOR prevForwardVector = forwardVector;
 
 	// I want to simulate the player having a determined height
-	position.y = 3.0f;
+	if(!isOrthographic)
+		position.y = 3.0f;
 
 	DirectX::XMVECTOR posVector = DirectX::XMLoadFloat3(&position);
 	DirectX::XMVECTOR yawQuat = DirectX::XMQuaternionRotationAxis(DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 1.0f), yaw);
@@ -161,7 +163,7 @@ DirectX::XMMATRIX Camera::getTransform(bool isOrthographic)
 	m_orientation = DirectX::XMQuaternionMultiply(yawQuat, m_orientation);
 	m_orientation = DirectX::XMQuaternionMultiply(rollQuat, m_orientation);
 
-	forwardVector = DirectX::XMVector3Rotate(DirectX::XMVectorSet(0.0f, 0.0f, 1.0f, 1.0f), m_orientation);
+	forwardVector = DirectX::XMVector3Rotate(startForwardVector, m_orientation);
 	if (fabs(DirectX::XMVectorGetY(forwardVector)) > 0.95f)
 	{
 		m_orientation = prevOrientationMatrix;
@@ -179,8 +181,9 @@ DirectX::XMMATRIX Camera::getTransform(bool isOrthographic)
 	lookAtVector = XMVectorAdd(posVector, forwardVector);
 
 	// Right now orthographic is only used for shadow maps
+	// TODO orthographic projection with bounding box of scene
 	XMMATRIX perspectiveMatrix = (isOrthographic) ?
-		XMMatrixOrthographicLH(1.0f, screenHeight / screenWidth, nearPlane, farPlane) :
+		XMMatrixOrthographicLH(10, 10, nearPlane, farPlane) :
 		XMMatrixPerspectiveLH(1.0f, screenHeight / screenWidth, nearPlane, farPlane);
 
     return DirectX::XMMatrixTranspose(
@@ -190,13 +193,14 @@ DirectX::XMMATRIX Camera::getTransform(bool isOrthographic)
 	);
 }
 // updateTransform has to be the same as getTransform
-void Camera::updateTransform()
+void Camera::updateTransform(bool isOrthographic)
 {
 	// Save previous orientation to ensure camera doesn't turn around 180� when pitching (gimball lock)
 	XMVECTOR prevOrientationMatrix = m_orientation;
 	XMVECTOR prevForwardVector = forwardVector;
-
-	position.y = 3.0f;
+	
+	if(!isOrthographic)
+		position.y = 3.0f;
 	DirectX::XMVECTOR posVector = DirectX::XMLoadFloat3(&position);
 
 	DirectX::XMVECTOR yawQuat = DirectX::XMQuaternionRotationAxis(DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 1.0f), yaw);
@@ -209,7 +213,7 @@ void Camera::updateTransform()
 	m_orientation = DirectX::XMQuaternionMultiply(yawQuat, m_orientation);
 	m_orientation = DirectX::XMQuaternionMultiply(rollQuat, m_orientation);
 
-	forwardVector = DirectX::XMVector3Rotate(DirectX::XMVectorSet(0.0f, 0.0f, 1.0f, 1.0f), m_orientation);
+	forwardVector = DirectX::XMVector3Rotate(startForwardVector, m_orientation);
 	if (fabs(DirectX::XMVectorGetY(forwardVector)) > 0.95f)
 	{
 		m_orientation = prevOrientationMatrix;

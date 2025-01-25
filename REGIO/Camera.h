@@ -36,7 +36,7 @@ public:
 	float getYaw();
 	float getPitch();
 	DirectX::XMMATRIX getTransform(bool isOrthographic = false);
-	void updateTransform();
+	void updateTransform(bool isOrthographic = false);
 
 public:
 	float translationSpeed;
@@ -44,12 +44,13 @@ public:
 
 private:
 	DirectX::XMVECTOR m_orientation;
-	DirectX::XMVECTOR upVector;
 	DirectX::XMVECTOR lookAtVector;
 	DirectX::XMFLOAT3 position;
 
+	DirectX::XMVECTOR startForwardVector;
 	DirectX::XMVECTOR forwardVector;
 	DirectX::XMVECTOR rightVector;
+	DirectX::XMVECTOR upVector;
 
 	float yaw;
 	float pitch;

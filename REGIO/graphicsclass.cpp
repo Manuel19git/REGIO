@@ -59,6 +59,7 @@ bool GraphicsClass::Frame()
 	XMFLOAT3 sunPosition = XMFLOAT3(0.5f, 2.0f, -4.0f);
 	XMVECTOR sunDirection = XMVector3Normalize(XMVectorSubtract(XMVectorZero(), XMLoadFloat3(&sunPosition)));
 	Camera* sunCamera = new Camera(sunPosition, sunDirection);
+	sunCamera->setResolution(mainCamera->getResolution().first, mainCamera->getResolution().second);
 	m_D3D->sunCamera = sunCamera;
 
 	m_D3D->ClearBuffer(0.0f, 0.0f, 0.0f);
