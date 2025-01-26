@@ -19,6 +19,50 @@ GraphicsClass::~GraphicsClass()
 {
 }
 
+// Everything besides scene is output parameter. For this to work the scene meshes should in world space
+void computeBoundingBox(const aiScene* scene, float& left, float& right, float& top, float& bottom, float &nearPlane, float &farPlane)
+{
+	left = FLT_MAX;
+	right = -FLT_MAX;
+	top = -FLT_MAX;
+	bottom = FLT_MAX;
+	nearPlane = FLT_MAX;
+	farPlane = -FLT_MAX;
+
+	for (int i = 0; i < scene->mNumMeshes; i++)
+	{
+		aiMesh* mesh = scene->mMeshes[i];
+		for (int j = 0; j < mesh->mNumVertices; j++)
+		{
+			aiVector3D vertex = mesh->mVertices[j];
+			if (vertex.x < left)
+			{
+				left = vertex.x;
+			}
+			if (vertex.x > right)
+			{
+				right = vertex.x;
+			}
+			if (vertex.y > top)
+			{
+				top = vertex.y;
+			}
+			if (vertex.y < bottom)
+			{
+				bottom = vertex.y;
+			}
+			if (vertex.z < nearPlane)
+			{
+				nearPlane = vertex.z;
+			}
+			if (vertex.z > farPlane)
+			{
+				farPlane = vertex.z;
+			}
+		}
+	}
+}
+
 
 bool GraphicsClass::Initialize(int screenWidth, int screenHeight, HWND hwnd, InputClass* m_Input)
 {
@@ -36,10 +80,13 @@ bool GraphicsClass::Initialize(int screenWidth, int screenHeight, HWND hwnd, Inp
 	//mScene = importer->ReadFile("..\\output\\NIER\\nier_park.glb",
 	//	aiProcess_Triangulate | aiProcess_ConvertToLeftHanded);
 
+	// Compute bounding box
+	computeBoundingBox(mScene, scenebbox.left, scenebbox.right, scenebbox.top, scenebbox.bottom, scenebbox.nearPlane, scenebbox.farPlane);
+
 	// Initialize player camera before directX
 	XMFLOAT3 startPosition = XMFLOAT3(0.5f, 2.0f, -4.0f);
 	XMVECTOR startForward = XMVectorSet(0.0f, 0.0f, 1.0f, 1.0f);
-	mainCamera = new Camera(startPosition, startForward);
+	mainCamera = new Camera(startPosition, startForward, scenebbox);
 	mainCamera->setResolution(screenWidth, screenHeight);
 
 	// Create window
@@ -58,7 +105,7 @@ bool GraphicsClass::Frame()
 	// In the future I may want to dynamically change sun position, hence we create sunCamera here :)
 	XMFLOAT3 sunPosition = XMFLOAT3(0.5f, 2.0f, -4.0f);
 	XMVECTOR sunDirection = XMVector3Normalize(XMVectorSubtract(XMVectorZero(), XMLoadFloat3(&sunPosition)));
-	Camera* sunCamera = new Camera(sunPosition, sunDirection);
+	Camera* sunCamera = new Camera(sunPosition, sunDirection, scenebbox);
 	sunCamera->setResolution(mainCamera->getResolution().first, mainCamera->getResolution().second);
 	m_D3D->sunCamera = sunCamera;
 

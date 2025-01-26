@@ -51,6 +51,8 @@ private:
 	Assimp::Importer* importer;
 	const aiScene* mScene;
 
+	BoundingBox scenebbox;
+
 };
 
 #endif

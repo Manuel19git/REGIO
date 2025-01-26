@@ -13,10 +13,20 @@ enum Axis
 };
 
 
+struct BoundingBox // TODO put this in a separate file with the rest of auxiliar stuff
+{
+	float left;
+	float right;
+	float top;
+	float bottom;
+	float nearPlane;
+	float farPlane;
+};
+
 class Camera
 {
 public:
-	Camera(DirectX::XMFLOAT3 &startPosition, DirectX::XMVECTOR &startForward);
+	Camera(DirectX::XMFLOAT3 &startPosition, DirectX::XMVECTOR &startForward, BoundingBox bbox);
 
 	void moveCamera(Axis axis, int sign);
 	void updateYawPitch(float x, float y);
@@ -60,4 +70,5 @@ private:
 	float farPlane;
 	float screenWidth;
 	float screenHeight;
+	BoundingBox scenebbox;
 };

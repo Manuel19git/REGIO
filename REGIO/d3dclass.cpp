@@ -158,13 +158,12 @@ void D3DClass::BuildSkymap()
 
 bool D3DClass::Initialize(HWND hWnd, const aiScene* pScene, Camera* mainCamera)
 {
-
     // Camera
     camera = mainCamera;
     screenWidth = camera->getResolution().first;
     screenHeight = camera->getResolution().second;
 
-    //Configure Swap Chain
+    // Configure Swap Chain
     DXGI_SWAP_CHAIN_DESC desc = {};
     ZeroMemory(&desc, sizeof(DXGI_SWAP_CHAIN_DESC));
     desc.Windowed = TRUE; // Sets the initial state of full-screen mode.

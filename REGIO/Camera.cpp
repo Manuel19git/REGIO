@@ -2,7 +2,7 @@
 
 using namespace DirectX;
 
-Camera::Camera(DirectX::XMFLOAT3 &startPosition, DirectX::XMVECTOR &startForward)
+Camera::Camera(DirectX::XMFLOAT3 &startPosition, DirectX::XMVECTOR &startForward, BoundingBox bbox)
 {
     translationSpeed = 0.1f;
 	rotationSpeed = 0.005f;
@@ -27,6 +27,8 @@ Camera::Camera(DirectX::XMFLOAT3 &startPosition, DirectX::XMVECTOR &startForward
 
 	screenWidth = 0.0f;
 	screenHeight = 0.0f;
+
+	scenebbox = bbox;
 }
 
 void Camera::moveCamera(Axis axis, int sign)
@@ -164,26 +166,32 @@ DirectX::XMMATRIX Camera::getTransform(bool isOrthographic)
 	m_orientation = DirectX::XMQuaternionMultiply(rollQuat, m_orientation);
 
 	forwardVector = DirectX::XMVector3Rotate(startForwardVector, m_orientation);
+	// This condition is here to avoid the camera going up and beyond resulting in inverting the mouse controls
 	if (fabs(DirectX::XMVectorGetY(forwardVector)) > 0.95f)
 	{
 		m_orientation = prevOrientationMatrix;
 		forwardVector = prevForwardVector;
 	}
-
+	forwardVector = XMVector3Normalize(forwardVector);
 	// Calculate rightVector and upVector without any limitations
 	//rightVector = DirectX::XMVector3Rotate(DirectX::XMVectorSet(1.0f, 0.0f, 0.0f, 1.0f), m_orientation);
 	//upVector = DirectX::XMVector3Rotate(DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 1.0f), m_orientation);
 
 	// Calculate rightVector and upVector here to ensure right vector stays on XZ plane
-	rightVector = DirectX::XMVector3Normalize(DirectX::XMVector3Cross(DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 1.0f), forwardVector));
-	upVector = DirectX::XMVector3Cross(forwardVector, rightVector);
+	float dot = XMVectorGetX(XMVector3Dot(DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 1.0f), forwardVector));
+	if (fabs(dot) > 0.999f)
+		rightVector = DirectX::XMVector3Normalize(DirectX::XMVector3Cross(DirectX::XMVectorSet(0.0f, 0.0f, 1.0f, 1.0f), forwardVector));
+	else
+		rightVector = DirectX::XMVector3Normalize(DirectX::XMVector3Cross(DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 1.0f), forwardVector));
+
+	upVector = XMVector3Normalize(DirectX::XMVector3Cross(forwardVector, rightVector));
 
 	lookAtVector = XMVectorAdd(posVector, forwardVector);
 
 	// Right now orthographic is only used for shadow maps
-	// TODO orthographic projection with bounding box of scene
 	XMMATRIX perspectiveMatrix = (isOrthographic) ?
-		XMMatrixOrthographicLH(10, 10, nearPlane, farPlane) :
+		//XMMatrixOrthographicLH(10, 10, nearPlane, farPlane) :
+		XMMatrixOrthographicOffCenterLH(scenebbox.left, scenebbox.right, scenebbox.bottom, scenebbox.top, scenebbox.nearPlane, scenebbox.farPlane) :
 		XMMatrixPerspectiveLH(1.0f, screenHeight / screenWidth, nearPlane, farPlane);
 
     return DirectX::XMMatrixTranspose(
@@ -214,6 +222,7 @@ void Camera::updateTransform(bool isOrthographic)
 	m_orientation = DirectX::XMQuaternionMultiply(rollQuat, m_orientation);
 
 	forwardVector = DirectX::XMVector3Rotate(startForwardVector, m_orientation);
+	// This condition is here to avoid the camera going up and beyond resulting in inverting the mouse controls
 	if (fabs(DirectX::XMVectorGetY(forwardVector)) > 0.95f)
 	{
 		m_orientation = prevOrientationMatrix;
@@ -224,8 +233,13 @@ void Camera::updateTransform(bool isOrthographic)
 	//upVector = DirectX::XMVector3Rotate(DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 1.0f), m_orientation);
 
 	// Calculate rightVector and upVector here to ensure right vector stays on XZ plane
-	rightVector = DirectX::XMVector3Normalize(DirectX::XMVector3Cross(DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 1.0f), forwardVector));
-	upVector = DirectX::XMVector3Cross(forwardVector, rightVector);
+	float dot = XMVectorGetX(XMVector3Dot(DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 1.0f), forwardVector));
+	if (fabs(dot) > 0.999f)
+		rightVector = DirectX::XMVector3Normalize(DirectX::XMVector3Cross(DirectX::XMVectorSet(0.0f, 0.0f, 1.0f, 1.0f), forwardVector));
+	else
+		rightVector = DirectX::XMVector3Normalize(DirectX::XMVector3Cross(DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 1.0f), forwardVector));
+
+	upVector = XMVector3Normalize(DirectX::XMVector3Cross(forwardVector, rightVector));
 
 	lookAtVector = XMVectorAdd(posVector, forwardVector);
 }
