@@ -222,6 +222,17 @@ bool D3DClass::Initialize(HWND hWnd, const aiScene* pScene, Camera* mainCamera)
     rasterizerDesc.DepthClipEnable = true;
     GFX_THROW_INFO(pDevice->CreateRasterizerState(&rasterizerDesc, &pNoCullRS));
 
+    //Create depth bias state
+    D3D11_RASTERIZER_DESC depthBiasDesc = {};
+    ZeroMemory(&depthBiasDesc, sizeof(D3D11_RASTERIZER_DESC));
+    depthBiasDesc.FillMode = D3D11_FILL_SOLID;
+    depthBiasDesc.CullMode = D3D11_CULL_NONE;
+    depthBiasDesc.DepthBias = 1000;
+    depthBiasDesc.DepthBiasClamp = 0.02f;
+    depthBiasDesc.SlopeScaledDepthBias = 4.75f;
+    GFX_THROW_INFO(pDevice->CreateRasterizerState(&depthBiasDesc, &pDepthRS));
+
+
     //Create Stencil Buffer
     D3D11_DEPTH_STENCIL_DESC depthStencilDesc = {};
     depthStencilDesc.DepthEnable = TRUE; 
@@ -310,7 +321,7 @@ bool D3DClass::Initialize(HWND hWnd, const aiScene* pScene, Camera* mainCamera)
         pointLights[i].Specular = XMFLOAT4(0.7f, 0.7f, 0.7f, 1.0f);
         pointLights[i].Att = XMFLOAT3(1.0f, 0.1f, 0.01f);
         pointLights[i].Range = 1000.0f;
-        pointLights[i].Intensity = 1.0f;
+        pointLights[i].Intensity = 0.0f;
     }
     pointLights[0].Position = XMFLOAT3(-32.2553, 1.85, -38.189022);
     pointLights[1].Position = XMFLOAT3(-32.2553, 1.85, -81.722275);
@@ -373,20 +384,20 @@ void D3DClass::DrawScene(const aiScene* scene, Camera* camera)
 {
     HRESULT hr;
 
-    //Bind Vertex Layout and Primitive Topology
+    // Bind Vertex Layout and Primitive Topology
     pDeviceContext->IASetInputLayout(pInputLayout.Get());
     pDeviceContext->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-    //Bind Vertex and Index buffer
+    // Bind Vertex and Index buffer
     const UINT strides = sizeof(Vertex);
     const UINT offset = 0;
     GFX_THROW_INFO_ONLY(pDeviceContext->IASetVertexBuffers(0, 1, pVertexBuffer.GetAddressOf(), &strides, &offset));
     GFX_THROW_INFO_ONLY(pDeviceContext->IASetIndexBuffer(pIndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0));
 
-    //Set constant buffers
+    // Set constant buffers
     XMFLOAT3 eyePos = sunCamera->getPosition();
     DirectX::XMMATRIX transformation = sunCamera->getTransform(true);
-    DirectX::XMMATRIX transformationSun = sunCamera->getTransform(true); // true means orthographic camera
+    DirectX::XMMATRIX transformationSun = sunCamera->getTransform(true);
 
     spotLight.Position = eyePos;
     pointLight.Position = eyePos;
@@ -396,10 +407,28 @@ void D3DClass::DrawScene(const aiScene* scene, Camera* camera)
     fxDirLight->SetRawValue(&dirLight, 0, sizeof(DirectionalLight));
     fxEyePos->SetRawValue(&eyePos, 0, sizeof(XMFLOAT3));
     fxTransform->SetRawValue(&transformation, 0, sizeof(XMMATRIX));
-    fxTransformSun->SetRawValue(&transformationSun, 0, sizeof(Material));
+    fxTransformSun->SetRawValue(&transformationSun, 0, sizeof(XMMATRIX));
     fxMaterial->SetRawValue(&material, 0, sizeof(Material));
 
-    //Viewport
+
+    //Rasterizer State
+    //pDeviceContext->RSSetState(pNoCullRS.Get());
+    ID3D11RasterizerState* auxState;
+    pDeviceContext->RSGetState(&auxState);
+    pDeviceContext->RSSetState(pDepthRS.Get());
+    // Shadow map pass
+	pShadowMap->BindDSVandNullTarget(pDeviceContext.Get());	
+    pTechniqueLight->GetPassByIndex(1)->Apply(0, pDeviceContext.Get()); // 1 is the shadow map pass fix in the future to something more readable
+    for (int meshId = 0; meshId < scene->mNumMeshes; ++meshId)
+    {
+		// Draw Scene
+		pDeviceContext->DrawIndexed(pIndexCount[meshId], pIndexOffsets[meshId], pVertexOffsets[meshId]);
+    }
+	// Restore
+	pDeviceContext->OMSetRenderTargets(1, pTarget.GetAddressOf(), pDepthStencilView.Get());
+    pDeviceContext->RSSetState(auxState);
+
+    // Restore Viewport
     D3D11_VIEWPORT viewport;
     viewport.Width = screenWidth;
     viewport.Height = screenHeight;
@@ -409,25 +438,10 @@ void D3DClass::DrawScene(const aiScene* scene, Camera* camera)
     viewport.MaxDepth = 1;
     pDeviceContext->RSSetViewports(1, &viewport);
 
-    //Rasterizer State
-    //pDeviceContext->RSSetState(pNoCullRS.Get());
-
-    // Shadow map pass
-	pShadowMap->BindDSVandNullTarget(pDeviceContext.Get());
-	pTechniqueLight->GetPassByIndex(1)->Apply(0, pDeviceContext.Get()); // 1 is the shadow map pass fix in the future to something more readable
-    for (int meshId = 0; meshId < scene->mNumMeshes; ++meshId)
-    {
-		// Draw Scene
-		pDeviceContext->DrawIndexed(pIndexCount[meshId], pIndexOffsets[meshId], pVertexOffsets[meshId]);
-    }
-	// Restore
-	pDeviceContext->OMSetRenderTargets(1, pTarget.GetAddressOf(), pDepthStencilView.Get());
-
-
     //Set constant buffers
     eyePos = camera->getPosition();
     transformation = camera->getTransform();
-    transformationSun = sunCamera->getTransform(true); // true means orthographic camera
+    transformationSun = sunCamera->getTransform(true);
 
     spotLight.Position = eyePos;
     pointLight.Position = eyePos;
@@ -437,7 +451,7 @@ void D3DClass::DrawScene(const aiScene* scene, Camera* camera)
     fxDirLight->SetRawValue(&dirLight, 0, sizeof(DirectionalLight));
     fxEyePos->SetRawValue(&eyePos, 0, sizeof(XMFLOAT3));
     fxTransform->SetRawValue(&transformation, 0, sizeof(XMMATRIX));
-    fxTransformSun->SetRawValue(&transformationSun, 0, sizeof(Material));
+    fxTransformSun->SetRawValue(&transformationSun, 0, sizeof(XMMATRIX));
     fxMaterial->SetRawValue(&material, 0, sizeof(Material));
 
 	for (int meshId = 0; meshId < scene->mNumMeshes; ++meshId)
@@ -708,9 +722,9 @@ void D3DClass::DrawDebug(const aiScene* scene, Camera* camera)
     {
         // Bottom-left corner of the screen (in NDC space) with correct texture coordinates
         { DirectX::XMFLOAT3(-1.4f, -1.0f, distance), DirectX::XMFLOAT2(0.0f, 1.0f) },  // Bottom-left
-        { DirectX::XMFLOAT3(-0.9f, -1.0f, distance), DirectX::XMFLOAT2(1.0f, 1.0f) },  // Bottom-right
+        { DirectX::XMFLOAT3(-0.6f, -1.0f, distance), DirectX::XMFLOAT2(1.0f, 1.0f) },  // Bottom-right
         { DirectX::XMFLOAT3(-1.4f, -0.5f, distance), DirectX::XMFLOAT2(0.0f, 0.0f) },  // Top-left
-        { DirectX::XMFLOAT3(-0.9f, -0.5f, distance), DirectX::XMFLOAT2(1.0f, 0.0f) },  // Top-right
+        { DirectX::XMFLOAT3(-0.6f, -0.5f, distance), DirectX::XMFLOAT2(1.0f, 0.0f) },  // Top-right
     };
 
 	unsigned int indices[] =

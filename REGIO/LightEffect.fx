@@ -41,6 +41,18 @@ SamplerState samTriLinearSam
     AddressV = WRAP;
 };
 
+SamplerComparisonState samShadow
+{
+    Filter = COMPARISON_MIN_MAG_LINEAR_MIP_POINT;
+    AddressU = BORDER;
+    AddressV = BORDER;
+    AddressW = BORDER;
+    BorderColor = float4(0.0f, 0.0f, 0.0f, 0.0f);
+
+    ComparisonFunc = LESS_EQUAL;
+};
+
+
 struct VS_INPUT
 {
 	float3 inPos : POSITION;
@@ -54,6 +66,7 @@ struct VS_OUTPUT
 	float3 posOrig : POSITION; //World Space
 	float3 norm : NORMAL; //World Space
 	float2 tex : TEXCOORD;
+    float4 shadowPosNDC : TEXCOORD1;
 };
 
 VS_OUTPUT VS(VS_INPUT input)
@@ -64,7 +77,8 @@ VS_OUTPUT VS(VS_INPUT input)
     output.norm = input.inNorm;
     //output.norm = mul(input.inNorm, (float3x3)gTransform);
 	output.tex = input.inTex;
-	return output;
+    output.shadowPosNDC = mul(float4(input.inPos, 1.0f), gTransformSun);
+    return output;
 }
 
 float4 PS(VS_OUTPUT input, uniform bool useTexture) : SV_TARGET
@@ -120,19 +134,12 @@ DepthStencilState lessEqualDSS
     DepthFunc = LESS_EQUAL;
 };
 
-RasterizerState Depth
-{
-    DepthBias = 10000;
-    DepthBiasClamp = 0.0f;
-    SlopeScaledDepthBias = 1.0f;
-};
-
 float4 PS_multilight(VS_OUTPUT input, uniform bool useTexture) : SV_TARGET
 {
-	input.norm = normalize(input.norm);
+    input.norm = normalize(input.norm);
 	float3 toEye = normalize(gEyePosW - input.posOrig.xyz);
 
-	float4 texColor = float4(1, 1, 1, 1);
+    float4 texColor = float4(1, 1, 1, 1);
 	if (useTexture)
 	{
         texColor = textureObject.Sample(samTriLinearSam, input.tex);
@@ -141,6 +148,9 @@ float4 PS_multilight(VS_OUTPUT input, uniform bool useTexture) : SV_TARGET
 	////////////
 	//Lighting//
 	////////////
+    float shadow = 1.0f;
+    shadow = CalcShadowFactor(samShadow, shadowMap, input.shadowPosNDC);
+    //texColor = shadowMap.Sample(samTriLinearSam, input.tex);
 
 	//This is what we are going to use to compute pixel color
 	float4 ambient = float4(0.0f, 0.0f, 0.0f, 0.0f);
@@ -152,8 +162,8 @@ float4 PS_multilight(VS_OUTPUT input, uniform bool useTexture) : SV_TARGET
 
     ComputeDirectionalLight(gMaterial, gDirLight, input.norm, toEye, A, D, S);
     ambient += A;
-    diffuse += D;
-    specular += S;
+    diffuse += shadow * D;
+    specular += shadow * S;
     for (int i = 0; i < 6; ++i)
     {
         ComputePointLight(gMaterial, gPointLights[i], input.posOrig, input.norm, toEye, A, D, S);
@@ -235,7 +245,6 @@ technique11 LighTech
     {
         SetVertexShader(CompileShader(vs_5_0, VS_Sun()));
         SetPixelShader(NULL);
-        SetRasterizerState(Depth);
     }
 	pass P1
 	{
@@ -250,8 +259,6 @@ technique11 LighTechTex
   //  {
 		//SetVertexShader(CompileShader(vs_5_0, VS_Sun()));
   //      SetPixelShader(NULL);
-		
-  //      SetRasterizerState(Depth);
   //  }
 
 	pass P0

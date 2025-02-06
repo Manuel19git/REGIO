@@ -53,6 +53,8 @@ private:
 
 	BoundingBox scenebbox;
 
+	float offset = 0.0f;
+
 };
 
 #endif

@@ -117,10 +117,14 @@ DirectX::XMMATRIX Camera::getViewMatrix()
 	return DirectX::XMMatrixLookAtLH(DirectX::XMLoadFloat3(&position), lookAtVector, upVector);
 }
 
-DirectX::XMMATRIX Camera::getProjectionMatrix()
+DirectX::XMMATRIX Camera::getProjectionMatrix(bool isOrthographic)
 {
 	updateTransform();
-	return DirectX::XMMatrixPerspectiveLH(1.0f, 3.0f / 4.0f, nearPlane, farPlane);
+	XMMATRIX projectionMatrix = (isOrthographic) ?
+		XMMatrixOrthographicOffCenterLH(scenebbox.left, scenebbox.right, scenebbox.bottom, scenebbox.top, scenebbox.nearPlane * 2, scenebbox.farPlane * 2) :
+		XMMatrixPerspectiveLH(1.0f, screenHeight / screenWidth, nearPlane, farPlane);
+
+	return projectionMatrix;
 }
 
 float Camera::getNear()
@@ -189,15 +193,15 @@ DirectX::XMMATRIX Camera::getTransform(bool isOrthographic)
 	lookAtVector = XMVectorAdd(posVector, forwardVector);
 
 	// Right now orthographic is only used for shadow maps
-	XMMATRIX perspectiveMatrix = (isOrthographic) ?
+	XMMATRIX projectionMatrix = (isOrthographic) ?
 		//XMMatrixOrthographicLH(10, 10, nearPlane, farPlane) :
-		XMMatrixOrthographicOffCenterLH(scenebbox.left, scenebbox.right, scenebbox.bottom, scenebbox.top, scenebbox.nearPlane, scenebbox.farPlane) :
+		XMMatrixOrthographicOffCenterLH(scenebbox.left, scenebbox.right, scenebbox.bottom, scenebbox.top, scenebbox.nearPlane * 2, scenebbox.farPlane * 2) :
 		XMMatrixPerspectiveLH(1.0f, screenHeight / screenWidth, nearPlane, farPlane);
 
     return DirectX::XMMatrixTranspose(
 		XMMatrixLookAtLH(posVector, lookAtVector, upVector) *
 		//DirectX::XMMatrixPerspectiveLH(1.0f, 3.0f / 4.0f, nearPlane, farPlane)     //800x600 screen size
-		perspectiveMatrix //2048x1133 screen size
+		projectionMatrix //2048x1133 screen size
 	);
 }
 // updateTransform has to be the same as getTransform
@@ -214,6 +218,8 @@ void Camera::updateTransform(bool isOrthographic)
 	DirectX::XMVECTOR yawQuat = DirectX::XMQuaternionRotationAxis(DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 1.0f), yaw);
 	DirectX::XMVECTOR pitchQuat = DirectX::XMQuaternionRotationAxis(DirectX::XMVectorSet(1.0f, 0.0f, 0.0f, 1.0f), pitch);
 	DirectX::XMVECTOR rollQuat = DirectX::XMQuaternionRotationAxis(DirectX::XMVectorSet(0.0f, 0.0f, 1.0f, 1.0f), roll);
+	yaw = 0.0;
+	pitch = 0.0;
 	roll = 0.0;
 
 	// Combine the new rotations with the current orientation
@@ -228,6 +234,7 @@ void Camera::updateTransform(bool isOrthographic)
 		m_orientation = prevOrientationMatrix;
 		forwardVector = prevForwardVector;
 	}
+	forwardVector = XMVector3Normalize(forwardVector);
 	// Calculate rightVector and upVector without any limitations
 	//rightVector = DirectX::XMVector3Rotate(DirectX::XMVectorSet(1.0f, 0.0f, 0.0f, 1.0f), m_orientation);
 	//upVector = DirectX::XMVector3Rotate(DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 1.0f), m_orientation);

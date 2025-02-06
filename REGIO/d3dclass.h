@@ -119,6 +119,7 @@ private:
 
 	// Initialize depth stencil buffer
 	Microsoft::WRL::ComPtr<ID3D11RasterizerState> pNoCullRS;
+	Microsoft::WRL::ComPtr<ID3D11RasterizerState> pDepthRS;
 	Microsoft::WRL::ComPtr<ID3D11DepthStencilState> pDepthBuffer;
 	Microsoft::WRL::ComPtr<ID3D11Texture2D> pDepthTexture;
 

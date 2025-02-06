@@ -4,23 +4,23 @@
 ShadowMap::ShadowMap(ID3D11Device* device, float width, float height) : width(width), height(height)
 {
     HRESULT hr;
-
+    float shadowMapWidth = 2048;
+    float shadowMapHeight = 2048;
     // Viewport
-    viewport.Width = width;
-    viewport.Height = height;
+    viewport.Width = shadowMapWidth;
+    viewport.Height = shadowMapHeight;
     viewport.TopLeftX = 0;
     viewport.TopLeftY = 0;
     viewport.MinDepth = 0;
     viewport.MaxDepth = 1;
 
-
 	// Create Depth Stencil Texture
     D3D11_TEXTURE2D_DESC depthTextureDesc = {};
-    depthTextureDesc.Width = width; 
-    depthTextureDesc.Height = height; 
+    depthTextureDesc.Width = shadowMapWidth; 
+    depthTextureDesc.Height = shadowMapHeight; 
     depthTextureDesc.MipLevels = 1;
     depthTextureDesc.ArraySize = 1;
-    depthTextureDesc.Format = DXGI_FORMAT_R24G8_TYPELESS; //Typeless bcause SRV and DSV have different formats
+    depthTextureDesc.Format = DXGI_FORMAT_R32_TYPELESS; //Typeless bcause SRV and DSV have different formats
     depthTextureDesc.SampleDesc.Count = 1;
     depthTextureDesc.SampleDesc.Quality = 0;
     depthTextureDesc.Usage = D3D11_USAGE_DEFAULT;
@@ -32,14 +32,14 @@ ShadowMap::ShadowMap(ID3D11Device* device, float width, float height) : width(wi
 
     // Create depth stencil view of depth texture
     D3D11_DEPTH_STENCIL_VIEW_DESC depthStencilViewDesc = {};
-    depthStencilViewDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+    depthStencilViewDesc.Format = DXGI_FORMAT_D32_FLOAT;
     depthStencilViewDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
     depthStencilViewDesc.Texture2D.MipSlice = 0;
     GFX_THROW_INFO(device->CreateDepthStencilView(pDepthTexture.Get(), &depthStencilViewDesc, &pDepthStencilView));
 
     // Create shader resource view of depth texture
     D3D11_SHADER_RESOURCE_VIEW_DESC shaderResourceViewDesc = {};
-    shaderResourceViewDesc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
+    shaderResourceViewDesc.Format = DXGI_FORMAT_R32_FLOAT;
     shaderResourceViewDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
     shaderResourceViewDesc.Texture2D.MipLevels = depthTextureDesc.MipLevels;
     shaderResourceViewDesc.Texture2D.MostDetailedMip = 0;
@@ -48,8 +48,8 @@ ShadowMap::ShadowMap(ID3D11Device* device, float width, float height) : width(wi
 
 	// Create Sun view target texture
     D3D11_TEXTURE2D_DESC textureDesc = {};
-    textureDesc.Width = width; 
-    textureDesc.Height = height; 
+    textureDesc.Width = shadowMapWidth; 
+    textureDesc.Height = shadowMapHeight; 
     textureDesc.MipLevels = 1;
     textureDesc.ArraySize = 1;
     textureDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM; 

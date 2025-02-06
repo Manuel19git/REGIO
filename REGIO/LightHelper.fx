@@ -161,3 +161,32 @@ void ComputeSpotLight(Material mat, SpotLight light,
     diffuse *= att;
     specular *= att;
 }
+
+float CalcShadowFactor(SamplerComparisonState sampShadow, Texture2D shadowMap, float4 shadowPosNDC)
+{
+	// Projection
+    shadowPosNDC.xyz /= shadowPosNDC.w;
+
+    // NDC Space
+    float2 shadowTexCoords;
+    shadowTexCoords.x = shadowPosNDC.x * 0.5f + 0.5f;
+    shadowTexCoords.y = -shadowPosNDC.y * 0.5f + 0.5f;
+
+    float depth = shadowPosNDC.z;
+
+    // PFC Filtering
+    float percentLit = 0.0f;
+	float2 texelSize = 1.0f / float2(2048, 2048);
+	for (int y = -1; y <= 1; ++y)
+    {
+        for (int x = -1; x <= 1; ++x)
+        {
+            float2 offset = float2(x, y) * texelSize;
+            percentLit += shadowMap.SampleCmpLevelZero(sampShadow, shadowTexCoords + offset, depth);
+        }
+    }
+	// Average samples
+    percentLit /= 9;
+    
+    return percentLit;
+}

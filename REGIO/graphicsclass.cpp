@@ -61,6 +61,23 @@ void computeBoundingBox(const aiScene* scene, float& left, float& right, float& 
 			}
 		}
 	}
+
+	// We want the bounding box to be a square box. In case it is a rectangle, it is corrected here
+	float vLength = fabs(top - bottom);
+	float hLength = fabs(right - left);
+	if ( vLength < hLength)
+	{
+		float offset = (hLength - vLength) / 2;
+		top += offset;
+		bottom -= offset;
+	}
+	else
+	{
+		float offset = (vLength - hLength) / 2;
+		right += offset;
+		left -= offset;
+	}
+
 }
 
 
@@ -103,7 +120,9 @@ bool GraphicsClass::Initialize(int screenWidth, int screenHeight, HWND hwnd, Inp
 bool GraphicsClass::Frame()
 {
 	// In the future I may want to dynamically change sun position, hence we create sunCamera here :)
-	XMFLOAT3 sunPosition = XMFLOAT3(0.5f, 2.0f, -4.0f);
+	float scale = 1.0f;
+	//offset -= (fabs(offset) < 3) ? 0.001 : 0.0;
+	XMFLOAT3 sunPosition = XMFLOAT3(1.0f * scale, 0.5f * scale, -0.5f + offset);
 	XMVECTOR sunDirection = XMVector3Normalize(XMVectorSubtract(XMVectorZero(), XMLoadFloat3(&sunPosition)));
 	Camera* sunCamera = new Camera(sunPosition, sunDirection, scenebbox);
 	sunCamera->setResolution(mainCamera->getResolution().first, mainCamera->getResolution().second);
