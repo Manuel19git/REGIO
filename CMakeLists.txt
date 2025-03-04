@@ -35,6 +35,12 @@ find_fxc_exe()
 # Output the found path
 message(STATUS "Found fxc.exe at ${FXC_PATH}")
 
+# Note from cmake creators:
+# "We do not recommend using GLOB to collect a list of source files from your source tree. If no 
+# CMakeLists.txt file changes when a source is added or removed then the generated build system 
+# cannot know when to ask CMake to regenerate"
+# https://cmake.org/cmake/help/latest/command/file.html#glob
+
 # Add executable target
 file(GLOB SOURCES "REGIO/*.cpp") # find files matching the GLOBbing-expression and store it 
 file(GLOB HEADERS "REGIO/*.h")
@@ -44,10 +50,17 @@ file(GLOB EFFECTS "REGIO/*.fx")
 set(SHADERS 
     "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/VertexShader.hlsl"
     "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/PixelShader.hlsl"
+    "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/SimplePixelShader.hlsl"
+    "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/SkyPixelShader.hlsl"
+    "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/common.hlsl"
 )
 set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/REGIO/VertexShader.hlsl PROPERTIES ShaderType "vs")
 set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/REGIO/PixelShader.hlsl PROPERTIES ShaderType "ps")
+set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/REGIO/SimplePixelShader.hlsl PROPERTIES ShaderType "ps")
+set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/REGIO/SkyPixelShader.hlsl PROPERTIES ShaderType "ps")
+set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/REGIO/common.hlsl PROPERTIES ShaderType "ignore")
 set_source_files_properties(${SHADERS} PROPERTIES ShaderModel "4_0")
+
 # This option tells Visual Studio to treat this file as header, thus not compiling it
 set_source_files_properties(${SHADERS} PROPERTIES HEADER_FILE_ONLY ON)
 
@@ -120,6 +133,10 @@ if (CMAKE_GENERATOR MATCHES "Visual Studio")
         # Get shader type and model
         get_source_file_property(shadertype ${SHADER} ShaderType)
         get_source_file_property(shadermodel ${SHADER} ShaderModel)
+
+	if (${shadertype} STREQUAL "ignore")
+	    continue()
+	endif()
         
         # Add a custom command to compile the shader
         add_custom_command(

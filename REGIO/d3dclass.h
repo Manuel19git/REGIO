@@ -83,7 +83,7 @@ public:
 	void BuildGeometry(const aiScene* scene);
 	void BuildVertexLayout();
 	void BuildTextures(const aiScene* scene);
-	void BuildSkymap();
+	void BuildSkymapTexture();
 	void DrawShadowMap(const aiScene* scene, Camera* sunCamera);
 	void DrawScene(const aiScene* scene, Camera* camera);
 	void DrawSky(const aiScene* scene, Camera* camera);
@@ -133,7 +133,8 @@ private:
 	wrl::ComPtr<ID3D11InputLayout> pInputLayout;
 
 	// Texture
-	Microsoft::WRL::ComPtr<ID3D11SamplerState> samplerState;
+	Microsoft::WRL::ComPtr<ID3D11SamplerState> pSamplerState;
+	Microsoft::WRL::ComPtr<ID3D11SamplerState> pShadowSamplerState;
 	std::vector<Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>> pTextures;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> cubemapTexture;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> textureMaxwell;
@@ -142,6 +143,15 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> textureSky;
 	Microsoft::WRL::ComPtr<ID3DX11EffectShaderResourceVariable> shaderResource;
 
+	// Constant buffers
+	Microsoft::WRL::ComPtr<ID3D11Buffer> pFrameConstantBuffer;
+	Microsoft::WRL::ComPtr<ID3D11Buffer> pObjectConstantBuffer;
+
+	// Shaders
+    Microsoft::WRL::ComPtr<ID3D11VertexShader> pVertexShader;
+    Microsoft::WRL::ComPtr<ID3D11PixelShader> pPixelShader;
+    Microsoft::WRL::ComPtr<ID3D11PixelShader> pSimplePixelShader;
+    Microsoft::WRL::ComPtr<ID3D11PixelShader> pSkyPixelShader;
 
 	// Effects
 	Microsoft::WRL::ComPtr<ID3DX11Effect> pEffect;
