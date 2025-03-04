@@ -22,6 +22,8 @@ GraphicsClass::~GraphicsClass()
 // Everything besides scene is output parameter. For this to work the scene meshes should in world space
 void computeBoundingBox(const aiScene* scene, float& left, float& right, float& top, float& bottom, float &nearPlane, float &farPlane)
 {
+	PROFILE_SCOPE();
+
 	left = FLT_MAX;
 	right = -FLT_MAX;
 	top = -FLT_MAX;
@@ -83,6 +85,8 @@ void computeBoundingBox(const aiScene* scene, float& left, float& right, float& 
 
 bool GraphicsClass::Initialize(int screenWidth, int screenHeight, HWND hwnd, InputClass* m_Input)
 {
+	PROFILE_SCOPE();
+
 	mouse = &m_Input->mouse;
 	m_hwnd = hwnd;
 
@@ -119,6 +123,8 @@ bool GraphicsClass::Initialize(int screenWidth, int screenHeight, HWND hwnd, Inp
 
 bool GraphicsClass::Frame()
 {
+	PROFILE_SCOPE();
+
 	// In the future I may want to dynamically change sun position, hence we create sunCamera here :)
 	float scale = 1.0f;
 	//offset -= (fabs(offset) < 3) ? 0.001 : 0.0;
@@ -156,6 +162,8 @@ bool GraphicsClass::Frame()
 
 bool GraphicsClass::UpdateCamera(Axis axis, int sign)
 {
+	PROFILE_SCOPE();
+
 	mainCamera->moveCamera(axis, sign);
 
 	return true;
@@ -163,6 +171,8 @@ bool GraphicsClass::UpdateCamera(Axis axis, int sign)
 
 bool GraphicsClass::UpdateCameraLookAt(float x, float y)
 {
+	PROFILE_SCOPE();
+
 	mainCamera->updateYawPitch(x, y);
 
 	return true;
@@ -170,6 +180,8 @@ bool GraphicsClass::UpdateCameraLookAt(float x, float y)
 
 bool GraphicsClass::RotateCamera(int sign)
 {
+	PROFILE_SCOPE();
+
 	mainCamera->updateRoll(sign);
 	return true;
 }

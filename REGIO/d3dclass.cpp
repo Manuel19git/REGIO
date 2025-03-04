@@ -16,6 +16,8 @@ void DirectXError(HRESULT hr, const std::string& Msg, const std::string& File, i
 // Build the vertex and index buffer in an efficient way (every object vertex is in the same buffer)
 void D3DClass::BuildGeometry(const aiScene* pScene)
 {
+    PROFILE_SCOPE();
+
     HRESULT hr;
 
     //Define size and Initialize all offset arrays to zero
@@ -132,6 +134,8 @@ void D3DClass::BuildTextures(const aiScene* pScene)
 
 void D3DClass::BuildSkymapTexture()
 {
+	PROFILE_SCOPE();
+
     HRESULT hr;
 
     // CreateDDSTextureFromFile sets automatically description and its properties. 
@@ -145,6 +149,8 @@ void D3DClass::BuildSkymapTexture()
 
 bool D3DClass::Initialize(HWND hWnd, const aiScene* pScene, Camera* mainCamera)
 {
+	PROFILE_SCOPE();
+
     // Camera
     camera = mainCamera;
     screenWidth = camera->getResolution().first;
@@ -407,8 +413,9 @@ void D3DClass::DrawShadowMap(const aiScene* scene, Camera* sunCamera)
 
 void D3DClass::DrawScene(const aiScene* scene, Camera* camera)
 {
-    HRESULT hr;
+    PROFILE_SCOPE();
 
+    HRESULT hr;
     // Bind Vertex Layout and Primitive Topology
     pDeviceContext->IASetInputLayout(pInputLayout.Get());
     pDeviceContext->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -528,6 +535,8 @@ void D3DClass::DrawScene(const aiScene* scene, Camera* camera)
 //Method to draw the sky
 void D3DClass::DrawSky(const aiScene* scene, Camera* camera)
 {
+    PROFILE_SCOPE();
+
 	HRESULT hr;
 
     float scale = 1000.0f;
@@ -664,6 +673,8 @@ void D3DClass::DrawSky(const aiScene* scene, Camera* camera)
 //Method to draw anything to debug
 void D3DClass::DrawDebug(const aiScene* scene, Camera* camera)
 {
+    PROFILE_SCOPE();
+
 	HRESULT hr;
 
     float nearPlane = camera->getNear();
@@ -810,6 +821,8 @@ void D3DClass::DrawDebug(const aiScene* scene, Camera* camera)
 //This method will be in charge of flipping (Taking the back buffer and presenting it as the front)
 void D3DClass::EndScene()
 {
+    PROFILE_SCOPE();
+
     HRESULT hr;
 #ifndef NDEBUG
     infoManager.Set();

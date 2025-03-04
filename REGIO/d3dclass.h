@@ -36,6 +36,8 @@
 #include "Macros.h"
 #include "ShadowMap.h"
 
+#include "profiler.h"
+
 using namespace DirectX;
 namespace wrl = Microsoft::WRL;
 

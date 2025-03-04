@@ -2,6 +2,7 @@
 
 #define GFX_EXCEPT_NOINFO(hr) HrException( __LINE__,__FILE__,(hr) );
 #define GFX_THROW_NOINFO(hrcall) if( FAILED( hr = (hrcall) ) ) throw HrException( __LINE__,__FILE__,hr );
+#define PROFILE_SCOPE() ProfilerTimer timer(__FUNCSIG__)
 
 #ifndef NDEBUG
 #define GFX_EXCEPT(hr) HrException( __LINE__,__FILE__,(hr),infoManager.GetMessages() )
