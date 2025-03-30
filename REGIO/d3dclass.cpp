@@ -34,14 +34,25 @@ std::wstring string2WideString(const std::string& s)
 {
 	PROFILE_SCOPE();
 
-	int len;
-	int slength = (int)s.length() + 1;
-	len = MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, 0, 0);
-	std::wstring r(len, L'\0');
-	MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, &r[0], len);
-	return r;
+	//setup converter
+	using convert_type = std::codecvt_utf8<wchar_t>;
+	std::wstring_convert<convert_type, wchar_t> converter;
+
+	//use converter (.to_bytes: wstr->str, .from_bytes: str->wstr)
+    return converter.from_bytes(s);
 }
 
+std::string wideString2String(const std::wstring& s)
+{
+	PROFILE_SCOPE();
+
+	//setup converter
+	using convert_type = std::codecvt_utf8<wchar_t>;
+	std::wstring_convert<convert_type, wchar_t> converter;
+
+	//use converter (.to_bytes: wstr->str, .from_bytes: str->wstr)
+    return converter.to_bytes(s);
+}
 D3DClass::D3DClass()
 {}
 

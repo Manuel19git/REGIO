@@ -1,5 +1,6 @@
 #include "systemclass.h"
 #include "profiler.h"
+#include <shellapi.h>
 
 //Punto de entrada para aplicaciones de windows
 //hInstance -> Sistema operativo lo usa para localizar el EXE
@@ -12,11 +13,22 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
 	{
 		Profiler::Get().StartProfile("Profile");
 
+		std::wstring scenePath = L"";
+
+		int argc;
+		LPWSTR* argv = CommandLineToArgvW(GetCommandLineW(), &argc);
+		for (int i = 0; argv && i < argc; i++) {
+			if (wcscmp(argv[i], L"-i") == 0 && i != argc - 1)
+			{
+				scenePath = argv[i + 1];
+				break;
+			}
+		}
 		SystemClass* systemClass = new SystemClass();
 		bool result;
 
 		//Inicializar ventana y algunas variables
-		result = systemClass->Initialize();
+		result = systemClass->Initialize(scenePath);
 		if (result)
 		{
 			systemClass->Run();

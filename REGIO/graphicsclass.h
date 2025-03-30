@@ -30,7 +30,7 @@ public:
 	GraphicsClass(const GraphicsClass&);
 	~GraphicsClass();
 
-	bool Initialize(int, int, HWND, InputClass*);
+	bool Initialize(int, int, HWND, InputClass*, std::wstring scenePath);
 	void Shutdown();
 	bool Frame();
 	float count = 0;

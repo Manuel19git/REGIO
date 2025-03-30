@@ -19,7 +19,7 @@ SystemClass::~SystemClass()
 {
 }
 
-bool SystemClass::Initialize()
+bool SystemClass::Initialize(std::wstring scenePath)
 {
 	bool result;
 
@@ -34,7 +34,7 @@ bool SystemClass::Initialize()
 	// Create and initialize the graphics object.  This object will handle rendering all the graphics for this application.
 	m_Graphics = new GraphicsClass;
 
-	result = m_Graphics->Initialize(screenWidth, screenHeight, m_hwnd, m_Input);
+	result = m_Graphics->Initialize(screenWidth, screenHeight, m_hwnd, m_Input, scenePath);
 	if (!result)
 	{
 		return false;

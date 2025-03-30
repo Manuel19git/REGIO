@@ -38,6 +38,10 @@
 
 #include "profiler.h"
 
+// Conversion widestring string
+#include<locale>
+#include<codecvt>
+
 using namespace DirectX;
 namespace wrl = Microsoft::WRL;
 
@@ -74,6 +78,7 @@ struct Vertex
 ///////////////
 std::string searchFileInParentDirectories(std::string path);
 std::wstring string2WideString(const std::string& s);
+std::string wideString2String(const std::wstring& s);
 
 
 ////////////////////////////////////////////////////////////////////////////////

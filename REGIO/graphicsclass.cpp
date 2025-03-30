@@ -83,7 +83,7 @@ void computeBoundingBox(const aiScene* scene, float& left, float& right, float& 
 }
 
 
-bool GraphicsClass::Initialize(int screenWidth, int screenHeight, HWND hwnd, InputClass* m_Input)
+bool GraphicsClass::Initialize(int screenWidth, int screenHeight, HWND hwnd, InputClass* m_Input, std::wstring wideScenePath)
 {
 	PROFILE_SCOPE();
 
@@ -94,7 +94,9 @@ bool GraphicsClass::Initialize(int screenWidth, int screenHeight, HWND hwnd, Inp
 	importer = new Assimp::Importer();
 	//mScene = importer->ReadFile("..\\output\\NIER\\Props\\turnstile_wall.usdc", //USD is not fully supported by assimp yet
 	//	aiProcess_Triangulate | aiProcess_ConvertToLeftHanded);
-	std::string scenePath = searchFileInParentDirectories("\\output\\Maxwell_cat\\source\\maxwell_scene.obj");
+	std::string scenePath = wideString2String(wideScenePath);
+	if ( scenePath == "")
+		scenePath = searchFileInParentDirectories("\\output\\Maxwell_cat\\source\\maxwell_scene.obj");
 	mScene = importer->ReadFile(scenePath,
 		aiProcess_Triangulate | aiProcess_ConvertToLeftHanded);
 	//mScene = importer->ReadFile("..\\output\\NIER\\nier_park.obj",

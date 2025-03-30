@@ -48,7 +48,7 @@ public:
 	SystemClass(const SystemClass&);
 	~SystemClass();
 
-	bool Initialize();
+	bool Initialize(std::wstring scenePath);
 	void Shutdown();
 	void Run();
 

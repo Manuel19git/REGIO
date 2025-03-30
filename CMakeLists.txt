@@ -169,7 +169,6 @@ install(TARGETS ${PROJECT_NAME}
 )
 
 # Move shaders and assets to specific folder
-cmake_print_variables(${CMAKE_CURRENT_BINARY_DIR}/shaders)
 install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/shaders/
 	DESTINATION shaders
 )
