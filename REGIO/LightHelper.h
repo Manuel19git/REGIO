@@ -60,3 +60,20 @@ struct SpotLight
 	DirectX::XMFLOAT3 Att;
 	float Intensity;
 };
+
+struct cbPerObject
+{
+	DirectX::XMMATRIX gTransform;
+	DirectX::XMMATRIX gTransformSun;
+	Material gMaterial;
+	int hasTexture;
+};
+
+struct cbPerFrame
+{
+	DirectionalLight gDirLight;
+    PointLight gPointLights[6];
+    SpotLight gSpotLight;
+	DirectX::XMFLOAT3 gEyePosW;
+	float padding;
+};
