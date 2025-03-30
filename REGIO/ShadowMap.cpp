@@ -79,11 +79,13 @@ void ShadowMap::BindDSVandNullTarget(ID3D11DeviceContext* deviceContext)
     deviceContext->RSSetViewports(1, &viewport);
 
     // We set pTargets to null because we are not going to render anything. We are only going to write to the depth buffer texture
-    //ID3D11RenderTargetView* pTargets[1] = {0};
+    ID3D11RenderTargetView* pTargets[1] = {0};
+	GFX_THROW_INFO_ONLY(deviceContext->OMSetRenderTargets(1, pTargets, pDepthStencilView.Get()));
+
 
     // Setting pTarget
-    ID3D11RenderTargetView* pTargets[1] = {pSunTarget.Get()};
-    GFX_THROW_INFO_ONLY(deviceContext->OMSetRenderTargets(1, pSunTarget.GetAddressOf(), pDepthStencilView.Get()));
+    //ID3D11RenderTargetView* pTargets[1] = {pSunTarget.Get()};
+    //GFX_THROW_INFO_ONLY(deviceContext->OMSetRenderTargets(1, pSunTarget.GetAddressOf(), pDepthStencilView.Get()));
 
     deviceContext->ClearDepthStencilView(pDepthStencilView.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
 }

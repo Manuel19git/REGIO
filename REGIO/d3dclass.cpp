@@ -16,6 +16,8 @@ void DirectXError(HRESULT hr, const std::string& Msg, const std::string& File, i
 // Build the vertex and index buffer in an efficient way (every object vertex is in the same buffer)
 void D3DClass::BuildGeometry(const aiScene* pScene)
 {
+    PROFILE_SCOPE();
+
     HRESULT hr;
 
     //Define size and Initialize all offset arrays to zero
@@ -101,23 +103,10 @@ void D3DClass::BuildGeometry(const aiScene* pScene)
     delete[] indices;
 }
 
-void D3DClass::BuildVertexLayout()
-{
-    HRESULT hr;
-
-    //D3D11_APPEND_ALIGNED_ELEMENT is a way to let d3d calculate the offset from previous element
-    const D3D11_INPUT_ELEMENT_DESC inputLayoutDesc[] =
-    {
-        {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
-        {"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0},
-        {"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0}
-    };
-    pTechniqueLight->GetPassByIndex(0)->GetDesc(&passDesc);
-    GFX_THROW_INFO(pDevice->CreateInputLayout(inputLayoutDesc, std::size(inputLayoutDesc), passDesc.pIAInputSignature, passDesc.IAInputSignatureSize, &pInputLayout));
-}
-
 void D3DClass::BuildTextures(const aiScene* pScene)
 {
+    PROFILE_SCOPE();
+
     HRESULT hr;
 
     pTextures.resize(pScene->mNumMaterials);
@@ -143,8 +132,10 @@ void D3DClass::BuildTextures(const aiScene* pScene)
     }
 }
 
-void D3DClass::BuildSkymap()
+void D3DClass::BuildSkymapTexture()
 {
+	PROFILE_SCOPE();
+
     HRESULT hr;
 
     // CreateDDSTextureFromFile sets automatically description and its properties. 
@@ -158,6 +149,8 @@ void D3DClass::BuildSkymap()
 
 bool D3DClass::Initialize(HWND hWnd, const aiScene* pScene, Camera* mainCamera)
 {
+	PROFILE_SCOPE();
+
     // Camera
     camera = mainCamera;
     screenWidth = camera->getResolution().first;
@@ -265,38 +258,63 @@ bool D3DClass::Initialize(HWND hWnd, const aiScene* pScene, Camera* mainCamera)
     BuildGeometry(pScene);
 
     //Build Effects
-    GFX_THROW_INFO(D3DX11CreateEffectFromFile(L"../build/effects/LightEffect.fxo", 0, pDevice.Get(), pEffect.GetAddressOf()));
-    pTechniqueLight = pEffect->GetTechniqueByName("LighTech");
-    pTechniqueLightTex = pEffect->GetTechniqueByName("LighTechTex");
-    pTechniqueDebug = pEffect->GetTechniqueByName("DebugTexture");
-    pTechniqueSky = pEffect->GetTechniqueByName("Sky");
-    pTechniqueShadow = pEffect->GetTechniqueByName("ShadowMap");
+    //GFX_THROW_INFO(D3DX11CreateEffectFromFile(L"../build/effects/LightEffect.fxo", 0, pDevice.Get(), pEffect.GetAddressOf()));
+    //pTechniqueLight = pEffect->GetTechniqueByName("LighTech");
+    //pTechniqueLightTex = pEffect->GetTechniqueByName("LighTechTex");
+    //pTechniqueDebug = pEffect->GetTechniqueByName("DebugTexture");
+    //pTechniqueSky = pEffect->GetTechniqueByName("Sky");
+    //pTechniqueShadow = pEffect->GetTechniqueByName("ShadowMap");
 
+
+    //Initialize shaders
+    wrl::ComPtr<ID3DBlob> pBlob;
+	GFX_THROW_INFO_ONLY(D3DReadFileToBlob(L"../build/shaders/SkyPixelShader.cso", &pBlob));
+    GFX_THROW_INFO_ONLY(pDevice->CreatePixelShader(pBlob->GetBufferPointer(), pBlob->GetBufferSize(), nullptr, &pSkyPixelShader));
+
+	GFX_THROW_INFO_ONLY(D3DReadFileToBlob(L"../build/shaders/SimplePixelShader.cso", &pBlob));
+    GFX_THROW_INFO_ONLY(pDevice->CreatePixelShader(pBlob->GetBufferPointer(), pBlob->GetBufferSize(), nullptr, &pSimplePixelShader));
+
+    GFX_THROW_INFO_ONLY(D3DReadFileToBlob(L"../build/shaders/PixelShader.cso", &pBlob));
+    GFX_THROW_INFO_ONLY(pDevice->CreatePixelShader(pBlob->GetBufferPointer(), pBlob->GetBufferSize(), nullptr, &pPixelShader));
+
+    GFX_THROW_INFO_ONLY(D3DReadFileToBlob(L"../build/shaders/VertexShader.cso", &pBlob));
+    GFX_THROW_INFO_ONLY(pDevice->CreateVertexShader(pBlob->GetBufferPointer(), pBlob->GetBufferSize(), nullptr, &pVertexShader));
 
     //Build Vertex Layout
-    BuildVertexLayout();
+    const D3D11_INPUT_ELEMENT_DESC inputLayoutDesc[] =
+    {
+        {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
+        {"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0},
+        {"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0}
+    };
+    GFX_THROW_INFO(pDevice->CreateInputLayout(inputLayoutDesc, std::size(inputLayoutDesc), pBlob->GetBufferPointer(), pBlob->GetBufferSize(), &pInputLayout));
 
-    //Textures here
+    // Sampler states
     D3D11_SAMPLER_DESC sampDesc;
     ZeroMemory(&sampDesc, sizeof(sampDesc));
     sampDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
     sampDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
     sampDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
     sampDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
-    sampDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
-    sampDesc.MinLOD = 0; //This means highest level of detail
-    sampDesc.MaxLOD = D3D11_FLOAT32_MAX;
+    GFX_THROW_INFO(pDevice->CreateSamplerState(&sampDesc, pSamplerState.GetAddressOf()));
 
-    GFX_THROW_INFO(pDevice->CreateSamplerState(&sampDesc, samplerState.GetAddressOf()));
-
+    D3D11_SAMPLER_DESC shadowSampDesc;
+    ZeroMemory(&shadowSampDesc, sizeof(shadowSampDesc));
+    shadowSampDesc.Filter = D3D11_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT;
+    shadowSampDesc.AddressU = D3D11_TEXTURE_ADDRESS_BORDER;
+    shadowSampDesc.AddressV = D3D11_TEXTURE_ADDRESS_BORDER;
+    shadowSampDesc.AddressW = D3D11_TEXTURE_ADDRESS_BORDER;
+	shadowSampDesc.BorderColor[0] = shadowSampDesc.BorderColor[1] = shadowSampDesc.BorderColor[2] = shadowSampDesc.BorderColor[3] = 0;
+    shadowSampDesc.ComparisonFunc = D3D11_COMPARISON_LESS_EQUAL;
+    GFX_THROW_INFO(pDevice->CreateSamplerState(&shadowSampDesc, pShadowSamplerState.GetAddressOf()));
 
     //Create textures
     BuildTextures(pScene);
-    shaderResource = pEffect->GetVariableByName("textureObject")->AsShaderResource();
+    //shaderResource = pEffect->GetVariableByName("textureObject")->AsShaderResource();
 
     //Create skymap
-    BuildSkymap();
-    pEffect->GetVariableByName("textureCubemap")->AsShaderResource()->SetResource(cubemapTexture.Get());
+    BuildSkymapTexture();
+    //pEffect->GetVariableByName("textureCubemap")->AsShaderResource()->SetResource(cubemapTexture.Get());
 
     //Create light and material
     float down = 10.0f;
@@ -334,17 +352,30 @@ bool D3DClass::Initialize(HWND hWnd, const aiScene* pScene, Camera* mainCamera)
     material.Diffuse    = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
     material.Specular   = XMFLOAT4(0.2f, 0.2f, 0.2f, 1.0f);
 
-    fxDirLight      = pEffect->GetVariableByName("gDirLight");
-    fxPointLight    = pEffect->GetVariableByName("gPointLight");
-    fxSpotLight     = pEffect->GetVariableByName("gSpotLight");
-    fxEyePos        = pEffect->GetVariableByName("gEyePosW");
-    fxTransform     = pEffect->GetVariableByName("gTransform");
-    fxTransformSkybox = pEffect->GetVariableByName("gTransformSkybox");
-    fxTransformSun  = pEffect->GetVariableByName("gTransformSun");
-    fxMaterial      = pEffect->GetVariableByName("gMaterial");
-    fxPointLights   = pEffect->GetVariableByName("gPointLights");
+    // Create the structs for constant buffers
+	D3D11_BUFFER_DESC constDesc = {};
+    constDesc.Usage = D3D11_USAGE_DYNAMIC;
+    constDesc.BindFlags = D3D10_BIND_CONSTANT_BUFFER;
+    constDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 
-    fxPointLights->SetRawValue(&pointLights, 0, sizeof(PointLight) * 6);
+    constDesc.ByteWidth = sizeof(cbPerFrame);
+    GFX_THROW_INFO(pDevice->CreateBuffer(&constDesc, nullptr, &pFrameConstantBuffer));
+
+    constDesc.ByteWidth = sizeof(cbPerObject);
+    GFX_THROW_INFO(pDevice->CreateBuffer(&constDesc, nullptr, &pObjectConstantBuffer));
+
+
+    //fxDirLight      = pEffect->GetVariableByName("gDirLight");
+    //fxPointLight    = pEffect->GetVariableByName("gPointLight");
+    //fxSpotLight     = pEffect->GetVariableByName("gSpotLight");
+    //fxEyePos        = pEffect->GetVariableByName("gEyePosW");
+    //fxTransform     = pEffect->GetVariableByName("gTransform");
+    //fxTransformSkybox = pEffect->GetVariableByName("gTransformSkybox");
+    //fxTransformSun  = pEffect->GetVariableByName("gTransformSun");
+    //fxMaterial      = pEffect->GetVariableByName("gMaterial");
+    //fxPointLights   = pEffect->GetVariableByName("gPointLights");
+
+    //fxPointLights->SetRawValue(&pointLights, 0, sizeof(PointLight) * 6);
 
     //Initialize sprint font and batch to render text
     spriteBatch = std::make_unique<SpriteBatch>(pDeviceContext.Get());
@@ -382,8 +413,9 @@ void D3DClass::DrawShadowMap(const aiScene* scene, Camera* sunCamera)
 
 void D3DClass::DrawScene(const aiScene* scene, Camera* camera)
 {
-    HRESULT hr;
+    PROFILE_SCOPE();
 
+    HRESULT hr;
     // Bind Vertex Layout and Primitive Topology
     pDeviceContext->IASetInputLayout(pInputLayout.Get());
     pDeviceContext->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -395,36 +427,51 @@ void D3DClass::DrawScene(const aiScene* scene, Camera* camera)
     GFX_THROW_INFO_ONLY(pDeviceContext->IASetIndexBuffer(pIndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0));
 
     // Set constant buffers
-    XMFLOAT3 eyePos = sunCamera->getPosition();
-    DirectX::XMMATRIX transformation = sunCamera->getTransform(true);
-    DirectX::XMMATRIX transformationSun = sunCamera->getTransform(true);
+    cbPerObject cbObject;
+    cbObject.gTransform = sunCamera->getTransform(true);
+    cbObject.gTransformSun = sunCamera->getTransform(true);
+    cbObject.gMaterial = material;
+    cbObject.hasTexture = false;
 
-    spotLight.Position = eyePos;
-    pointLight.Position = eyePos;
+    D3D11_MAPPED_SUBRESOURCE mappedResource;
+    pDeviceContext->Map(pObjectConstantBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
+	memcpy(mappedResource.pData, &cbObject, sizeof(cbPerObject));
+	pDeviceContext->Unmap(pObjectConstantBuffer.Get(), 0);
+    GFX_THROW_INFO_ONLY(pDeviceContext->VSSetConstantBuffers(0, 1, pObjectConstantBuffer.GetAddressOf()));
+    GFX_THROW_INFO_ONLY(pDeviceContext->PSSetConstantBuffers(0, 1, pObjectConstantBuffer.GetAddressOf()));
+
+    cbPerFrame cbFrame;
+    spotLight.Position = cbFrame.gEyePosW;
     XMStoreFloat3(&spotLight.Direction, XMVector3Normalize(camera->getLookAt()));
-    fxSpotLight->SetRawValue(&spotLight, 0, sizeof(SpotLight));
-    fxPointLight->SetRawValue(&pointLight, 0, sizeof(PointLight));
-    fxDirLight->SetRawValue(&dirLight, 0, sizeof(DirectionalLight));
-    fxEyePos->SetRawValue(&eyePos, 0, sizeof(XMFLOAT3));
-    fxTransform->SetRawValue(&transformation, 0, sizeof(XMMATRIX));
-    fxTransformSun->SetRawValue(&transformationSun, 0, sizeof(XMMATRIX));
-    fxMaterial->SetRawValue(&material, 0, sizeof(Material));
+    pointLight.Position = cbFrame.gEyePosW;
+    cbFrame.gEyePosW = sunCamera->getPosition();
+    cbFrame.gSpotLight = spotLight;
+    cbFrame.gDirLight = dirLight;
+    for (int i = 0; i < 6; ++i)
+    {
+		cbFrame.gPointLights[i] = pointLights[i];
+    }
+    pDeviceContext->Map(pFrameConstantBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
+	memcpy(mappedResource.pData, &cbFrame, sizeof(cbPerFrame));
+	pDeviceContext->Unmap(pFrameConstantBuffer.Get(), 0);
+    GFX_THROW_INFO_ONLY(pDeviceContext->PSSetConstantBuffers(1, 1, pFrameConstantBuffer.GetAddressOf()));
 
 
-    //Rasterizer State
-    //pDeviceContext->RSSetState(pNoCullRS.Get());
+	// Save RS state to restore it later
     ID3D11RasterizerState* auxState;
     pDeviceContext->RSGetState(&auxState);
     pDeviceContext->RSSetState(pDepthRS.Get());
+
     // Shadow map pass
 	pShadowMap->BindDSVandNullTarget(pDeviceContext.Get());	
-    pTechniqueLight->GetPassByIndex(1)->Apply(0, pDeviceContext.Get()); // 1 is the shadow map pass fix in the future to something more readable
+    pDeviceContext->VSSetShader(pVertexShader.Get(), 0, 0);
+    pDeviceContext->PSSetShader(NULL, 0, 0); // We don't need fancy pixel shader for generating shadow maps
     for (int meshId = 0; meshId < scene->mNumMeshes; ++meshId)
     {
 		// Draw Scene
 		pDeviceContext->DrawIndexed(pIndexCount[meshId], pIndexOffsets[meshId], pVertexOffsets[meshId]);
     }
-	// Restore
+	// Restore render target and RS state
 	pDeviceContext->OMSetRenderTargets(1, pTarget.GetAddressOf(), pDepthStencilView.Get());
     pDeviceContext->RSSetState(auxState);
 
@@ -438,66 +485,49 @@ void D3DClass::DrawScene(const aiScene* scene, Camera* camera)
     viewport.MaxDepth = 1;
     pDeviceContext->RSSetViewports(1, &viewport);
 
-    //Set constant buffers
-    eyePos = camera->getPosition();
-    transformation = camera->getTransform();
-    transformationSun = sunCamera->getTransform(true);
+    //Set constant buffers per object
+    cbObject.gTransform = camera->getTransform();
+    cbObject.gTransformSun = sunCamera->getTransform(true);
+    cbObject.gMaterial = material;
 
-    spotLight.Position = eyePos;
-    pointLight.Position = eyePos;
-    XMStoreFloat3(&spotLight.Direction, XMVector3Normalize(camera->getLookAt()));
-    fxSpotLight->SetRawValue(&spotLight, 0, sizeof(SpotLight));
-    fxPointLight->SetRawValue(&pointLight, 0, sizeof(PointLight));
-    fxDirLight->SetRawValue(&dirLight, 0, sizeof(DirectionalLight));
-    fxEyePos->SetRawValue(&eyePos, 0, sizeof(XMFLOAT3));
-    fxTransform->SetRawValue(&transformation, 0, sizeof(XMMATRIX));
-    fxTransformSun->SetRawValue(&transformationSun, 0, sizeof(XMMATRIX));
-    fxMaterial->SetRawValue(&material, 0, sizeof(Material));
 
 	for (int meshId = 0; meshId < scene->mNumMeshes; ++meshId)
 	{
+		GFX_THROW_INFO_ONLY(pDeviceContext->PSSetShaderResources(0, 1, pShadowMap->pShaderResourceView.GetAddressOf()));
         if (pTextures[scene->mMeshes[meshId]->mMaterialIndex] != nullptr)
         {
-            D3DX11_TECHNIQUE_DESC techDesc;
-            pTechniqueLightTex->GetDesc(&techDesc);
-            for (UINT32 p = 0; p < techDesc.Passes; ++p)
-            {
-				aiString name = scene->mMaterials[scene->mMeshes[meshId]->mMaterialIndex]->GetName();
-				scene->mMeshes[meshId]->mName;
-				// Gotta test this
-				shaderResource->SetResource(pTextures[scene->mMeshes[meshId]->mMaterialIndex].Get());
+			aiString name = scene->mMaterials[scene->mMeshes[meshId]->mMaterialIndex]->GetName();
+			scene->mMeshes[meshId]->mName;
+			// Gotta test this
+			GFX_THROW_INFO_ONLY(pDeviceContext->PSSetShaderResources(1, 1, pTextures[scene->mMeshes[meshId]->mMaterialIndex].GetAddressOf()));
+			//shaderResource->SetResource(pTextures[scene->mMeshes[meshId]->mMaterialIndex].Get());
 
-				pTechniqueLightTex->GetPassByIndex(p)->Apply(0, pDeviceContext.Get());
-				pDeviceContext->DrawIndexed(pIndexCount[meshId], pIndexOffsets[meshId], pVertexOffsets[meshId]);
-			}
+            // Update value on object constant buffer
+			cbObject.hasTexture = 1;
+			pDeviceContext->Map(pObjectConstantBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
+			memcpy(mappedResource.pData, &cbObject, sizeof(cbPerObject));
+			pDeviceContext->Unmap(pObjectConstantBuffer.Get(), 0);
+			GFX_THROW_INFO_ONLY(pDeviceContext->VSSetConstantBuffers(0, 1, pObjectConstantBuffer.GetAddressOf()));
+			GFX_THROW_INFO_ONLY(pDeviceContext->PSSetConstantBuffers(0, 1, pObjectConstantBuffer.GetAddressOf()));
+
+			pDeviceContext->PSSetShader(pPixelShader.Get(), 0, 0);
+			pDeviceContext->DrawIndexed(pIndexCount[meshId], pIndexOffsets[meshId], pVertexOffsets[meshId]);
         }
         else
         {
-			D3DX11_TECHNIQUE_DESC techDesc;
-			pTechniqueLight->GetDesc(&techDesc);
-			for (UINT32 p = 0; p < techDesc.Passes; ++p)
-			{
-                if (p == 0)
-                {
-     //               pShadowMap->BindDSVandNullTarget(pDeviceContext.Get());
+            // Update value on object constant buffer
+			cbObject.hasTexture = 0;
+			pDeviceContext->Map(pObjectConstantBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
+			memcpy(mappedResource.pData, &cbObject, sizeof(cbPerObject));
+			pDeviceContext->Unmap(pObjectConstantBuffer.Get(), 0);
+			GFX_THROW_INFO_ONLY(pDeviceContext->VSSetConstantBuffers(0, 1, pObjectConstantBuffer.GetAddressOf()));
+			GFX_THROW_INFO_ONLY(pDeviceContext->PSSetConstantBuffers(0, 1, pObjectConstantBuffer.GetAddressOf()));
 
-     //               // Draw Scene
-					//pTechniqueLightTex->GetPassByIndex(p)->Apply(0, pDeviceContext.Get());
-					//pDeviceContext->DrawIndexed(pIndexCount[meshId], pIndexOffsets[meshId], pVertexOffsets[meshId]);
 
-     //               // Restore
-     //               pDeviceContext->RSSetState(0);
-				 //   pDeviceContext->OMSetRenderTargets(1, pTarget.GetAddressOf(), pDepthStencilView.Get());
-     //               pDeviceContext->RSSetViewports(1, &viewport); // Right now this doesn't make sense because shadow map viewport is the same as this one
-
-                }
-				else
-                {
-                    pTechniqueLight->GetPassByIndex(p)->Apply(0, pDeviceContext.Get());
-                    pDeviceContext->DrawIndexed(pIndexCount[meshId], pIndexOffsets[meshId], pVertexOffsets[meshId]);
-                }
-
-			}
+			GFX_THROW_INFO_ONLY(pDeviceContext->PSSetSamplers(0, 1, pShadowSamplerState.GetAddressOf()));
+			pDeviceContext->VSSetShader(pVertexShader.Get(), 0, 0);
+			pDeviceContext->PSSetShader(pPixelShader.Get(), 0, 0); 
+			pDeviceContext->DrawIndexed(pIndexCount[meshId], pIndexOffsets[meshId], pVertexOffsets[meshId]);
         }
 	}
 }
@@ -505,61 +535,52 @@ void D3DClass::DrawScene(const aiScene* scene, Camera* camera)
 //Method to draw the sky
 void D3DClass::DrawSky(const aiScene* scene, Camera* camera)
 {
+    PROFILE_SCOPE();
+
 	HRESULT hr;
 
     float scale = 1000.0f;
-	struct Vertex {
-		XMFLOAT3 position;
-		XMFLOAT3 normal;
-		XMFLOAT2 uv;
-	};
 
 	// Cube vertices data
 	Vertex vertices[] = {
 		// Back Face
-		{ XMFLOAT3(-1.0f * scale, -1.0f * scale, -1.0f * scale), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT2(0.0f, 1.0f) },
-		{ XMFLOAT3(1.0f * scale, -1.0f * scale, -1.0f * scale), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT2(1.0f, 1.0f) },
-		{ XMFLOAT3(1.0f * scale,  1.0f * scale, -1.0f * scale), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT2(1.0f, 0.0f) },
-		{ XMFLOAT3(-1.0f * scale,  1.0f * scale, -1.0f * scale), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT2(0.0f, 0.0f) },
+		{ {-1.0f * scale, -1.0f * scale, -1.0f * scale}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f} },
+		{ {1.0f * scale, -1.0f * scale, -1.0f * scale}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f} },
+		{ {1.0f * scale,  1.0f * scale, -1.0f * scale}, {0.0f, 0.0f, 1.0f}, {1.0f, 0.0f} },
+		{ {-1.0f * scale,  1.0f * scale, -1.0f * scale}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f} },
 
 		// Front Face
-		{ XMFLOAT3(-1.0f * scale, -1.0f * scale,  1.0f * scale), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT2(0.0f, 1.0f) },
-		{ XMFLOAT3(1.0f * scale, -1.0f * scale,  1.0f * scale), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT2(1.0f, 1.0f) },
-		{ XMFLOAT3(1.0f * scale,  1.0f * scale,  1.0f * scale), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT2(1.0f, 0.0f) },
-		{ XMFLOAT3(-1.0f * scale,  1.0f * scale,  1.0f * scale), XMFLOAT3(0.0f, 0.0f, -1.0f), XMFLOAT2(0.0f, 0.0f) },
+		{ {-1.0f * scale, -1.0f * scale,  1.0f * scale}, {0.0f, 0.0f, -1.0f}, {0.0f, 1.0f} },
+		{ {1.0f * scale, -1.0f * scale,  1.0f * scale}, {0.0f, 0.0f, -1.0f}, {1.0f, 1.0f} },
+		{ {1.0f * scale,  1.0f * scale,  1.0f * scale}, {0.0f, 0.0f, -1.0f}, {1.0f, 0.0f} },
+		{ {-1.0f * scale,  1.0f * scale,  1.0f * scale}, {0.0f, 0.0f, -1.0f}, {0.0f, 0.0f} },
 
 		// Left Face
-		{ XMFLOAT3(-1.0f * scale, -1.0f * scale,  1.0f * scale), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT2(0.0f, 1.0f) },
-		{ XMFLOAT3(-1.0f * scale, -1.0f * scale, -1.0f * scale), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT2(1.0f, 1.0f) },
-		{ XMFLOAT3(-1.0f * scale,  1.0f * scale, -1.0f * scale), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT2(1.0f, 0.0f) },
-		{ XMFLOAT3(-1.0f * scale,  1.0f * scale,  1.0f * scale), XMFLOAT3(1.0f, 0.0f, 0.0f), XMFLOAT2(0.0f, 0.0f) },
+		{ {-1.0f * scale, -1.0f * scale,  1.0f * scale}, {1.0f, 0.0f, 0.0f}, {0.0f, 1.0f} },
+		{ {-1.0f * scale, -1.0f * scale, -1.0f * scale}, {1.0f, 0.0f, 0.0f}, {1.0f, 1.0f} },
+		{ {-1.0f * scale,  1.0f * scale, -1.0f * scale}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f} },
+		{ {-1.0f * scale,  1.0f * scale,  1.0f * scale}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f} },
 
 		// Right Face
-		{ XMFLOAT3(1.0f * scale, -1.0f * scale,  1.0f * scale), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT2(0.0f, 1.0f) },
-		{ XMFLOAT3(1.0f * scale, -1.0f * scale, -1.0f * scale), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT2(1.0f, 1.0f) },
-		{ XMFLOAT3(1.0f * scale,  1.0f * scale, -1.0f * scale), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT2(1.0f, 0.0f) },
-		{ XMFLOAT3(1.0f * scale,  1.0f * scale,  1.0f * scale), XMFLOAT3(-1.0f, 0.0f, 0.0f), XMFLOAT2(0.0f, 0.0f) },
+		{ {1.0f * scale, -1.0f * scale,  1.0f * scale}, {-1.0f, 0.0f, 0.0f}, {0.0f, 1.0f} },
+		{ {1.0f * scale, -1.0f * scale, -1.0f * scale}, {-1.0f, 0.0f, 0.0f}, {1.0f, 1.0f} },
+		{ {1.0f * scale,  1.0f * scale, -1.0f * scale}, {-1.0f, 0.0f, 0.0f}, {1.0f, 0.0f} },
+		{ {1.0f * scale,  1.0f * scale,  1.0f * scale}, {-1.0f, 0.0f, 0.0f}, {0.0f, 0.0f} },
 
 		// Top Face
-		{ XMFLOAT3(-1.0f * scale,  1.0f * scale, -1.0f * scale), XMFLOAT3(0.0f, -1.0f, 0.0f), XMFLOAT2(0.0f, 1.0f) },
-		{ XMFLOAT3(1.0f * scale,  1.0f * scale, -1.0f * scale), XMFLOAT3(0.0f, -1.0f, 0.0f), XMFLOAT2(1.0f, 1.0f) },
-		{ XMFLOAT3(1.0f * scale,  1.0f * scale,  1.0f * scale), XMFLOAT3(0.0f, -1.0f, 0.0f), XMFLOAT2(1.0f, 0.0f) },
-		{ XMFLOAT3(-1.0f * scale,  1.0f * scale,  1.0f * scale), XMFLOAT3(0.0f, -1.0f, 0.0f), XMFLOAT2(0.0f, 0.0f) },
+		{ {-1.0f * scale,  1.0f * scale, -1.0f * scale}, {0.0f, -1.0f, 0.0f}, {0.0f, 1.0f} },
+		{ {1.0f * scale,  1.0f * scale, -1.0f * scale}, {0.0f, -1.0f, 0.0f}, {1.0f, 1.0f} },
+		{ {1.0f * scale,  1.0f * scale,  1.0f * scale}, {0.0f, -1.0f, 0.0f}, {1.0f, 0.0f} },
+		{ {-1.0f * scale,  1.0f * scale,  1.0f * scale}, {0.0f, -1.0f, 0.0f}, {0.0f, 0.0f} },
 
 
 		// Bottom Face
-		{ XMFLOAT3(-1.0f * scale, -1.0f * scale, -1.0f * scale), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT2(0.0f, 1.0f) },
-		{ XMFLOAT3(1.0f * scale, -1.0f * scale, -1.0f * scale), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT2(1.0f, 1.0f) },
-		{ XMFLOAT3(1.0f * scale, -1.0f * scale,  1.0f * scale), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT2(1.0f, 0.0f) },
-		{ XMFLOAT3(-1.0f * scale, -1.0f * scale,  1.0f * scale), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT2(0.0f, 0.0f) },
+		{ {-1.0f * scale, -1.0f * scale, -1.0f * scale}, {0.0f, 1.0f, 0.0f}, {0.0f, 1.0f} },
+		{ {1.0f * scale, -1.0f * scale, -1.0f * scale}, {0.0f, 1.0f, 0.0f}, {1.0f, 1.0f} },
+		{ {1.0f * scale, -1.0f * scale,  1.0f * scale}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f} },
+		{ {-1.0f * scale, -1.0f * scale,  1.0f * scale}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f} },
 	};
 
-	//Set constant buffers
-    DirectX::XMMATRIX viewMatrix = camera->getViewMatrix();
-	viewMatrix.r[3] = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f); // Remove translation part of matrix
-    DirectX::XMMATRIX projectionMatrix = camera->getProjectionMatrix();
-    DirectX::XMMATRIX transformSkybox = DirectX::XMMatrixTranspose(viewMatrix * projectionMatrix);
-    fxTransformSkybox->SetRawValue(&transformSkybox, 0, sizeof(XMMATRIX));
 
 	unsigned int indices[] = {
 		// Back Face
@@ -613,33 +634,38 @@ void D3DClass::DrawSky(const aiScene* scene, Camera* camera)
     ID3D11Buffer* indexBuffer;
     pDevice->CreateBuffer(&indexBufferDesc, &indexData, &indexBuffer);
 
-    // Set the vertex buffer
+    // Set the vertex and index buffer
     UINT stride = sizeof(Vertex);
     UINT offset = 0;
     pDeviceContext->IASetVertexBuffers(0, 1, &vertexBuffer, &stride, &offset);
-
-    // Set the index buffer
     pDeviceContext->IASetIndexBuffer(indexBuffer, DXGI_FORMAT_R32_UINT, 0);
 
-
-    // Set the primitive topology (triangle list)
+    // Set the input layout and specify primitive topology
+    pDeviceContext->IASetInputLayout(pInputLayout.Get());
     pDeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-    // Set the input layout (assuming you have created an input layout for the shader)
-    wrl::ComPtr<ID3D11InputLayout> pInputLayoutSky;
-    const D3D11_INPUT_ELEMENT_DESC inputLayoutDesc[] =
-    {
-        {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
-        {"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0},
-        {"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0}
-    };
-    pTechniqueSky->GetPassByIndex(0)->GetDesc(&passDesc);
-    GFX_THROW_INFO(pDevice->CreateInputLayout(inputLayoutDesc, std::size(inputLayoutDesc), passDesc.pIAInputSignature, passDesc.IAInputSignatureSize, &pInputLayoutSky));
+	//Set constant buffer
+    cbPerObject cbObject;
+    DirectX::XMMATRIX viewMatrix = camera->getViewMatrix();
+	viewMatrix.r[3] = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f); // Remove translation part of matrix
+    DirectX::XMMATRIX projectionMatrix = camera->getProjectionMatrix();
+    DirectX::XMMATRIX transformSkybox = DirectX::XMMatrixTranspose(viewMatrix * projectionMatrix);
+    cbObject.gTransform = transformSkybox;
 
-    pDeviceContext->IASetInputLayout(pInputLayoutSky.Get());
+    D3D11_MAPPED_SUBRESOURCE mappedResource;
+	pDeviceContext->Map(pObjectConstantBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
+	memcpy(mappedResource.pData, &cbObject, sizeof(cbPerObject));
+	pDeviceContext->Unmap(pObjectConstantBuffer.Get(), 0);
+	GFX_THROW_INFO_ONLY(pDeviceContext->VSSetConstantBuffers(0, 1, pObjectConstantBuffer.GetAddressOf()));
 
+    // Set sampler state and cubemap texture
+    pDeviceContext->PSSetSamplers(0, 1, pSamplerState.GetAddressOf());
+	pDeviceContext->PSSetShaderResources(0, 1, cubemapTexture.GetAddressOf());
+    
 	// Draw the quad
-	pTechniqueSky->GetPassByIndex(0)->Apply(0, pDeviceContext.Get());
+    pDeviceContext->VSSetShader(pVertexShader.Get(), 0, 0);
+    pDeviceContext->PSSetShader(pSkyPixelShader.Get(), 0, 0);
+
     pDeviceContext->DrawIndexed(36, 0, 0);
 }
 
@@ -647,20 +673,9 @@ void D3DClass::DrawSky(const aiScene* scene, Camera* camera)
 //Method to draw anything to debug
 void D3DClass::DrawDebug(const aiScene* scene, Camera* camera)
 {
+    PROFILE_SCOPE();
+
 	HRESULT hr;
-
-    //// Vertex structure
-    //struct Vertex
-    //{
-    //    DirectX::XMFLOAT3 position;
-    //    DirectX::XMFLOAT4 color;
-    //};
-    struct TexVertex
-    {
-		DirectX::XMFLOAT3 position;
-        DirectX::XMFLOAT2 uv;
-    };
-
 
     float nearPlane = camera->getNear();
     float farPlane = camera->getFar() - 10.0f;
@@ -718,13 +733,13 @@ void D3DClass::DrawDebug(const aiScene* scene, Camera* camera)
 	//																				DirectX::XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f) }, // Red color
 	//};
     float factor = screenWidth / screenHeight;
-    TexVertex quadVertices[] =
+    Vertex quadVertices[] =
     {
         // Bottom-left corner of the screen (in NDC space) with correct texture coordinates
-        { DirectX::XMFLOAT3(-1.4f, -1.0f, distance), DirectX::XMFLOAT2(0.0f, 1.0f) },  // Bottom-left
-        { DirectX::XMFLOAT3(-0.6f, -1.0f, distance), DirectX::XMFLOAT2(1.0f, 1.0f) },  // Bottom-right
-        { DirectX::XMFLOAT3(-1.4f, -0.5f, distance), DirectX::XMFLOAT2(0.0f, 0.0f) },  // Top-left
-        { DirectX::XMFLOAT3(-0.6f, -0.5f, distance), DirectX::XMFLOAT2(1.0f, 0.0f) },  // Top-right
+        { {-1.4f, -1.0f, distance}, {0.0f, 0.0f, 0.0f}, {0.0f, 1.0f} },  // Bottom-left
+        { { -0.6f, -1.0f, distance}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f}},  // Bottom-right
+        { { -1.4f, -0.5f, distance}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},  // Top-left
+        { {-0.6f, -0.5f, distance}, {0.0f, 0.0f, 0.0f}, {1.0f, 0.0f} },  // Top-right
     };
 
 	unsigned int indices[] =
@@ -733,12 +748,6 @@ void D3DClass::DrawDebug(const aiScene* scene, Camera* camera)
 		1, 2, 3   // Second triangle (top-left, bottom-right, top-right)
 	};
 
-	//unsigned int indices[] =
-
-	//{
-	//	0, 1, 2,  // First triangle (top-left, bottom-left, bottom-right)
-	//	0, 2, 3   // Second triangle (top-left, bottom-right, top-right)
-	//};
     //Create Stencil Buffer
 	Microsoft::WRL::ComPtr<ID3D11DepthStencilState> noDepthBuffer;
     D3D11_DEPTH_STENCIL_DESC depthStencilDesc = {};
@@ -774,7 +783,7 @@ void D3DClass::DrawDebug(const aiScene* scene, Camera* camera)
     pDevice->CreateBuffer(&indexBufferDesc, &indexData, &indexBuffer);
 
     // Set the vertex buffer
-    UINT stride = sizeof(TexVertex);
+    UINT stride = sizeof(Vertex);
     UINT offset = 0;
     pDeviceContext->IASetVertexBuffers(0, 1, &vertexBuffer, &stride, &offset);
 
@@ -782,38 +791,38 @@ void D3DClass::DrawDebug(const aiScene* scene, Camera* camera)
     pDeviceContext->IASetIndexBuffer(indexBuffer, DXGI_FORMAT_R32_UINT, 0);
 
     //Set constant buffers
-    DirectX::XMMATRIX projectionMatrix = camera->getProjectionMatrix();
-    DirectX::XMMATRIX transformSkybox = DirectX::XMMatrixTranspose(projectionMatrix);
-    fxTransformSkybox->SetRawValue(&transformSkybox, 0, sizeof(XMMATRIX));
+    cbPerObject cbObject;
+    cbObject.gTransform = DirectX::XMMatrixTranspose(camera->getProjectionMatrix());
 
-    // Set the input layout (assuming you have created an input layout for the shader)
-    wrl::ComPtr<ID3D11InputLayout> pInputLayoutSimple;
-    const D3D11_INPUT_ELEMENT_DESC inputLayoutDesc[] =
-    {
-        {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
-        {"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0}
-    };
+    D3D11_MAPPED_SUBRESOURCE mappedResource;
+    pDeviceContext->Map(pObjectConstantBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
+	memcpy(mappedResource.pData, &cbObject, sizeof(cbPerObject));
+	pDeviceContext->Unmap(pObjectConstantBuffer.Get(), 0);
+    GFX_THROW_INFO_ONLY(pDeviceContext->VSSetConstantBuffers(0, 1, pObjectConstantBuffer.GetAddressOf()));
+    GFX_THROW_INFO_ONLY(pDeviceContext->PSSetConstantBuffers(0, 1, pObjectConstantBuffer.GetAddressOf()));
+    GFX_THROW_INFO_ONLY(pDeviceContext->PSSetShaderResources(0, 1, pShadowMap->pShaderResourceView.GetAddressOf()));
 
-    pEffect->GetVariableByName("shadowMap")->AsShaderResource()->SetResource(pShadowMap->pShaderResourceView.Get());
-    //pEffect->GetVariableByName("shadowMap")->AsShaderResource()->SetResource(pShadowMap->pSunShaderResourceView.Get());
-    pTechniqueDebug->GetPassByIndex(0)->GetDesc(&passDesc);
-    GFX_THROW_INFO(pDevice->CreateInputLayout(inputLayoutDesc, std::size(inputLayoutDesc), passDesc.pIAInputSignature, passDesc.IAInputSignatureSize, &pInputLayoutSimple));
+    // Bind Vertex Layout and Primitive Topology
+    pDeviceContext->IASetInputLayout(pInputLayout.Get());
 
-    pDeviceContext->IASetInputLayout(pInputLayoutSimple.Get());
+
 
     // I put this here because its the last draw call, meaning that everything will be set as it was in the EndScene call
     GFX_THROW_INFO_ONLY(pDeviceContext->OMSetDepthStencilState(noDepthBuffer.Get(), 1u)); // Don't take into account this quad in the depth texture
 
 	// Draw the quad
-	pTechniqueDebug->GetPassByIndex(0)->Apply(0, pDeviceContext.Get());
+    pDeviceContext->VSSetShader(pVertexShader.Get(), 0, 0);
+    pDeviceContext->PSSetShader(pSimplePixelShader.Get(), 0, 0);
+
     pDeviceContext->DrawIndexed(6, 0, 0);
-    
 }
 
 
 //This method will be in charge of flipping (Taking the back buffer and presenting it as the front)
 void D3DClass::EndScene()
 {
+    PROFILE_SCOPE();
+
     HRESULT hr;
 #ifndef NDEBUG
     infoManager.Set();
