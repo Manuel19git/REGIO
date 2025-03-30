@@ -159,6 +159,25 @@ if (CMAKE_GENERATOR MATCHES "Visual Studio")
     set_target_properties(${PROJECT_NAME} PROPERTIES WIN32_EXECUTABLE TRUE)
 
     # You can also define any Visual Studio specific flags or options here
-    add_definitions(-DUNICODE -D_UNICODE) 
+    add_definitions(-DUNICODE -D_UNICODE)
     
 endif()
+
+# Install
+install(TARGETS ${PROJECT_NAME}
+    DESTINATION ${PROJECT_NAME}
+)
+
+# Move shaders and assets to specific folder
+cmake_print_variables(${CMAKE_CURRENT_BINARY_DIR}/shaders)
+install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/shaders/
+	DESTINATION shaders
+)
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/output/
+	DESTINATION output
+)
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/Data/
+	DESTINATION Data
+)
+
+
