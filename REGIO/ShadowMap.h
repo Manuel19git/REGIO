@@ -25,6 +25,7 @@ public:
 	Microsoft::WRL::ComPtr<ID3D11RenderTargetView> pSunTarget;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> pSunShaderResourceView;
 
+#ifndef NDEBUG
 	DxgiInfoManager infoManager;
-
+#endif
 };

@@ -94,12 +94,17 @@ bool GraphicsClass::Initialize(int screenWidth, int screenHeight, HWND hwnd, Inp
 	importer = new Assimp::Importer();
 	//mScene = importer->ReadFile("..\\output\\NIER\\Props\\turnstile_wall.usdc", //USD is not fully supported by assimp yet
 	//	aiProcess_Triangulate | aiProcess_ConvertToLeftHanded);
-	mScene = importer->ReadFile("..\\output\\Maxwell_cat\\source\\maxwell_scene.obj",
+	std::string scenePath = searchFileInParentDirectories("\\output\\Maxwell_cat\\source\\maxwell_scene.obj");
+	mScene = importer->ReadFile(scenePath,
 		aiProcess_Triangulate | aiProcess_ConvertToLeftHanded);
 	//mScene = importer->ReadFile("..\\output\\NIER\\nier_park.obj",
 	//	aiProcess_Triangulate | aiProcess_ConvertToLeftHanded);
 	//mScene = importer->ReadFile("..\\output\\NIER\\nier_park.glb",
 	//	aiProcess_Triangulate | aiProcess_ConvertToLeftHanded);
+	if (!mScene)
+	{
+		MessageBoxA(nullptr, importer->GetErrorString(), "Assimp Importer error", 0);
+	}
 
 	// Compute bounding box
 	computeBoundingBox(mScene, scenebbox.left, scenebbox.right, scenebbox.top, scenebbox.bottom, scenebbox.nearPlane, scenebbox.farPlane);
