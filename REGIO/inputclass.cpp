@@ -53,6 +53,16 @@ int Mouse::GetPosY() const noexcept
 	return y;
 }
 
+float Mouse::GetPosXDelta() const noexcept
+{
+	return deltaX / mouseCount;
+}
+
+float Mouse::GetPosYDelta() const noexcept
+{
+	return deltaY / mouseCount;
+}
+
 bool Mouse::IsInWindow() const noexcept
 {
 	return isInWindow;
@@ -99,10 +109,24 @@ bool Mouse::RawEnabled() const noexcept
 	return rawEnabled;
 }
 
+void Mouse::RestartMouseMoveState()
+{
+	x = 0;
+	y = 0;
+	deltaX = 0;
+	deltaY = 0;
+
+	mouseCount = 1;
+}
+
 void Mouse::OnMouseMove(int newx, int newy) noexcept
 {
 	x = newx;
 	y = newy;
+
+	deltaX += newx;
+	deltaY += newy;
+	mouseCount++;
 
 	buffer.push(Mouse::Event(Mouse::Event::Type::Move, *this));
 	TrimBuffer();
@@ -225,11 +249,23 @@ InputClass::~InputClass()
 }
 
 
-void InputClass::Initialize()
+void InputClass::Initialize(HWND hwnd)
 {
+    RAWINPUTDEVICE Rid[2];
+    Rid[0].usUsagePage = 0x01;
+    Rid[0].usUsage = 0x06;      //keyboard
+    Rid[0].dwFlags = RIDEV_INPUTSINK;
+    Rid[0].hwndTarget = hwnd;
+
+    Rid[1].usUsagePage = 0x01;
+    Rid[1].usUsage = 0x02;      //mouse
+    Rid[1].dwFlags = RIDEV_INPUTSINK;
+    Rid[1].hwndTarget = hwnd;
+
+    if (RegisterRawInputDevices(Rid, 2, sizeof(Rid[0])) == false)
+		OutputDebugString(TEXT("Input registration failed !\n"));
+
 	int i;
-
-
 	// Initialize all the keys to being released and not pressed.
 	for (i = 0; i < 256; i++)
 	{
@@ -239,6 +275,9 @@ void InputClass::Initialize()
 	// This avoids the the camera looking god knows where
 	mouse.x = 0;
 	mouse.y = 0;
+	mouse.deltaX = 0;
+	mouse.deltaY = 0;
+	mouse.mouseCount = 1;
 
 	return;
 }

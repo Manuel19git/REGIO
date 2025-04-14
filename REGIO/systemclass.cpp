@@ -29,7 +29,7 @@ bool SystemClass::Initialize(std::wstring scenePath)
 	// Create and initialize the input object.  This object will be used to handle reading the keyboard input from the user.
 	m_Input = new InputClass;
 
-	m_Input->Initialize();
+	m_Input->Initialize(m_hwnd);
 
 	// Create and initialize the graphics object.  This object will handle rendering all the graphics for this application.
 	m_Graphics = new GraphicsClass;
@@ -264,24 +264,18 @@ bool SystemClass::Frame()
 		m_Graphics->RotateCamera(NEGATIVE);
 	}
 	
-	// SetCursorPos is quite slow, so only use if necessary
-	POINT cursorPos;
-	GetCursorPos(&cursorPos);
-	if (cursorPos.x != centerX || cursorPos.y != centerY)
-	{
-		SetCursorPos(centerX, centerY);
-	}
-	
+	// Process previous mouse delta movements and get the medium delta
+	float xDelta = m_Input->mouse.GetPosXDelta();
+	float yDelta = m_Input->mouse.GetPosYDelta();
+	m_Graphics->UpdateCameraLookAt(xDelta, yDelta);
+
+	m_Input->mouse.RestartMouseMoveState(); // By restarting mouse state, when I don't receive raw input, it writes the xy to zero
+
 	// Do the frame processing for the graphics object.
 	result = m_Graphics->Frame();
 	if (!result)
 	{
 		return false;
-	}
-
-	if (m_Input->mouse.GetPosX() != 0 && m_Input->mouse.GetPosY() != 0)
-	{
-		m_Graphics->UpdateCameraLookAt((m_Input->mouse.GetPosX() / (screenWidth / 2.0f) - 1.0f), (m_Input->mouse.GetPosY() / (screenHeight / 2.0f) - 1.0f));
 	}
 
 	return true;
@@ -300,8 +294,8 @@ void SystemClass::Run()
 	done = false;
 	while (!done)
 	{
-		// Handle the windows messages.
-		if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
+		// We must process all (using "while" instead of "if") previous window messages before rendering current frame
+		while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
 		{
 			TranslateMessage(&msg);
 			DispatchMessage(&msg);
@@ -350,49 +344,44 @@ LRESULT CALLBACK SystemClass::MessageHandler(HWND hwnd, UINT umsg, WPARAM wparam
 {
 	switch (umsg)
 	{
-		// Check if a key has been pressed on the keyboard.
-	case WM_KEYDOWN:
-	{
-		// If a key is pressed send it to the input object so it can record that state.
-		m_Input->KeyDown((unsigned int)wparam);
-		return 0;
-	}
-
-	// Check if a key has been released on the keyboard.
-	case WM_KEYUP:
-	{
-		// If a key is released then send it to the input object so it can unset the state for that key.
-		m_Input->KeyUp((unsigned int)wparam);
-		return 0;
-	}
-
-	//CHECK MOUSE MESSAGES
-	case WM_MOUSEMOVE:
+	// New CHECK MOUSE MESSAGES WITH RAW INPUT API
+	case WM_INPUT:
 	{
 		// isPause stops windows queue from registering mouse moves when in pause
 		if (isPause)
 			break;
-		const POINTS pt = MAKEPOINTS(lparam);
-		if (pt.x >= 0 && pt.x < screenWidth && pt.y >= 0 && pt.y < screenHeight)
+		UINT dwSize;
+		GetRawInputData(
+			(HRAWINPUT)lparam,
+			RID_INPUT,
+			NULL,
+			&dwSize,
+			sizeof(RAWINPUTHEADER)
+		);
+
+		LPBYTE lpb = new BYTE[dwSize];
+		if (GetRawInputData((HRAWINPUT)lparam, RID_INPUT, lpb, &dwSize, sizeof(RAWINPUTHEADER)) != dwSize)
+			OutputDebugString(TEXT("GetRawInputData does not return correct size !\n"));
+
+		if (lpb == NULL)
+			break;
+
+		RAWINPUT* raw = (RAWINPUT*)lpb;
+
+		if (raw->header.dwType == RIM_TYPEMOUSE)
 		{
-			m_Input->mouse.OnMouseMove(pt.x, pt.y);
-			if (!m_Input->mouse.IsInWindow())
-			{
-				SetCapture(hwnd);
-				m_Input->mouse.OnMouseEnter();
-			}
+			m_Input->mouse.OnMouseMove(raw->data.mouse.lLastX, raw->data.mouse.lLastY);
+			break;
 		}
-		else
+		else if (raw->header.dwType == RIM_TYPEKEYBOARD && raw->data.keyboard.Message == WM_KEYDOWN && !m_Input->IsKeyDown(raw->data.keyboard.VKey))
 		{
-			if (wparam & (MK_LBUTTON | MK_RBUTTON))
-			{
-				m_Input->mouse.OnMouseMove(pt.x, pt.y);
-			}
-			else
-			{
-				ReleaseCapture();
-				m_Input->mouse.OnMouseLeave();
-			}
+			m_Input->KeyDown(raw->data.keyboard.VKey);
+			break;
+		}
+		else if (raw->header.dwType == RIM_TYPEKEYBOARD && raw->data.keyboard.Message == WM_KEYUP)
+		{
+			m_Input->KeyUp(raw->data.keyboard.VKey);
+			break;
 		}
 		break;
 	}
