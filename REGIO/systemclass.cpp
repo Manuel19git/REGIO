@@ -144,6 +144,17 @@ void SystemClass::InitializeWindows(int& screenWidth, int& screenHeight)
 	SetForegroundWindow(m_hwnd);
 	SetFocus(m_hwnd);
 
+	// Constrain cursor to window
+	RECT clientRect;
+	GetClientRect(m_hwnd, &clientRect);
+
+	POINT ul = { clientRect.left, clientRect.top };
+	POINT lr = { clientRect.right, clientRect.bottom };
+	ClientToScreen(m_hwnd, &ul);
+	ClientToScreen(m_hwnd, &lr);
+	RECT clipRect = { ul.x, ul.y, lr.x, lr.y };
+	ClipCursor(&clipRect);
+
 	// Show the mouse cursor.
 	ShowCursor(false);
 
@@ -221,6 +232,7 @@ bool SystemClass::Frame()
 	{
 		isPause = true;
 		ShowCursor(true);
+		ClipCursor(nullptr);
 	}
 	if (m_Input->IsKeyDown(VK_RETURN))
 	{
