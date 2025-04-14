@@ -51,6 +51,7 @@ public:
 public:
 	float translationSpeed;
 	float rotationSpeed;
+	float lookSensitivity;
 
 private:
 	DirectX::XMVECTOR m_orientation;

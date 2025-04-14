@@ -4,8 +4,9 @@ using namespace DirectX;
 
 Camera::Camera(DirectX::XMFLOAT3 &startPosition, DirectX::XMVECTOR &startForward, BoundingBox bbox)
 {
-    translationSpeed = 0.1f;
+    translationSpeed = 0.3f;
 	rotationSpeed = 0.005f;
+	lookSensitivity = 0.02;
 
 	yaw = 0.0f;
 	pitch = 0.0f;
@@ -58,16 +59,8 @@ void Camera::moveCamera(Axis axis, int sign)
 
 void Camera::updateYawPitch(float x, float y)
 {
-	float speed = (screenWidth < 2000 && screenHeight < 1000) ? 0.6f : 2.0f;
-	float error = 0.0035f; //Sweet spot
-	if (abs(x) > error )
-		yaw = x * speed;
-	else
-		yaw = 0;
-	if (abs(y) > error)
-		pitch = y * speed;
-	else
-		pitch = 0;
+	yaw = x * lookSensitivity;
+	pitch = y * lookSensitivity;
 }
 
 void Camera::setResolution(const float width, const float height)
@@ -168,6 +161,8 @@ DirectX::XMMATRIX Camera::getTransform(bool isOrthographic)
 	m_orientation = DirectX::XMQuaternionMultiply(pitchQuat, m_orientation);
 	m_orientation = DirectX::XMQuaternionMultiply(yawQuat, m_orientation);
 	m_orientation = DirectX::XMQuaternionMultiply(rollQuat, m_orientation);
+
+	//m_orientation = XMQuaternionRotationRollPitchYaw(pitch, yaw, 0.0f);
 
 	forwardVector = DirectX::XMVector3Rotate(startForwardVector, m_orientation);
 	// This condition is here to avoid the camera going up and beyond resulting in inverting the mouse controls

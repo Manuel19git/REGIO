@@ -103,6 +103,9 @@ public:
 	std::optional<RawDelta> ReadRawDelta() noexcept;
 	int GetPosX() const noexcept;
 	int GetPosY() const noexcept;
+	float GetPosXDelta() const noexcept;
+	float GetPosYDelta() const noexcept;
+
 	bool IsInWindow() const noexcept;
 	bool LeftIsPressed() const noexcept;
 	bool RightIsPressed() const noexcept;
@@ -115,6 +118,7 @@ public:
 	void EnableRaw() noexcept;
 	void DisableRaw() noexcept;
 	bool RawEnabled() const noexcept;
+	void RestartMouseMoveState();
 //private:
 	void OnMouseMove( int x,int y ) noexcept;
 	void OnMouseLeave() noexcept;
@@ -133,6 +137,9 @@ private:
 	static constexpr unsigned int bufferSize = 16u;
 	int x;
 	int y;
+	float deltaX;
+	float deltaY;
+	int mouseCount;
 	bool leftIsPressed = false;
 	bool rightIsPressed = false;
 	bool isInWindow = false;
@@ -154,7 +161,7 @@ public:
 	InputClass(const InputClass&);
 	~InputClass();
 
-	void Initialize();
+	void Initialize(HWND hwnd);
 
 	void KeyDown(unsigned int);
 	void KeyUp(unsigned int);
