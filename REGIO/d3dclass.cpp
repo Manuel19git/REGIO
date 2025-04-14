@@ -496,9 +496,15 @@ void D3DClass::DrawScene(const aiScene* scene, Camera* camera)
     GFX_THROW_INFO_ONLY(pDeviceContext->PSSetConstantBuffers(0, 1, pObjectConstantBuffer.GetAddressOf()));
 
     cbPerFrame cbFrame;
+
+    // Set spotLight position as the player position
     spotLight.Position = cbFrame.gEyePosW;
     XMStoreFloat3(&spotLight.Direction, XMVector3Normalize(camera->getLookAt()));
     pointLight.Position = cbFrame.gEyePosW;
+
+    // Set same sun direction as shadowMap one
+    XMStoreFloat3(&dirLight.Direction, XMVector3Normalize(XMVectorSubtract(XMVectorSet(0, 0, 0, 1), XMLoadFloat3(&sunCamera->getPosition()))));
+
     cbFrame.gEyePosW = sunCamera->getPosition();
     cbFrame.gSpotLight = spotLight;
     cbFrame.gDirLight = dirLight;
