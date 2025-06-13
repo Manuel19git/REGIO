@@ -15,18 +15,22 @@ enum Axis
 
 struct BoundingBox // TODO put this in a separate file with the rest of auxiliar stuff
 {
-	float left;
-	float right;
-	float top;
-	float bottom;
-	float nearPlane;
-	float farPlane;
+	BoundingBox() = default;
+
+	bool IsCorrect() { return left != right && top != bottom && nearPlane != farPlane; };
+
+	float left = INFINITY;
+	float right = -INFINITY;
+	float top = -INFINITY;
+	float bottom = INFINITY;
+	float nearPlane = INFINITY;
+	float farPlane = -INFINITY;
 };
 
 class Camera
 {
 public:
-	Camera(DirectX::XMFLOAT3 &startPosition, DirectX::XMVECTOR &startForward, BoundingBox bbox);
+	Camera(DirectX::XMFLOAT3 &startPosition, DirectX::XMVECTOR &startForward);
 
 	void moveCamera(Axis axis, int sign);
 	void updateYawPitch(float x, float y);
@@ -41,12 +45,17 @@ public:
 	DirectX::XMVECTOR getUp();
 	DirectX::XMMATRIX getViewMatrix();
 	DirectX::XMMATRIX getProjectionMatrix(bool isOrthographic = false);
+	DirectX::XMMATRIX getViewProjMatrix(bool isOrthographic = false);
 	float getNear();
 	float getFar();
+	void setFar(float far);
 	float getYaw();
 	float getPitch();
 	DirectX::XMMATRIX getTransform(bool isOrthographic = false);
 	void updateTransform(bool isOrthographic = false);
+
+	BoundingBox getSceneBBox();
+	void setSceneBBox(BoundingBox& bbox);
 
 public:
 	float translationSpeed;

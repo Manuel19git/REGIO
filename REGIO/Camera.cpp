@@ -2,7 +2,7 @@
 
 using namespace DirectX;
 
-Camera::Camera(DirectX::XMFLOAT3 &startPosition, DirectX::XMVECTOR &startForward, BoundingBox bbox)
+Camera::Camera(DirectX::XMFLOAT3 &startPosition, DirectX::XMVECTOR &startForward)
 {
     translationSpeed = 0.3f;
 	rotationSpeed = 0.005f;
@@ -28,8 +28,6 @@ Camera::Camera(DirectX::XMFLOAT3 &startPosition, DirectX::XMVECTOR &startForward
 
 	screenWidth = 0.0f;
 	screenHeight = 0.0f;
-
-	scenebbox = bbox;
 }
 
 void Camera::moveCamera(Axis axis, int sign)
@@ -114,10 +112,23 @@ DirectX::XMMATRIX Camera::getProjectionMatrix(bool isOrthographic)
 {
 	updateTransform();
 	XMMATRIX projectionMatrix = (isOrthographic) ?
-		XMMatrixOrthographicOffCenterLH(scenebbox.left, scenebbox.right, scenebbox.bottom, scenebbox.top, scenebbox.nearPlane * 2, scenebbox.farPlane * 2) :
+		XMMatrixOrthographicOffCenterLH(scenebbox.left, scenebbox.right, scenebbox.bottom, scenebbox.top, scenebbox.nearPlane, scenebbox.farPlane) :
 		XMMatrixPerspectiveLH(1.0f, screenHeight / screenWidth, nearPlane, farPlane);
 
 	return projectionMatrix;
+}
+
+
+DirectX::XMMATRIX Camera::getViewProjMatrix(bool isOrthographic)
+{
+	updateTransform();
+
+    DirectX::XMMATRIX view = getViewMatrix();
+    DirectX::XMMATRIX proj = getProjectionMatrix(isOrthographic);
+
+	//DirectX::XMMATRIX viewProj = DirectX::XMMatrixTranspose(view * proj);
+
+	return view * proj;
 }
 
 float Camera::getNear()
@@ -127,6 +138,10 @@ float Camera::getNear()
 float Camera::getFar()
 {
 	return farPlane;
+}
+void Camera::setFar(float far)
+{
+	farPlane = far;
 }
 
 float Camera::getYaw()
@@ -190,7 +205,7 @@ DirectX::XMMATRIX Camera::getTransform(bool isOrthographic)
 	// Right now orthographic is only used for shadow maps
 	XMMATRIX projectionMatrix = (isOrthographic) ?
 		//XMMatrixOrthographicLH(10, 10, nearPlane, farPlane) :
-		XMMatrixOrthographicOffCenterLH(scenebbox.left, scenebbox.right, scenebbox.bottom, scenebbox.top, scenebbox.nearPlane * 2, scenebbox.farPlane * 2) :
+		XMMatrixOrthographicOffCenterLH(scenebbox.left, scenebbox.right, scenebbox.bottom, scenebbox.top, scenebbox.nearPlane , scenebbox.farPlane ) :
 		XMMatrixPerspectiveLH(1.0f, screenHeight / screenWidth, nearPlane, farPlane);
 
     return DirectX::XMMatrixTranspose(
@@ -244,4 +259,13 @@ void Camera::updateTransform(bool isOrthographic)
 	upVector = XMVector3Normalize(DirectX::XMVector3Cross(forwardVector, rightVector));
 
 	lookAtVector = XMVectorAdd(posVector, forwardVector);
+}
+
+BoundingBox Camera::getSceneBBox()
+{
+	return scenebbox; 
+}
+void Camera::setSceneBBox(BoundingBox& bbox)
+{
+	scenebbox = bbox;
 }

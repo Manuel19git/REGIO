@@ -65,6 +65,7 @@ void computeBoundingBox(const aiScene* scene, float& left, float& right, float& 
 	}
 
 	// We want the bounding box to be a square box. In case it is a rectangle, it is corrected here
+	// XY Plane
 	float vLength = fabs(top - bottom);
 	float hLength = fabs(right - left);
 	if ( vLength < hLength)
@@ -78,6 +79,21 @@ void computeBoundingBox(const aiScene* scene, float& left, float& right, float& 
 		float offset = (vLength - hLength) / 2;
 		right += offset;
 		left -= offset;
+	}
+	// XZ Plane
+	hLength = fabs(right - left);
+	float zLength = fabs(farPlane - nearPlane);
+	if (hLength < zLength)
+	{
+		float offset = (zLength - hLength) / 2;
+		right += offset;
+		left -= offset;
+	}
+	else
+	{
+		float offset = (hLength - zLength) / 2;
+		farPlane += offset;
+		nearPlane -= offset;
 	}
 
 }
@@ -114,8 +130,9 @@ bool GraphicsClass::Initialize(int screenWidth, int screenHeight, HWND hwnd, Inp
 	// Initialize player camera before directX
 	XMFLOAT3 startPosition = XMFLOAT3(0.5f, 2.0f, -4.0f);
 	XMVECTOR startForward = XMVectorSet(0.0f, 0.0f, 1.0f, 1.0f);
-	mainCamera = new Camera(startPosition, startForward, scenebbox);
+	mainCamera = new Camera(startPosition, startForward);
 	mainCamera->setResolution(screenWidth, screenHeight);
+	mainCamera->setSceneBBox(scenebbox);
 
 	// Create window
 	m_D3D = new D3DClass();
@@ -135,14 +152,19 @@ bool GraphicsClass::Frame()
 	// In the future I may want to dynamically change sun position, hence we create sunCamera here :)
 	float scale = 1.0f;
 	//offset -= (fabs(offset) < 3) ? 0.001 : 0.0;
-	XMFLOAT3 sunPosition = XMFLOAT3(1.0f * scale, 0.5f * scale, -0.5f + offset);
+	offset = 0;
+	//XMFLOAT3 sunPosition = XMFLOAT3(1.0f * scale, 0.5f * scale, -0.5f + offset);
+	XMFLOAT3 sunPosition = XMFLOAT3(0.0f, 100.0f , 0.0f ) ;
 	XMVECTOR sunDirection = XMVector3Normalize(XMVectorSubtract(XMVectorZero(), XMLoadFloat3(&sunPosition)));
-	Camera* sunCamera = new Camera(sunPosition, sunDirection, scenebbox);
+	Camera* sunCamera = new Camera(sunPosition, sunDirection);
 	sunCamera->setResolution(mainCamera->getResolution().first, mainCamera->getResolution().second);
 	m_D3D->sunCamera = sunCamera;
 
 	m_D3D->ClearBuffer(0.0f, 0.0f, 0.0f);
 	//m_D3D->DrawShadowMap(mScene, sunCamera);
+
+	scenebbox = m_D3D->ComputeSunFrustum();
+	sunCamera->setSceneBBox(scenebbox);
 	m_D3D->DrawScene(mScene, mainCamera);
 	m_D3D->DrawSky(mScene, mainCamera);
 	m_D3D->DrawDebug(mScene, mainCamera);

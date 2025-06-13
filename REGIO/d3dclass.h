@@ -116,7 +116,8 @@ public:
 
 	void GetVideoCardInfo(char*, int&);
 
-	// For debugging
+	BoundingBox ComputeSunFrustum();
+
 	Camera* camera;
 	Camera* sunCamera;
 

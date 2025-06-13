@@ -536,6 +536,10 @@ void D3DClass::DrawScene(const aiScene* scene, Camera* camera)
 	pDeviceContext->OMSetRenderTargets(1, pTarget.GetAddressOf(), pDepthStencilView.Get());
     pDeviceContext->RSSetState(auxState);
 
+    // For now I am going to use no culling because in blender I have objects with only planes not volume
+    // (TODO: In the future the scene should have all visible faces with its normals pointing towards camera)
+    pDeviceContext->RSSetState(pNoCullRS.Get());
+
     // Restore Viewport
     D3D11_VIEWPORT viewport;
     viewport.Width = screenWidth;
@@ -600,7 +604,7 @@ void D3DClass::DrawSky(const aiScene* scene, Camera* camera)
 
 	HRESULT hr;
 
-    float scale = 1000.0f;
+    float scale = 300.0f;
 
 	// Cube vertices data
 	Vertex vertices[] = {
@@ -956,4 +960,78 @@ void D3DClass::Shutdown()
     delete[] pVertexOffsets;
     delete[] pIndexOffsets;
     delete[] pIndexCount;
+}
+
+
+BoundingBox D3DClass::ComputeSunFrustum()
+{
+    BoundingBox frustum = BoundingBox();
+
+    // We want to get the shadow map with a good quality without it changing the main camera far which is very far
+    // so we set far of the mainCamera to the 
+    float farDefault = camera->getFar();
+    camera->setFar(std::abs(camera->getSceneBBox().farPlane - camera->getSceneBBox().nearPlane)); // WARNING: Shitty way of solving this, might break in the future
+
+    // 1. Coger la matriz de transformacion de la camara principal
+    DirectX::XMMATRIX view = camera->getViewMatrix();
+    DirectX::XMMATRIX proj = camera->getProjectionMatrix();
+    DirectX::XMMATRIX viewProj = DirectX::XMMatrixMultiply(view, proj);
+    DirectX::XMMATRIX invViewProj = DirectX::XMMatrixInverse(nullptr, viewProj );
+    DirectX::XMMATRIX sunViewProj = sunCamera->getViewMatrix();
+
+    camera->setFar(farDefault);
+
+    // 2. Multiplicarla por la posicion del cubo can�nico
+    DirectX::XMVECTOR ndcCorners[8] = {
+        {-1,-1,0,1}, {+1,-1,0,1}, {-1,+1,0,1}, {+1,+1,0,1},
+        {-1,-1,1,1}, {+1,-1,1,1}, {-1,+1,1,1}, {+1,+1,1,1}
+	};
+    DirectX::XMVECTOR sunViewCorners[8];
+    for (int i = 0; i < 8; ++i)
+    {
+        DirectX::XMVECTOR worldPos = DirectX::XMVector4Transform(ndcCorners[i], invViewProj);
+        DirectX::XMFLOAT4 worldPosFloat = { 0,0,0,0 };
+
+        DirectX::XMStoreFloat4(&worldPosFloat, worldPos);
+
+        // From homogeneous space to cartesian world
+        worldPos /= worldPosFloat.w;
+
+        // From cartesian world to sun view space
+        sunViewCorners[i] = DirectX::XMVector4Transform(worldPos, sunViewProj);
+    }
+
+
+    for (DirectX::XMVECTOR corner : sunViewCorners)
+    {
+        DirectX::XMFLOAT4 cornerFloat = { 0,0,0,0 };
+        DirectX::XMStoreFloat4(&cornerFloat, corner);
+        if (cornerFloat.x < frustum.left)
+        {
+            frustum.left = cornerFloat.x;
+        }
+        if (cornerFloat.x > frustum.right)
+        {
+            frustum.right = cornerFloat.x;
+        }
+        if (cornerFloat.y > frustum.top)
+        {
+            frustum.top = cornerFloat.y;
+        }
+        if (cornerFloat.y < frustum.bottom)
+        {
+            frustum.bottom = cornerFloat.y;
+        }
+        if (cornerFloat.z < frustum.nearPlane)
+        {
+            frustum.nearPlane = cornerFloat.z;
+        }
+        if (cornerFloat.z > frustum.farPlane)
+        {
+            frustum.farPlane = cornerFloat.z;
+        }
+    }
+
+
+    return frustum;
 }
