@@ -512,6 +512,8 @@ void D3DClass::DrawScene(const aiScene* scene, Camera* camera)
     {
 		cbFrame.gPointLights[i] = pointLights[i];
     }
+	cbFrame.sunActive = (sunActive) ? 1 : 0;
+
     pDeviceContext->Map(pFrameConstantBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
 	memcpy(mappedResource.pData, &cbFrame, sizeof(cbPerFrame));
 	pDeviceContext->Unmap(pFrameConstantBuffer.Get(), 0);

@@ -39,6 +39,9 @@ public:
 	bool UpdateCameraLookAt(float x, float y);
 	bool RotateCamera(int sign);
 
+	// Switch the sun on/off
+	void switchSun(bool value) { sunActive = value; };
+
 private:
 	
 	D3DClass* m_D3D;
@@ -54,6 +57,8 @@ private:
 	BoundingBox scenebbox;
 
 	float offset = 0.0f;
+
+	bool sunActive = true;
 
 };
 

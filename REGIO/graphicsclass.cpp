@@ -159,6 +159,7 @@ bool GraphicsClass::Frame()
 	Camera* sunCamera = new Camera(sunPosition, sunDirection);
 	sunCamera->setResolution(mainCamera->getResolution().first, mainCamera->getResolution().second);
 	m_D3D->sunCamera = sunCamera;
+	m_D3D->sunActive = sunActive;
 
 	m_D3D->ClearBuffer(0.0f, 0.0f, 0.0f);
 	//m_D3D->DrawShadowMap(mScene, sunCamera);

@@ -120,6 +120,8 @@ public:
 
 	Camera* camera;
 	Camera* sunCamera;
+	// For debugging
+	bool sunActive = false;
 
 private:
 #ifndef NDEBUG

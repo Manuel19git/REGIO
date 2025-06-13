@@ -75,5 +75,5 @@ struct cbPerFrame
     PointLight gPointLights[6];
     SpotLight gSpotLight;
 	DirectX::XMFLOAT3 gEyePosW;
-	float padding;
+	int sunActive;
 };

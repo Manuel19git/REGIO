@@ -14,6 +14,7 @@ cbuffer cbPerFrame : register(b1)
     PointLight gPointLights[6];
     SpotLight gSpotLight;
 	float3 gEyePosW;
+    int sunActive;
 };
 
 //Nonnumeric values cannot be added to a cbuffer
@@ -45,11 +46,14 @@ float4 main(PS_INPUT input) : SV_TARGET
 	//Lighting//
 	////////////
     float shadow = 1.0f;
-    shadow = CalcShadowFactor(samShadow, shadowMap, input.shadowPosNDC);
+    if (sunActive)
+    {
+        shadow = CalcShadowFactor(samShadow, shadowMap, input.shadowPosNDC);
+    }
     //texColor = shadowMap.Sample(samTriLinearSam, input.tex);
 
 	//This is what we are going to use to compute pixel color
-	float4 ambient = float4(0.0f, 0.0f, 0.0f, 0.0f);
+    float4 ambient = float4(0.0f, 0.0f, 0.0f, 0.0f);
 	float4 diffuse = float4(0.0f, 0.0f, 0.0f, 0.0f);
 	float4 specular = float4(0.0f, 0.0f, 0.0f, 0.0f);
 

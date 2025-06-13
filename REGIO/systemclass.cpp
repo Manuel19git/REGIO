@@ -275,6 +275,15 @@ bool SystemClass::Frame()
 	{
 		m_Graphics->RotateCamera(NEGATIVE);
 	}
+	if (m_Input->IsKeyDown('I'))
+	{
+		m_Graphics->switchSun(true);
+	}
+	if (m_Input->IsKeyDown('O'))
+	{
+		m_Graphics->switchSun(false);
+	}
+
 	
 	// Process previous mouse delta movements and get the medium delta
 	float xDelta = m_Input->mouse.GetPosXDelta();
