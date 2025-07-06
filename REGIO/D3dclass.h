@@ -26,17 +26,17 @@
 #include "DDSTextureLoader.h"
 
 // Light and material structs
-#include "LightHelper.h"
+#include "Common/LightHelper.h"
 
 #include "SpriteFont.h"
 #include <chrono>
 #include <Windows.h>
 
 #include "Camera.h"
-#include "Macros.h"
+#include "Common/Macros.h"
 #include "ShadowMap.h"
 
-#include "profiler.h"
+#include "Common/Profiler.h"
 
 // Conversion widestring string
 #include<locale>

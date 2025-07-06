@@ -1,5 +1,5 @@
-#include "systemclass.h"
-#include "profiler.h"
+#include "Systemclass.h"
+#include "Common/Profiler.h"
 #include <shellapi.h>
 
 //Punto de entrada para aplicaciones de windows

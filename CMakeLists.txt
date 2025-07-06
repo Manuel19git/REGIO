@@ -132,6 +132,7 @@ if (CMAKE_GENERATOR MATCHES "Visual Studio")
     source_group("Common" FILES
 	"${CMAKE_CURRENT_SOURCE_DIR}/REGIO/Common/Macros.h"
     	"${CMAKE_CURRENT_SOURCE_DIR}/REGIO/Common/Profiler.h"
+       	"${CMAKE_CURRENT_SOURCE_DIR}/REGIO/Common/LightHelper.h"
     	"${CMAKE_CURRENT_SOURCE_DIR}/REGIO/Common/RenderItem.h"
     )
 

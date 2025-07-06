@@ -1,6 +1,6 @@
 #include "DxgiInfoManager.h"
-#include "systemclass.h"
-#include "d3dclass.h"
+#include "Systemclass.h"
+#include "D3dclass.h"
 #include <dxgidebug.h>
 #include <memory>
 

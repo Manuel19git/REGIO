@@ -8,9 +8,9 @@
 //////////////
 // INCLUDES //
 //////////////
-#include "d3dclass.h"
+#include "D3dclass.h"
 #include "MyException.h"
-#include "inputclass.h"
+#include "Inputclass.h"
 
 /////////////
 // GLOBALS //
