@@ -52,6 +52,7 @@ set(SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/Camera.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/D3dclass.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/ShadowMap.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/SceneLoader.cpp"
 
     "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/dxerr.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/DxgiInfoManager.cpp"
@@ -66,6 +67,7 @@ set(HEADERS
     "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/Camera.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/D3dclass.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/ShadowMap.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/SceneLoader.h"
 
     "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/dxerr.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/DxgiInfoManager.h"
@@ -75,6 +77,7 @@ set(HEADERS
     "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/Common/Profiler.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/Common/LightHelper.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/Common/RenderItem.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/Common/Common.h"
 )
 
 #file(GLOB SOURCES "REGIO/*.cpp") # find files matching the GLOBbing-expression and store it 
@@ -130,10 +133,11 @@ if (CMAKE_GENERATOR MATCHES "Visual Studio")
     source_group("Shaders" FILES ${SHADERS})
     source_group("Effects" FILES ${EFFECTS})
     source_group("Common" FILES
-	"${CMAKE_CURRENT_SOURCE_DIR}/REGIO/Common/Macros.h"
+	    "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/Common/Macros.h"
     	"${CMAKE_CURRENT_SOURCE_DIR}/REGIO/Common/Profiler.h"
        	"${CMAKE_CURRENT_SOURCE_DIR}/REGIO/Common/LightHelper.h"
     	"${CMAKE_CURRENT_SOURCE_DIR}/REGIO/Common/RenderItem.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/Common/Common.h"
     )
 
     # Set the shader output directory

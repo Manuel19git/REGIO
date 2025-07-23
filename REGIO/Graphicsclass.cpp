@@ -98,7 +98,7 @@ void computeBoundingBox(const aiScene* scene, float& left, float& right, float& 
 
 }
 
-
+#include "SceneLoader.h"
 bool GraphicsClass::Initialize(int screenWidth, int screenHeight, HWND hwnd, InputClass* m_Input, std::wstring wideScenePath)
 {
 	PROFILE_SCOPE();
@@ -106,13 +106,26 @@ bool GraphicsClass::Initialize(int screenWidth, int screenHeight, HWND hwnd, Inp
 	mouse = &m_Input->mouse;
 	m_hwnd = hwnd;
 
+	std::string scenePath = wideString2String(wideScenePath);
+	if ( scenePath == "")
+		scenePath = searchFileInParentDirectories("\\output\\Maxwell_cat\\source\\maxwell_scene.obj");
+
+	//------------------------------------------------------------- NEW -------------------------------------------------------------
+	// 1. Load scene and generate Scene Data
+	SceneLoader loader;
+	loader.loadScene(scenePath);
+	loader.pScene;
+	// 2. Process Scene Data to generate resources using Resource Manager
+	// 3. Process Scene Data with resources to generate batch of Render Items sharing same shader
+	// 4. For each RenderItem the IRenderer will call DrawItem(RenderItem& renderItem)
+
+
+	//------------------------------------------------------------- OLD -------------------------------------------------------------
+
 	// Read mesh
 	importer = new Assimp::Importer();
 	//mScene = importer->ReadFile("..\\output\\NIER\\Props\\turnstile_wall.usdc", //USD is not fully supported by assimp yet
 	//	aiProcess_Triangulate | aiProcess_ConvertToLeftHanded);
-	std::string scenePath = wideString2String(wideScenePath);
-	if ( scenePath == "")
-		scenePath = searchFileInParentDirectories("\\output\\Maxwell_cat\\source\\maxwell_scene.obj");
 	mScene = importer->ReadFile(scenePath,
 		aiProcess_Triangulate | aiProcess_ConvertToLeftHanded);
 	//mScene = importer->ReadFile("..\\output\\NIER\\nier_park.obj",

@@ -37,6 +37,7 @@
 #include "ShadowMap.h"
 
 #include "Common/Profiler.h"
+#include "Common/Common.h"
 
 // Conversion widestring string
 #include<locale>
@@ -49,29 +50,6 @@ namespace wrl = Microsoft::WRL;
 // STRUCTS //
 /////////////
 
-struct Vertex
-{
-	struct
-	{
-		float x;
-		float y;
-		float z;
-	} pos;
-
-	struct
-	{
-		float x;
-		float y;
-		float z;
-	} normal;
-
-	struct
-	{
-		float u;
-		float v;
-	} tex;
-
-};
 
 ///////////////
 // FUNCTIONS //

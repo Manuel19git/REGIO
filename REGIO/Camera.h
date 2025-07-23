@@ -1,6 +1,7 @@
 #pragma once
 #include <DirectXMath.h>
 #include <string>
+#include "Common/Common.h"
 
 #define POSITIVE 1
 #define NEGATIVE -1
@@ -30,6 +31,7 @@ struct BoundingBox // TODO put this in a separate file with the rest of auxiliar
 class Camera
 {
 public:
+	Camera(Vector& startPosition, Vector& startForward);
 	Camera(DirectX::XMFLOAT3 &startPosition, DirectX::XMVECTOR &startForward);
 
 	void moveCamera(Axis axis, int sign);
