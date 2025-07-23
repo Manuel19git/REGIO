@@ -76,7 +76,6 @@ public:
 	void BuildVertexLayout();
 	void BuildTextures(const aiScene* scene);
 	void BuildSkymapTexture();
-	void DrawShadowMap(const aiScene* scene, Camera* sunCamera);
 	void DrawScene(const aiScene* scene, Camera* camera);
 	void DrawSky(const aiScene* scene, Camera* camera);
 	void DrawDebug(const aiScene* scene, Camera* camera);

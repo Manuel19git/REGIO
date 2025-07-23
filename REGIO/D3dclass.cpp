@@ -448,24 +448,6 @@ void D3DClass::ClearBuffer(float red, float green, float blue)
     pDeviceContext->ClearDepthStencilView(pDepthStencilView.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
 }
 
-// I may not need it
-void D3DClass::DrawShadowMap(const aiScene* scene, Camera* sunCamera)
-{
-    HRESULT hr;
-
-    //Bind Vertex Layout and Primitive Topology
-    pDeviceContext->IASetInputLayout(pInputLayout.Get());
-    pDeviceContext->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
-    //Bind Vertex and Index buffer
-    const UINT strides = sizeof(Vertex);
-    const UINT offset = 0;
-    GFX_THROW_INFO_ONLY(pDeviceContext->IASetVertexBuffers(0, 1, pVertexBuffer.GetAddressOf(), &strides, &offset));
-    GFX_THROW_INFO_ONLY(pDeviceContext->IASetIndexBuffer(pIndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0));
-
-
-}
-
 void D3DClass::DrawScene(const aiScene* scene, Camera* camera)
 {
     PROFILE_SCOPE();
