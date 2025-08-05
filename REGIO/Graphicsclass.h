@@ -11,6 +11,7 @@
 #include "D3dclass.h"
 #include "MyException.h"
 #include "Inputclass.h"
+#include "Interfaces/IRenderer.h"
 
 /////////////
 // GLOBALS //
@@ -44,6 +45,8 @@ public:
 
 private:
 	
+	std::unique_ptr<IRenderer> m_Renderer;
+
 	D3DClass* m_D3D;
 	Mouse* mouse;
 	HWND m_hwnd;

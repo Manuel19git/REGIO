@@ -67,6 +67,8 @@ set(HEADERS
     "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/Camera.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/D3dclass.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/ShadowMap.h"
+
+    "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/ResourceManager.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/SceneLoader.h"
 
     "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/dxerr.h"
@@ -78,6 +80,8 @@ set(HEADERS
     "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/Common/LightHelper.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/Common/RenderItem.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/Common/Common.h"
+
+    "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/Interfaces/IRenderer.h"
 )
 
 #file(GLOB SOURCES "REGIO/*.cpp") # find files matching the GLOBbing-expression and store it 
@@ -138,6 +142,9 @@ if (CMAKE_GENERATOR MATCHES "Visual Studio")
        	"${CMAKE_CURRENT_SOURCE_DIR}/REGIO/Common/LightHelper.h"
     	"${CMAKE_CURRENT_SOURCE_DIR}/REGIO/Common/RenderItem.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/Common/Common.h"
+    )
+    source_group("Interfaces" FILES
+        "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/Interfaces/IRenderer.h"
     )
 
     # Set the shader output directory

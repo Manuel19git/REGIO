@@ -102,4 +102,3 @@ struct MaterialCPU
 	// In the future this will hold parameters for bsdf (I still don't know if this will be added)
 };
 
-

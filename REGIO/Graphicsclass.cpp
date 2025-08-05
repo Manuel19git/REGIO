@@ -115,7 +115,9 @@ bool GraphicsClass::Initialize(int screenWidth, int screenHeight, HWND hwnd, Inp
 	SceneLoader loader;
 	loader.loadScene(scenePath);
 	loader.pScene;
+
 	// 2. Process Scene Data to generate resources using Resource Manager
+
 	// 3. Process Scene Data with resources to generate batch of Render Items sharing same shader
 	// 4. For each RenderItem the IRenderer will call DrawItem(RenderItem& renderItem)
 
@@ -147,6 +149,9 @@ bool GraphicsClass::Initialize(int screenWidth, int screenHeight, HWND hwnd, Inp
 	mainCamera->setResolution(screenWidth, screenHeight);
 	mainCamera->setSceneBBox(scenebbox);
 
+	// TODO: Renderer is the one that should be initialized and used. With this we can add new APIs in the future
+	//m_Renderer = std::make_unique<D3DClass>();
+
 	// Create window
 	m_D3D = new D3DClass();
 	bool result = m_D3D->Initialize(hwnd, mScene, mainCamera);
@@ -154,6 +159,7 @@ bool GraphicsClass::Initialize(int screenWidth, int screenHeight, HWND hwnd, Inp
 	{
 		return false;
 	}
+	//-------------------------------------------------------------------------------------------------------------------------------
 
 	return true;
 }

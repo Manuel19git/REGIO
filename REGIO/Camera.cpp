@@ -181,6 +181,7 @@ float Camera::getPitch()
 	return pitch;
 }
 
+// I can have this method be API specific (DirectX)
 DirectX::XMMATRIX Camera::getTransform(bool isOrthographic)
 {
 	// Save previous orientation to ensure camera doesn't turn around 180� when pitching (gimball lock)
