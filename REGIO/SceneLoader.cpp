@@ -21,7 +21,6 @@ void SceneLoader::loadScene(std::string scenePath)
 	rootNode.type = NodeType::EMPTY;
 	rootNode.name = aiScene->mRootNode->mName.C_Str();
 	rootNode.transform = aiScene->mRootNode->mTransformation;
-	rootNode.id = -1;
 	
 	for (int i = 0; i < aiScene->mRootNode->mNumChildren; ++i)
 	{
@@ -70,7 +69,6 @@ void SceneLoader::processNode(SceneData::Node& parentNode,const aiScene* aiScene
 		node.type = NodeType::EMPTY;
 		node.name = aiNode->mName.C_Str();
 		node.transform = aiNode->mTransformation;
-		node.id = -1;
 
 		parentNode.children.push_back(node);
 
@@ -86,15 +84,17 @@ void SceneLoader::processNode(SceneData::Node& parentNode,const aiScene* aiScene
 		leafNode.transform = aiNode->mTransformation;
 
 		std::pair<NodeType,int> nodeTypeId = getNodeTypeAndID(aiScene, aiNode->mName.C_Str());
-		NodeType nodeType = nodeTypeId.first;
+		leafNode.type = nodeTypeId.first;
 		int nodeId = nodeTypeId.second;
 		//TODO:  For now only support one mesh per node (but the idea is to support more than one in the future)
-		if (nodeType == NodeType::MESH)
+		if (leafNode.type == NodeType::MESH)
 		{
 			//aiMesh* aiMesh = aiScene.mMeshes[aiNode->mMeshes[0]];
 			aiMesh* aiMesh = aiScene->mMeshes[nodeId];
 
-			MeshCPU mesh;
+			MeshNode mesh;
+			mesh.node = leafNode;
+
 			mesh.vertices.resize(aiMesh->mNumVertices);
 			mesh.indices.resize(aiMesh->mNumFaces * aiMesh->mFaces->mNumIndices);
 
@@ -125,41 +125,32 @@ void SceneLoader::processNode(SceneData::Node& parentNode,const aiScene* aiScene
 			}
 			pScene->meshes.push_back(mesh);
 
-			leafNode.type = NodeType::MESH;
-			leafNode.id = pScene->meshes.size() - 1;
-
 		}
-		else if (nodeType == NodeType::EMITTER)
+		else if (leafNode.type == NodeType::EMITTER)
 		{
 			aiLight* aiEmitter = aiScene->mLights[nodeId];
 
 			// For now emitters are only pointLights
-			EmitterCPU emitter(
+			EmitterNode emitter(
 				Vector(aiEmitter->mPosition.x, aiEmitter->mPosition.y, aiEmitter->mPosition.z),
-				0.0f
+				0.0f,
+				leafNode
 			);
 
 			pScene->emitters.push_back(emitter);
-
-			leafNode.type = NodeType::EMITTER;
-			leafNode.id = pScene->emitters.size() - 1;
 		}
-		else if (nodeType == NodeType::CAMERA)
+		else if (leafNode.type == NodeType::CAMERA)
 		{
 			aiCamera* aiCamera = aiScene->mCameras[nodeId];
 
-
+			// No need to compose camera with Node (transformation is already in aiCamera)
 			Camera camera(
 				Vector(aiCamera->mPosition.x,aiCamera->mPosition.y, aiCamera->mPosition.z), 
 				Vector(aiCamera->mLookAt.x,aiCamera->mLookAt.y, aiCamera->mLookAt.z)
 			);
 
 			pScene->cameras.push_back(camera);
-
-			leafNode.type = NodeType::CAMERA;
-			leafNode.id = pScene->cameras.size() - 1;
 		}
-
 
 		parentNode.children.push_back(leafNode);
 	}

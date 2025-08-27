@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <string>
 #include <assimp/scene.h>
 
 struct Vector
@@ -78,25 +79,30 @@ struct Matrix4x4
 };
 
 
-struct MeshCPU
+struct MeshNode
 {
+	SceneData::Node node;
+
 	std::vector<Vertex> vertices;
 	std::vector<unsigned int> indices;
-
 };
 
-struct EmitterCPU
+struct EmitterNode
 {
+	SceneData::Node node;
+
 	Vector position;
 	float intensity;
 
-	EmitterCPU(Vector inPosition, float inIntensity) : position(inPosition), intensity(inIntensity)
+	EmitterNode(Vector inPosition, float inIntensity, SceneData::Node inNode) : position(inPosition), intensity(inIntensity), node(inNode)
 	{
 	}
 };
 
-struct MaterialCPU
+struct MaterialNode
 {
+	SceneData::Node node;
+
 	//Pointer to shaders
 	uint32_t textureID;
 	// In the future this will hold parameters for bsdf (I still don't know if this will be added)

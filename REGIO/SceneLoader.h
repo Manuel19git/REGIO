@@ -29,8 +29,17 @@ struct SceneData
 		std::string name;
 		Matrix4x4 transform;
 		NodeType type;
-		uint32_t id; // Id pointing to the scene maps depending on the NodeType
+		//uint32_t id; // Id pointing to the scene maps depending on the NodeType
 		std::vector<Node> children;
+		Node& operator = (const Node& other)
+		{
+			name = other.name;
+			transform = other.transform;
+			type = other.type;
+			//id = other.id;
+			children = other.children;
+			return *this;
+		}
 	};
 
 	Node* rootNode;
@@ -38,9 +47,9 @@ struct SceneData
 	//std::map<uint32_t, Mesh> meshesMap;
 	//std::map<uint32_t, Camera> camerasMap;
 	//std::map<uint32_t, Emitter> emittersMap;
-	std::vector<MeshCPU> meshes;
+	std::vector<MeshNode> meshes;
 	std::vector<Camera> cameras;
-	std::vector<EmitterCPU> emitters;
+	std::vector<EmitterNode> emitters;
 };
 
 class SceneLoader
