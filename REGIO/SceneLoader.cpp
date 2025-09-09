@@ -93,7 +93,6 @@ void SceneLoader::processNode(SceneData::Node& parentNode,const aiScene* aiScene
 			aiMesh* aiMesh = aiScene->mMeshes[nodeId];
 
 			MeshNode mesh;
-			mesh.node = leafNode;
 
 			mesh.vertices.resize(aiMesh->mNumVertices);
 			mesh.indices.resize(aiMesh->mNumFaces * aiMesh->mFaces->mNumIndices);
@@ -125,6 +124,8 @@ void SceneLoader::processNode(SceneData::Node& parentNode,const aiScene* aiScene
 			}
 			pScene->meshes.push_back(mesh);
 
+			leafNode.id = pScene->meshes.size() - 1;
+
 		}
 		else if (leafNode.type == NodeType::EMITTER)
 		{
@@ -138,6 +139,8 @@ void SceneLoader::processNode(SceneData::Node& parentNode,const aiScene* aiScene
 			);
 
 			pScene->emitters.push_back(emitter);
+
+			leafNode.id = pScene->emitters.size() - 1;
 		}
 		else if (leafNode.type == NodeType::CAMERA)
 		{
@@ -150,6 +153,8 @@ void SceneLoader::processNode(SceneData::Node& parentNode,const aiScene* aiScene
 			);
 
 			pScene->cameras.push_back(camera);
+
+			leafNode.id = pScene->cameras.size() - 1;
 		}
 
 		parentNode.children.push_back(leafNode);

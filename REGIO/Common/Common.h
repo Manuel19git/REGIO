@@ -81,16 +81,12 @@ struct Matrix4x4
 
 struct MeshNode
 {
-	SceneData::Node node;
-
 	std::vector<Vertex> vertices;
 	std::vector<unsigned int> indices;
 };
 
 struct EmitterNode
 {
-	SceneData::Node node;
-
 	Vector position;
 	float intensity;
 
@@ -101,10 +97,9 @@ struct EmitterNode
 
 struct MaterialNode
 {
-	SceneData::Node node;
-
 	//Pointer to shaders
 	uint32_t textureID;
+	uint32_t shaderID;
 	// In the future this will hold parameters for bsdf (I still don't know if this will be added)
 };
 

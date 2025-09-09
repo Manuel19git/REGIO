@@ -29,14 +29,14 @@ struct SceneData
 		std::string name;
 		Matrix4x4 transform;
 		NodeType type;
-		//uint32_t id; // Id pointing to the scene maps depending on the NodeType
+		uint32_t id; // Id pointing to the scene maps depending on the NodeType
 		std::vector<Node> children;
 		Node& operator = (const Node& other)
 		{
 			name = other.name;
 			transform = other.transform;
 			type = other.type;
-			//id = other.id;
+			id = other.id;
 			children = other.children;
 			return *this;
 		}
