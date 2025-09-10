@@ -90,7 +90,7 @@ struct EmitterNode
 	Vector position;
 	float intensity;
 
-	EmitterNode(Vector inPosition, float inIntensity, SceneData::Node inNode) : position(inPosition), intensity(inIntensity), node(inNode)
+	EmitterNode(Vector inPosition, float inIntensity) : position(inPosition), intensity(inIntensity)
 	{
 	}
 };

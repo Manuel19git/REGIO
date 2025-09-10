@@ -134,8 +134,7 @@ void SceneLoader::processNode(SceneData::Node& parentNode,const aiScene* aiScene
 			// For now emitters are only pointLights
 			EmitterNode emitter(
 				Vector(aiEmitter->mPosition.x, aiEmitter->mPosition.y, aiEmitter->mPosition.z),
-				0.0f,
-				leafNode
+				0.0f
 			);
 
 			pScene->emitters.push_back(emitter);
