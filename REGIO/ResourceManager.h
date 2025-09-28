@@ -5,7 +5,12 @@
 
 #include "Interfaces/IRenderer.h"
 #include "Common/Common.h"
+#include "SceneLoader.h"
 
+#include "Common/DX11Common.h"
+
+
+#define DX11 true
 
 struct MeshGPUResource
 {
@@ -14,15 +19,21 @@ struct MeshGPUResource
 	int indexCount;
 };
 
-
 class ResourceManager
 {
+public:
 	//TODO
+	bool initialize(IRenderer* renderer);
+	bool processSceneResources(SceneData& scene);
+	bool processNode(SceneData& scene, const SceneData::Node& node);
+
 	uint32_t loadMeshToGPU(std::string meshPath);
 
 private :
-	std::map <uint32_t, MeshGPUResource> meshResourceMap;
-	std::map <uint32_t, MaterialGPUResource> materialResourceMap;
+#ifdef DX11
+	std::map <std::string, DX11Mesh> meshResourceMap;
+#endif
+	//std::map <uint32_t, MaterialGPUResource> materialResourceMap;
 
-	IRenderer* renderer;
+	IRenderer* m_renderer;
 };

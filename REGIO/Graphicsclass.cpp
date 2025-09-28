@@ -116,7 +116,9 @@ bool GraphicsClass::Initialize(int screenWidth, int screenHeight, HWND hwnd, Inp
 	loader.loadScene(scenePath);
 	loader.pScene;
 
-	// 2. Process Scene Data to generate resources using Resource Manager
+	// 2. Process scene and create RenderItems with its resources.
+	m_resourceManager->initialize(m_renderer.get());
+	m_resourceManager->processSceneResources(*loader.pScene.get()); // Now resource manager has its resources (meshes only for now)
 
 	// 3. Process Scene Data with resources to generate batch of Render Items sharing same shader
 	// 4. For each RenderItem the IRenderer will call DrawItem(RenderItem& renderItem)
