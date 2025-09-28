@@ -98,7 +98,34 @@ void computeBoundingBox(const aiScene* scene, float& left, float& right, float& 
 
 }
 
-#include "SceneLoader.h"
+void buildRenderItems(SceneData::Node& node, std::vector<RenderItem>& items)
+{
+	// Using preorder traverse method for no particular reason :)
+	if (node.type == NodeType::MESH)
+	{
+		RenderItem item;
+		item.meshHandle = node.name;
+		//item.materialHandle = node.materialName?;
+		item.worldTransform = node.transform;
+	}
+	//Emitters?
+
+	if (node.children.size() > 0)
+	{
+		for (auto child : node.children)
+		{
+			buildRenderItems(child, items);
+		}
+	}
+}
+//std::vector<RenderItem> buildRenderItems(const SceneData& scene)
+//{
+//	std::vector<RenderItem> items;
+//	buildR(*scene.rootNode, items);
+//
+//	return items;
+//}
+
 bool GraphicsClass::Initialize(int screenWidth, int screenHeight, HWND hwnd, InputClass* m_Input, std::wstring wideScenePath)
 {
 	PROFILE_SCOPE();
@@ -114,14 +141,16 @@ bool GraphicsClass::Initialize(int screenWidth, int screenHeight, HWND hwnd, Inp
 	// 1. Load scene and generate Scene Data
 	SceneLoader loader;
 	loader.loadScene(scenePath);
-	loader.pScene;
 
 	// 2. Process scene and create RenderItems with its resources.
 	m_resourceManager->initialize(m_renderer.get());
 	m_resourceManager->processSceneResources(*loader.pScene.get()); // Now resource manager has its resources (meshes only for now)
 
 	// 3. Process Scene Data with resources to generate batch of Render Items sharing same shader
-	// 4. For each RenderItem the IRenderer will call DrawItem(RenderItem& renderItem)
+	std::vector<RenderItem> renderItems;
+	buildRenderItems(*loader.pScene->rootNode, renderItems);
+
+	// 4. We use the passes on render Items
 
 
 	//------------------------------------------------------------- OLD -------------------------------------------------------------

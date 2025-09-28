@@ -13,6 +13,7 @@
 #include "Inputclass.h"
 #include "Interfaces/IRenderer.h"
 #include "ResourceManager.h"
+#include "SceneLoader.h"
 
 /////////////
 // GLOBALS //

@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <string>
 #include <assimp/scene.h>
+#include <DirectXMath.h>
 
 struct Vector
 {

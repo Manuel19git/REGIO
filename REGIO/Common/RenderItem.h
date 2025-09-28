@@ -1,12 +1,12 @@
 #pragma once
-#include <cstdint>
-#include <DirectXMath.h>
 
-using namespace DirectX;
+#include <string>
+#include <cstdint>
+#include "Common.h"
 
 struct RenderItem
 {
-	uint32_t meshHandle;
-	uint32_t materialHandle;
-	XMMATRIX worldTransform; // Putting XMMATRIX I am making the engine use DirectX, I should have a generic type
+	std::string meshHandle;
+	std::string materialHandle;
+	Matrix4x4 worldTransform; 
 };
