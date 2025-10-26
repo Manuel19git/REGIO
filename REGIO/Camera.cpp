@@ -166,9 +166,9 @@ float Camera::getFar()
 {
 	return farPlane;
 }
-void Camera::setFar(float far)
+void Camera::setFar(float far_plane)
 {
-	farPlane = far;
+	farPlane = far_plane;
 }
 
 float Camera::getYaw()

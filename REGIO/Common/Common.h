@@ -1,8 +1,15 @@
 #pragma once
+#include <fstream>
 #include <cstdint>
 #include <string>
 #include <assimp/scene.h>
 #include <DirectXMath.h>
+
+// Conversion widestring string
+#include<locale>
+#include<codecvt>
+
+#include <Windows.h>
 
 struct Vector
 {
@@ -103,4 +110,45 @@ struct MaterialNode
 	uint32_t shaderID;
 	// In the future this will hold parameters for bsdf (I still don't know if this will be added)
 };
+
+
+inline std::string searchFileInParentDirectories(std::string path)
+{
+	char buffer[MAX_PATH];
+	GetModuleFileNameA(NULL, buffer, MAX_PATH);
+	std::string modulePath = std::string(buffer);
+	std::string moduleDir = modulePath.substr(0, modulePath.find_last_of("\\/"));
+
+	while (moduleDir != "C:")
+	{
+		std::string fullPath = moduleDir + path;
+		std::ifstream file(fullPath);
+		if (file.good())
+		{
+			return fullPath;
+		}
+		moduleDir = moduleDir.substr(0, moduleDir.find_last_of("\\/"));
+	}
+	return "";
+}
+// Function to transform regular string to wide string 
+inline std::wstring string2WideString(const std::string& s)
+{
+	//setup converter
+	using convert_type = std::codecvt_utf8<wchar_t>;
+	std::wstring_convert<convert_type, wchar_t> converter;
+
+	//use converter (.to_bytes: wstr->str, .from_bytes: str->wstr)
+    return converter.from_bytes(s);
+}
+
+inline std::string wideString2String(const std::wstring& s)
+{
+	//setup converter
+	using convert_type = std::codecvt_utf8<wchar_t>;
+	std::wstring_convert<convert_type, wchar_t> converter;
+
+	//use converter (.to_bytes: wstr->str, .from_bytes: str->wstr)
+    return converter.to_bytes(s);
+}
 

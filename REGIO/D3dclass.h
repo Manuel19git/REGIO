@@ -54,9 +54,9 @@ namespace wrl = Microsoft::WRL;
 ///////////////
 // FUNCTIONS //
 ///////////////
-std::string searchFileInParentDirectories(std::string path);
-std::wstring string2WideString(const std::string& s);
-std::string wideString2String(const std::wstring& s);
+//std::string searchFileInParentDirectories(std::string path);
+//std::wstring string2WideString(const std::string& s);
+//std::string wideString2String(const std::wstring& s);
 
 
 ////////////////////////////////////////////////////////////////////////////////
