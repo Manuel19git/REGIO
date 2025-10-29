@@ -9,8 +9,10 @@
 
 #include "Common/DX11Common.h"
 
+#ifdef DX11_ENABLED
+#include "D3D11Renderer.h"
+#endif
 
-#define DX11 true
 
 struct MeshGPUResource
 {
@@ -30,7 +32,7 @@ public:
 	uint32_t loadMeshToGPU(std::string meshPath);
 
 private :
-#ifdef DX11
+#ifdef DX11_ENABLED
 	std::map <std::string, DX11Mesh> meshResourceMap;
 #endif
 	//std::map <uint32_t, MaterialGPUResource> materialResourceMap;

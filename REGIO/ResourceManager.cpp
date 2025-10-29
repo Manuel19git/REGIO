@@ -1,22 +1,15 @@
 #include "ResourceManager.h"
 
 
-#ifdef DX11
-#include "D3D11Renderer.h"
-#endif
-
 bool ResourceManager::initialize(IRenderer* renderer)
 {
-#ifdef DX11
-	renderer = new D3D11Renderer();
 	m_renderer = renderer;
-#endif
     return true;
 }
 
 bool ResourceManager::processNode(SceneData& scene, const SceneData::Node& node)
 {
-#ifdef DX11
+#ifdef DX11_ENABLED
 	D3D11Renderer* d3d11Renderer = (D3D11Renderer*)m_renderer;
 #endif
 
@@ -31,7 +24,7 @@ bool ResourceManager::processNode(SceneData& scene, const SceneData::Node& node)
 	{
 		if (node.type == NodeType::MESH)
 		{
-#ifdef DX11
+#ifdef DX11_ENABLED
 			DX11Mesh meshResource = {};
 			MeshNode mesh = scene.meshes[node.id];
 
@@ -71,6 +64,8 @@ bool ResourceManager::processNode(SceneData& scene, const SceneData::Node& node)
 			// What should I do with emitters? (Think about this)
 		}
 
+		// TODO: Materials I have to load shaders here
+
 	}
 
 	return true;
@@ -79,7 +74,6 @@ bool ResourceManager::processNode(SceneData& scene, const SceneData::Node& node)
 bool ResourceManager::processSceneResources(SceneData& scene)
 {
 	HRESULT hr;
-	DxgiInfoManager infoManager;
 
 	// Process scene
 	processNode(scene, *scene.rootNode);

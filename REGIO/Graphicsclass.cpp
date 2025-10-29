@@ -138,6 +138,11 @@ bool GraphicsClass::Initialize(int screenWidth, int screenHeight, HWND hwnd, Inp
 		scenePath = searchFileInParentDirectories("\\output\\Maxwell_cat\\source\\maxwell_scene.obj");
 
 	//------------------------------------------------------------- NEW -------------------------------------------------------------
+#ifdef DX11_ENABLED
+	m_renderer = std::make_unique<D3D11Renderer>();
+#endif
+
+
 	// 1. Load scene and generate Scene Data
 	SceneLoader loader;
 	loader.loadScene(scenePath);

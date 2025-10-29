@@ -1,12 +1,21 @@
 #pragma once
+
+
+// Unless we define this NOMINMAX, whenever we includ winowds.h its going to give an error
+#define NOMINMAX 
+#include "Windows.h" // HWND
+
 #include "Common/RenderItem.h"
 
 class IRenderer
 {
-	virtual void DrawItem(RenderItem& renderItem) = 0;
+	// This is not needed if we end up implementing render passes
+	//virtual void DrawItem(RenderItem& renderItem) = 0;
+	virtual void ConfigureRenderPass(HWND hWnd) = 0;
+	virtual void BeginRenderPass() = 0;
 
 
-	virtual void EndScene() = 0;
+	virtual void EndRenderPass() = 0;
 
 
 	// I am still not sure if this should go here
@@ -14,7 +23,7 @@ class IRenderer
 
 
 	// Externally used methods? I don't know if this is final
-	virtual bool CreateBuffer() = 0;
+	//virtual bool CreateBuffer(void* data, size_t dataSize, size_t byteSize, IGPUBuffer& buffer) = 0; //DX11 specific
 	virtual bool ClearBuffer() = 0;
 
 };

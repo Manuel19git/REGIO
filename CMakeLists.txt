@@ -13,6 +13,9 @@ if (CMAKE_SIZEOF_VOID_P EQUAL 8)
     set(W_ARCH "x64")
 endif()
 
+# Here I will put macros used in the project
+option(DIRECTX11 "Render using directx11" ON)
+
 # Function to search for fxc.exe recursively
 function(find_fxc_exe)
     # Set the initial search directory to the Windows Kits folder
@@ -55,6 +58,7 @@ set(SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/SceneLoader.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/ResourceManager.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/D3D11Renderer.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/OpaquePass.cpp"
 
     "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/dxerr.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/DxgiInfoManager.cpp"
@@ -70,6 +74,7 @@ set(HEADERS
     "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/D3dclass.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/ShadowMap.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/D3D11Renderer.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/OpaquePass.h"
 
     "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/ResourceManager.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/SceneLoader.h"
@@ -85,6 +90,8 @@ set(HEADERS
     "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/Common/Common.h"
 
     "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/Interfaces/IRenderer.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/Interfaces/IRenderPass.h"
+
 )
 
 #file(GLOB SOURCES "REGIO/*.cpp") # find files matching the GLOBbing-expression and store it 
@@ -130,6 +137,11 @@ target_include_directories(${PROJECT_NAME} PRIVATE external/assimp/include)
 target_include_directories(${PROJECT_NAME} PRIVATE external/DirectXTK/Inc)
 target_include_directories(${PROJECT_NAME} PRIVATE external/FX11/inc)
 
+# Active options here
+if(DIRECTX11)
+  target_compile_definitions(${PROJECT_NAME} PRIVATE DX11_ENABLED=1)
+endif()
+
 
 # Check the generator used
 if (CMAKE_GENERATOR MATCHES "Visual Studio")
@@ -148,6 +160,7 @@ if (CMAKE_GENERATOR MATCHES "Visual Studio")
     )
     source_group("Interfaces" FILES
         "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/Interfaces/IRenderer.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/Interfaces/IRenderPass.h"
     )
 
     # Set the shader output directory
