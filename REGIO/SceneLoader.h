@@ -6,6 +6,7 @@
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
+#include <assimp/material.h>
 
 #include <DirectXMath.h>
 
@@ -21,6 +22,7 @@ enum NodeType
 	MESH,
 	CAMERA,
 	EMITTER,
+	MATERIAL
 };
 struct SceneData
 {
@@ -50,6 +52,7 @@ struct SceneData
 	std::vector<MeshNode> meshes;
 	std::vector<Camera> cameras;
 	std::vector<EmitterNode> emitters;
+	std::vector<MaterialNode> materials;
 };
 
 class SceneLoader

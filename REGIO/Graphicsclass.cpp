@@ -150,6 +150,7 @@ bool GraphicsClass::Initialize(int screenWidth, int screenHeight, HWND hwnd, Inp
 	// 2. Process scene and create RenderItems with its resources.
 	m_resourceManager->initialize(m_renderer.get());
 	m_resourceManager->processSceneResources(*loader.pScene.get()); // Now resource manager has its resources (meshes only for now)
+	m_resourceManager->loadDefaultShaders(); // Now resource manager has its resources (meshes only for now)
 
 	// 3. Process Scene Data with resources to generate batch of Render Items sharing same shader
 	std::vector<RenderItem> renderItems;

@@ -6,6 +6,7 @@
 // DirectX11 includes
 #include "DX11Buffer.h"
 #include <d3d11_2.h>
+#include <d3dcompiler.h>
 #include "MyException.h"
 #include "DxgiInfoManager.h"
 
@@ -28,6 +29,8 @@ public:
 	void DrawSky() override;
 
 	bool CreateBuffer(const void* data, ID3D11Buffer** outBuffer, D3D11_BUFFER_DESC bufferDesc);
+	bool CreateVertexShader(std::string shaderPath, ID3D11VertexShader* pVertexShader, ID3D11InputLayout* pInputLayout);
+	bool CreatePixelShader(std::string shaderPath, ID3D11PixelShader* pPixelShader);
 	bool ClearBuffer() override;
 
 #ifndef NDEBUG

@@ -56,6 +56,13 @@ std::pair<NodeType,int> getNodeTypeAndID(const aiScene* aiScene, std::string nod
 			return std::pair(NodeType::CAMERA, cameraId);
 		}
 	}
+	for (int materialId = 0; materialId < aiScene->mNumMaterials; ++materialId)
+	{
+		if (aiScene->mMaterials[materialId]->GetName().C_Str() == nodeName)
+		{
+			return std::pair(NodeType::MATERIAL, materialId);
+		}
+	}
 	return std::pair(NodeType::EMPTY, -1);
 }
 
@@ -133,7 +140,7 @@ void SceneLoader::processNode(SceneData::Node& parentNode,const aiScene* aiScene
 
 			// For now emitters are only pointLights
 			EmitterNode emitter(
-				Vector(aiEmitter->mPosition.x, aiEmitter->mPosition.y, aiEmitter->mPosition.z),
+				Vector(aiEmitter->mPosition.x, aiEmitter->mPosition.y, aiEmitter->mPosition.z, 1.0f),
 				0.0f
 			);
 
@@ -147,13 +154,56 @@ void SceneLoader::processNode(SceneData::Node& parentNode,const aiScene* aiScene
 
 			// No need to compose camera with Node (transformation is already in aiCamera)
 			Camera camera(
-				Vector(aiCamera->mPosition.x,aiCamera->mPosition.y, aiCamera->mPosition.z), 
-				Vector(aiCamera->mLookAt.x,aiCamera->mLookAt.y, aiCamera->mLookAt.z)
+				Vector(aiCamera->mPosition.x,aiCamera->mPosition.y, aiCamera->mPosition.z, 1.0f), 
+				Vector(aiCamera->mLookAt.x,aiCamera->mLookAt.y, aiCamera->mLookAt.z, 1.0f)
 			);
 
 			pScene->cameras.push_back(camera);
 
 			leafNode.id = pScene->cameras.size() - 1;
+		}
+		else if (leafNode.type == NodeType::MATERIAL)
+		{
+			aiMaterial* aiMaterial = aiScene->mMaterials[nodeId];
+
+			MaterialNode material;
+			aiColor3D ambient;
+			aiColor3D diffuse;
+			aiColor3D specular;
+			
+			if (AI_SUCCESS == aiMaterial->Get(AI_MATKEY_COLOR_AMBIENT, ambient))
+			{
+				material.ambient = Vector(ambient.r, ambient.g, ambient.b, 1.0f);
+			}
+			if (AI_SUCCESS == aiMaterial->Get(AI_MATKEY_COLOR_DIFFUSE, diffuse))
+			{
+				material.diffuse = Vector(diffuse.r, diffuse.g, diffuse.b, 1.0f);
+			}
+			if (AI_SUCCESS == aiMaterial->Get(AI_MATKEY_COLOR_SPECULAR, specular))
+			{
+				material.specular = Vector(specular.r, specular.g, specular.b, 1.0f);
+			}
+
+			aiString normalTexture;
+			aiString diffuseTexture;
+			aiString specularTexture;
+			if (AI_SUCCESS == aiMaterial->GetTexture(aiTextureType_DIFFUSE, 0, &diffuseTexture))
+			{
+				material.diffuseTexturePath = diffuseTexture.C_Str();
+			}
+			if (AI_SUCCESS == aiMaterial->GetTexture(aiTextureType_SPECULAR, 0, &specularTexture))
+			{
+				material.specularTexturePath = specularTexture.C_Str();
+			}
+			if (AI_SUCCESS == aiMaterial->GetTexture(aiTextureType_NORMALS, 0, &normalTexture))
+			{
+				material.normalTexturePath = normalTexture.C_Str();
+			}
+
+			// Do materials come with shaderPaths?
+
+			pScene->materials.push_back(material);
+			leafNode.id = pScene->materials.size() - 1;
 		}
 
 		parentNode.children.push_back(leafNode);

@@ -16,8 +16,9 @@ struct Vector
 	float x;
 	float y;
 	float z;
+	float w;
 
-	Vector(float inX, float inY, float inZ) : x(inX), y(inY), z(inZ)
+	Vector(float inX, float inY, float inZ, float inW) : x(inX), y(inY), z(inZ), w(inW)
 	{
 	}
 };
@@ -86,32 +87,6 @@ struct Matrix4x4
 
 };
 
-
-struct MeshNode
-{
-	std::vector<Vertex> vertices;
-	std::vector<unsigned int> indices;
-};
-
-struct EmitterNode
-{
-	Vector position;
-	float intensity;
-
-	EmitterNode(Vector inPosition, float inIntensity) : position(inPosition), intensity(inIntensity)
-	{
-	}
-};
-
-struct MaterialNode
-{
-	//Pointer to shaders
-	uint32_t textureID;
-	uint32_t shaderID;
-	// In the future this will hold parameters for bsdf (I still don't know if this will be added)
-};
-
-
 inline std::string searchFileInParentDirectories(std::string path)
 {
 	char buffer[MAX_PATH];
@@ -152,3 +127,32 @@ inline std::string wideString2String(const std::wstring& s)
     return converter.to_bytes(s);
 }
 
+struct MeshNode
+{
+	std::vector<Vertex> vertices;
+	std::vector<unsigned int> indices;
+};
+
+struct EmitterNode
+{
+	Vector position;
+	float intensity;
+
+	EmitterNode(Vector inPosition, float inIntensity) : position(inPosition), intensity(inIntensity)
+	{
+	}
+};
+
+struct MaterialNode
+{
+	//Pointer to shaders
+	std::string normalTexturePath = "";
+	std::string diffuseTexturePath = "";
+	std::string specularTexturePath = "";
+	std::string vertexShaderPath = searchFileInParentDirectories("\\shaders\\VertexShader.cso");
+	std::string pixelShaderPath = searchFileInParentDirectories("\\shaders\\PixelShader.cso");
+	// In the future this will hold parameters for bsdf (I still don't know if this will be added)
+	Vector ambient = Vector(1,1,1,1);
+	Vector diffuse = Vector(1,1,1,1);
+	Vector specular = Vector(0.2,0.2,0.2,1.0);
+};

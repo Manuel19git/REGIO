@@ -63,10 +63,49 @@ bool ResourceManager::processNode(SceneData& scene, const SceneData::Node& node)
 		{
 			// What should I do with emitters? (Think about this)
 		}
+		else if (node.type == NodeType::MATERIAL)
+		{
+#ifdef DX11_ENABLED
+			// TODO: Materials I have to load shaders here (if there are any)
+			DX11Material materialResource;
+			MaterialNode material = scene.materials[node.id];
 
-		// TODO: Materials I have to load shaders here
+			// Default shaders (VertexShader & PixelShader)
+			materialResource.pVertexShader = vertexShaders[0];
+			materialResource.pPixelShader = pixelShaders[1];
+
+
+#endif
+			
+		}
+
 
 	}
+
+	return true;
+}
+
+bool ResourceManager::loadDefaultShaders()
+{
+#ifdef DX11_ENABLED
+	D3D11Renderer* d3d11Renderer = (D3D11Renderer*)m_renderer;
+
+	// Load Vertex Shaders
+	wrl::ComPtr<ID3D11VertexShader> pVertexShader;
+	d3d11Renderer->CreateVertexShader(searchFileInParentDirectories("\\shaders\\VertexShader.cso"), pVertexShader.Get(), pInputLayout.Get());
+	vertexShaders.push_back(pVertexShader);
+
+	// Load Pixel Shaders
+	wrl::ComPtr<ID3D11PixelShader> pPixelShader;
+	d3d11Renderer->CreatePixelShader(searchFileInParentDirectories("\\shaders\\SimplePixelShader.cso"), pPixelShader.Get());
+	pixelShaders.push_back(pPixelShader);
+
+	d3d11Renderer->CreatePixelShader(searchFileInParentDirectories("\\shaders\\PixelShader.cso"), pPixelShader.Get());
+	pixelShaders.push_back(pPixelShader);
+
+	d3d11Renderer->CreatePixelShader(searchFileInParentDirectories("\\shaders\\SkyPixelShader.cso"), pPixelShader.Get());
+	pixelShaders.push_back(pPixelShader);
+#endif
 
 	return true;
 }

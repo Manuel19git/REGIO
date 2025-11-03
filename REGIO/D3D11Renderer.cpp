@@ -20,6 +20,44 @@ bool D3D11Renderer::CreateBuffer( const void* data, ID3D11Buffer** outBuffer, D3
 	return true;
 }
 
+bool D3D11Renderer::CreateVertexShader(std::string shaderPath, ID3D11VertexShader* pVertexShader, ID3D11InputLayout* pInputLayout)
+{
+    HRESULT hr;
+
+    // Read vertex shader
+    wrl::ComPtr<ID3DBlob> pBlob;
+	std::wstring wShaderPath = string2WideString(shaderPath);
+    GFX_THROW_INFO_ONLY(D3DReadFileToBlob(wShaderPath.c_str(), &pBlob));
+    GFX_THROW_INFO_ONLY(pDevice->CreateVertexShader(pBlob->GetBufferPointer(), pBlob->GetBufferSize(), nullptr, &pVertexShader));
+
+    // Build Vertex Layout
+    const D3D11_INPUT_ELEMENT_DESC inputLayoutDesc[] =
+    {
+        {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
+        {"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0},
+        {"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0}
+    };
+    GFX_THROW_INFO(pDevice->CreateInputLayout(inputLayoutDesc, std::size(inputLayoutDesc), pBlob->GetBufferPointer(), pBlob->GetBufferSize(), &pInputLayout));
+
+
+    return true;
+}
+
+bool D3D11Renderer::CreatePixelShader(std::string shaderPath, ID3D11PixelShader* pPixelShader)
+{
+    HRESULT hr;
+
+    // Read pixel shader
+    wrl::ComPtr<ID3DBlob> pBlob;
+	std::wstring wShaderPath = string2WideString(shaderPath);
+	GFX_THROW_INFO_ONLY(D3DReadFileToBlob(wShaderPath.c_str(), &pBlob));
+    GFX_THROW_INFO_ONLY(pDevice->CreatePixelShader(pBlob->GetBufferPointer(), pBlob->GetBufferSize(), nullptr, &pPixelShader));
+
+
+    return true;
+}
+
+
 // In here I would put everything that needs to be done before the render/game loop
 void D3D11Renderer::ConfigureRenderPass(HWND hWnd)
 {
