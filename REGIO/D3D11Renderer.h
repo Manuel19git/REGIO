@@ -9,6 +9,7 @@
 #include <d3dcompiler.h>
 #include "MyException.h"
 #include "DxgiInfoManager.h"
+#include <WICTextureLoader.h>
 
 // Debugging
 #include "SpriteFont.h"
@@ -31,6 +32,7 @@ public:
 	bool CreateBuffer(const void* data, ID3D11Buffer** outBuffer, D3D11_BUFFER_DESC bufferDesc);
 	bool CreateVertexShader(std::string shaderPath, ID3D11VertexShader* pVertexShader, ID3D11InputLayout* pInputLayout);
 	bool CreatePixelShader(std::string shaderPath, ID3D11PixelShader* pPixelShader);
+	bool CreateTexture(std::string texturePath, ID3D11ShaderResourceView* textureResourceView);
 	bool ClearBuffer() override;
 
 #ifndef NDEBUG

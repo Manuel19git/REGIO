@@ -66,17 +66,24 @@ bool ResourceManager::processNode(SceneData& scene, const SceneData::Node& node)
 		else if (node.type == NodeType::MATERIAL)
 		{
 #ifdef DX11_ENABLED
-			// TODO: Materials I have to load shaders here (if there are any)
 			DX11Material materialResource;
 			MaterialNode material = scene.materials[node.id];
 
-			// Default shaders (VertexShader & PixelShader)
+			// Default shaders (VertexShader.cso & PixelShader.cso)
 			materialResource.pVertexShader = vertexShaders[0];
 			materialResource.pPixelShader = pixelShaders[1];
 
+			d3d11Renderer->CreateTexture(material.diffuseTexturePath, materialResource.pDiffuseTexture.Get());
+			d3d11Renderer->CreateTexture(material.specularTexturePath, materialResource.pSpecularTexture.Get());
+			d3d11Renderer->CreateTexture(material.normalTexturePath, materialResource.pNormalTexture.Get());
 
+			materialResource.ambient = XMFLOAT4(material.ambient.x, material.ambient.y, material.ambient.z, material.ambient.w);
+			materialResource.diffuse = XMFLOAT4(material.diffuse.x, material.diffuse.y, material.diffuse.z, material.diffuse.w);
+			materialResource.specular = XMFLOAT4(material.specular.x, material.specular.y, material.specular.z, material.specular.w);
+
+
+			materialResourceMap.insert({ node.name, materialResource });
 #endif
-			
 		}
 
 

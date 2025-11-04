@@ -37,6 +37,7 @@ struct DX11Material
 	wrl::ComPtr<ID3D11VertexShader> pVertexShader;
 	wrl::ComPtr<ID3D11PixelShader> pPixelShader;
 
+	// For now we assume only one texture per type in an object
 	wrl::ComPtr<ID3D11ShaderResourceView> pDiffuseTexture;
 	wrl::ComPtr<ID3D11ShaderResourceView> pSpecularTexture;
 	wrl::ComPtr<ID3D11ShaderResourceView> pNormalTexture;

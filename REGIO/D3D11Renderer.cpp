@@ -57,6 +57,25 @@ bool D3D11Renderer::CreatePixelShader(std::string shaderPath, ID3D11PixelShader*
     return true;
 }
 
+bool D3D11Renderer::CreateTexture(std::string texturePath, ID3D11ShaderResourceView* textureResourceView)
+{
+    HRESULT hr;
+
+	// Convert the string to the right type before feeding it to the following function
+	const size_t pathSize = strlen(texturePath.c_str()) + 1;
+	wchar_t* pathWideString = new wchar_t[pathSize];
+	size_t retVal;
+	mbstowcs_s(&retVal, pathWideString, pathSize, texturePath.c_str(), pathSize - 1);
+
+	GFX_THROW_INFO(CreateWICTextureFromFile(
+		pDevice.Get(),
+		pathWideString,
+		nullptr,
+		&textureResourceView));
+
+    return true;
+}
+
 
 // In here I would put everything that needs to be done before the render/game loop
 void D3D11Renderer::ConfigureRenderPass(HWND hWnd)
