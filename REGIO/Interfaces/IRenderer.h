@@ -6,6 +6,7 @@
 #include "Windows.h" // HWND
 
 #include "Common/RenderItem.h"
+#include "Common/Profiler.h"
 
 class IRenderer
 {
