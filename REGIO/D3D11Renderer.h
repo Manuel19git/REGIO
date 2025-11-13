@@ -2,6 +2,7 @@
 
 #include "Interfaces/IRenderer.h"
 #include "Common/Common.h"
+#include "Common/LightHelper.h"
 
 // DirectX11 includes
 #include "DX11Buffer.h"
@@ -10,6 +11,7 @@
 #include "MyException.h"
 #include "DxgiInfoManager.h"
 #include <WICTextureLoader.h>
+//#include "DDSTextureLoader.h"
 
 // Debugging
 #include "SpriteFont.h"
@@ -20,19 +22,33 @@ using namespace DirectX;
 class D3D11Renderer : public IRenderer
 {
 public:
-	D3D11Renderer();
+	D3D11Renderer(HWND hwnd);
 	~D3D11Renderer();
 
 	//void DrawItem(RenderItem& renderItem) override;
-	void ConfigureRenderPass(HWND hWnd) override;
+	void ConfigureRenderPass(HWND hwnd) override;
+
+	// I don't like having to define a method for each action done with the API 
+	// (TODO: rework this in the future with a little bit more of knowledge)
+	void SetVertexLayoutAndTopology(ID3D11InputLayout* inputLayout, D3D_PRIMITIVE_TOPOLOGY topology);
+	void SetMeshBuffers(ID3D11Buffer* vertexBuffer, ID3D11Buffer* indexBuffer);
+	void SetObjectConstantBufferVS(const void* bufferData, size_t bufferSize, int registerId);
+	void SetObjectConstantBufferPS(const void* bufferData, size_t bufferSize, int registerId);
+	void SetFrameConstantBufferPS(const void* bufferData, size_t bufferSize, int registerId);
+	void SetShaderResourcePS(ID3D11ShaderResourceView* shaderResource, int registerId);
+	void SetShaders(ID3D11VertexShader* vertexShader, ID3D11PixelShader* pixelShader);
+	void DrawItem(uint32_t indexCount);
+
+
 	void BeginRenderPass() override;
 	void EndRenderPass() override;
 	void DrawSky() override;
 
 	bool CreateBuffer(const void* data, ID3D11Buffer** outBuffer, D3D11_BUFFER_DESC bufferDesc);
-	bool CreateVertexShader(std::string shaderPath, ID3D11VertexShader* pVertexShader, ID3D11InputLayout* pInputLayout);
-	bool CreatePixelShader(std::string shaderPath, ID3D11PixelShader* pPixelShader);
-	bool CreateTexture(std::string texturePath, ID3D11ShaderResourceView* textureResourceView);
+	bool CreateVertexShader(std::string shaderPath, ID3D11VertexShader** pVertexShader, ID3D11InputLayout** pInputLayout);
+	bool CreatePixelShader(std::string shaderPath, ID3D11PixelShader** pPixelShader);
+	bool CreateTexture(std::string texturePath, ID3D11ShaderResourceView** textureResourceView);
+
 	bool ClearBuffer() override;
 
 #ifndef NDEBUG
@@ -51,11 +67,21 @@ public:
 
 	Microsoft::WRL::ComPtr<ID3D11SamplerState> pSamplerState;
 
-	Microsoft::WRL::ComPtr<ID3D11InputLayout> pInputLayout;
+	// States
+	Microsoft::WRL::ComPtr<ID3D11RasterizerState> pNoCullRS;
+
+	// Constant buffers
+	Microsoft::WRL::ComPtr<ID3D11Buffer> pObjectConstantBuffer;
+	Microsoft::WRL::ComPtr<ID3D11Buffer> pFrameConstantBuffer;
 
 	// Show fps
 	std::unique_ptr<SpriteFont> spriteFont;
 	std::unique_ptr <SpriteBatch> spriteBatch;
 	std::chrono::time_point<std::chrono::system_clock> start;
+
+	int monitorWidth;
+	int monitorHeight;
+	int screenWidth;
+	int screenHeight;
 
 };

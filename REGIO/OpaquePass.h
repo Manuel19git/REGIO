@@ -4,13 +4,20 @@
 #include "Interfaces/IRenderPass.h"
 #include "Interfaces/IRenderer.h"
 
-#include "ResourceManager.h"
-
-class OpaquePass : public IRenderPass
+class OpaquePass /*: public IRenderPass*/
 {
-	void setup(IRenderer& renderer, HWND hwnd);
-	void execute(IRenderer& renderer, ResourceManager& resourceManager, const std::vector<RenderItem>& items);
-
 public:
+	OpaquePass();
+	~OpaquePass();
+
+	void setup(IRenderer& renderer, ResourceManager& resourceManager, HWND hwnd, Camera* camera);
+	void execute(SceneData& scene, const std::vector<RenderItem>& items);
+
 	IRenderer* m_renderer;
+	ResourceManager* m_resourceManager;
+
+	bool sunActive = false;
+
+private:
+	Camera* mainCamera;
 };

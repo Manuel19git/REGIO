@@ -24,15 +24,17 @@ struct MeshGPUResource
 class ResourceManager
 {
 public:
-	//TODO
+	ResourceManager();
+	~ResourceManager();
+
 	bool initialize(IRenderer* renderer);
 	bool processSceneResources(SceneData& scene);
 	bool processNode(SceneData& scene, const SceneData::Node& node);
 
 	uint32_t loadMeshToGPU(std::string meshPath);
 	bool loadDefaultShaders();
+	bool loadDefaultMaterial();
 
-private :
 #ifdef DX11_ENABLED
 	// TODO: I would like to abstract this resources, but I still need to study other render APIs
 	std::map <std::string, DX11Mesh> meshResourceMap;
@@ -44,5 +46,6 @@ private :
 	wrl::ComPtr<ID3D11InputLayout> pInputLayout;
 #endif
 
+private :
 	IRenderer* m_renderer;
 };

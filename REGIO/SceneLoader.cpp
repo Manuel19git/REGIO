@@ -17,15 +17,16 @@ void SceneLoader::loadScene(std::string scenePath)
 	}
 
 	//Process aiScene to fill SceneData with the data we need
-	SceneData::Node rootNode;
-	rootNode.type = NodeType::EMPTY;
-	rootNode.name = aiScene->mRootNode->mName.C_Str();
-	rootNode.transform = aiScene->mRootNode->mTransformation;
+	pScene->rootNode = new SceneData::Node();
+	pScene->rootNode->type = NodeType::EMPTY;
+	pScene->rootNode->name = aiScene->mRootNode->mName.C_Str();
+	pScene->rootNode->transform = aiScene->mRootNode->mTransformation;
 	
 	for (int i = 0; i < aiScene->mRootNode->mNumChildren; ++i)
 	{
-		processNode(rootNode, aiScene, aiScene->mRootNode->mChildren[i]);
+		processNode(*pScene->rootNode, aiScene, aiScene->mRootNode->mChildren[i]);
 	}
+	delete importer;
 }
 
 std::pair<NodeType,int> getNodeTypeAndID(const aiScene* aiScene, std::string nodeName)
@@ -98,9 +99,9 @@ void SceneLoader::processNode(SceneData::Node& parentNode,const aiScene* aiScene
 		{
 			//aiMesh* aiMesh = aiScene.mMeshes[aiNode->mMeshes[0]];
 			aiMesh* aiMesh = aiScene->mMeshes[nodeId];
+			leafNode.materialName = aiScene->mMaterials[aiMesh->mMaterialIndex]->GetName().C_Str();
 
 			MeshNode mesh;
-
 			mesh.vertices.resize(aiMesh->mNumVertices);
 			mesh.indices.resize(aiMesh->mNumFaces * aiMesh->mFaces->mNumIndices);
 
@@ -162,6 +163,8 @@ void SceneLoader::processNode(SceneData::Node& parentNode,const aiScene* aiScene
 
 			leafNode.id = pScene->cameras.size() - 1;
 		}
+		// Are we sure materials are found in nodes?
+		// How do I connect mesh with material. Maybe I should load materials before meshes
 		else if (leafNode.type == NodeType::MATERIAL)
 		{
 			aiMaterial* aiMaterial = aiScene->mMaterials[nodeId];
@@ -170,6 +173,7 @@ void SceneLoader::processNode(SceneData::Node& parentNode,const aiScene* aiScene
 			aiColor3D ambient;
 			aiColor3D diffuse;
 			aiColor3D specular;
+			aiColor3D reflect;
 			
 			if (AI_SUCCESS == aiMaterial->Get(AI_MATKEY_COLOR_AMBIENT, ambient))
 			{
@@ -183,6 +187,11 @@ void SceneLoader::processNode(SceneData::Node& parentNode,const aiScene* aiScene
 			{
 				material.specular = Vector(specular.r, specular.g, specular.b, 1.0f);
 			}
+			if (AI_SUCCESS == aiMaterial->Get(AI_MATKEY_COLOR_REFLECTIVE, reflect))
+			{
+				material.reflect = Vector(reflect.r, reflect.g, reflect.b, 1.0f);
+			}
+
 
 			aiString normalTexture;
 			aiString diffuseTexture;

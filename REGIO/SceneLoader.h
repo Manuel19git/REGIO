@@ -29,6 +29,7 @@ struct SceneData
 	struct Node
 	{
 		std::string name;
+		std::string materialName;
 		Matrix4x4 transform;
 		NodeType type;
 		uint32_t id; // Id pointing to the scene maps depending on the NodeType

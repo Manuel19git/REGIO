@@ -1,6 +1,14 @@
 #include "ResourceManager.h"
 
 
+ResourceManager::ResourceManager()
+{
+}
+
+ResourceManager::~ResourceManager()
+{
+}
+
 bool ResourceManager::initialize(IRenderer* renderer)
 {
 	m_renderer = renderer;
@@ -48,14 +56,6 @@ bool ResourceManager::processNode(SceneData& scene, const SceneData::Node& node)
 			d3d11Renderer->CreateBuffer(mesh.indices.data(), &meshResource.indexBuffer, bufferDesc);
 			meshResource.indexCount = mesh.indices.size();
 
-			// Constant buffer?
-			bufferDesc.ByteWidth = sizeof(Matrix4x4);
-			bufferDesc.Usage = D3D11_USAGE_DYNAMIC; // CPU Write and GPU Read (Used for buffers updated at least once per frame)
-			bufferDesc.BindFlags = D3D10_BIND_CONSTANT_BUFFER;
-			bufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE; // Allow CPU to write to the buffer
-
-			d3d11Renderer->CreateBuffer(nullptr, &meshResource.transformationBuffer, bufferDesc);
-
 			meshResourceMap.insert({ node.name, meshResource });
 #endif
 		}
@@ -72,21 +72,25 @@ bool ResourceManager::processNode(SceneData& scene, const SceneData::Node& node)
 			// Default shaders (VertexShader.cso & PixelShader.cso)
 			materialResource.pVertexShader = vertexShaders[0];
 			materialResource.pPixelShader = pixelShaders[1];
+			
+			if (material.diffuseTexturePath != "")
+				d3d11Renderer->CreateTexture(material.diffuseTexturePath, materialResource.pDiffuseTexture.GetAddressOf());
 
-			d3d11Renderer->CreateTexture(material.diffuseTexturePath, materialResource.pDiffuseTexture.Get());
-			d3d11Renderer->CreateTexture(material.specularTexturePath, materialResource.pSpecularTexture.Get());
-			d3d11Renderer->CreateTexture(material.normalTexturePath, materialResource.pNormalTexture.Get());
+			if (material.specularTexturePath != "")
+				d3d11Renderer->CreateTexture(material.specularTexturePath, materialResource.pSpecularTexture.GetAddressOf());
+
+			if (material.normalTexturePath != "")
+				d3d11Renderer->CreateTexture(material.normalTexturePath, materialResource.pNormalTexture.GetAddressOf());
 
 			materialResource.ambient = XMFLOAT4(material.ambient.x, material.ambient.y, material.ambient.z, material.ambient.w);
 			materialResource.diffuse = XMFLOAT4(material.diffuse.x, material.diffuse.y, material.diffuse.z, material.diffuse.w);
 			materialResource.specular = XMFLOAT4(material.specular.x, material.specular.y, material.specular.z, material.specular.w);
+			materialResource.reflect = XMFLOAT4(material.reflect.x, material.reflect.y, material.reflect.z, material.reflect.w);
 
 
 			materialResourceMap.insert({ node.name, materialResource });
 #endif
 		}
-
-
 	}
 
 	return true;
@@ -99,22 +103,44 @@ bool ResourceManager::loadDefaultShaders()
 
 	// Load Vertex Shaders
 	wrl::ComPtr<ID3D11VertexShader> pVertexShader;
-	d3d11Renderer->CreateVertexShader(searchFileInParentDirectories("\\shaders\\VertexShader.cso"), pVertexShader.Get(), pInputLayout.Get());
+	d3d11Renderer->CreateVertexShader(searchFileInParentDirectories("\\shaders\\VertexShader.cso"), pVertexShader.GetAddressOf(), pInputLayout.GetAddressOf());
 	vertexShaders.push_back(pVertexShader);
 
 	// Load Pixel Shaders
+	wrl::ComPtr<ID3D11PixelShader> pSimplePixelShader;
+	d3d11Renderer->CreatePixelShader(searchFileInParentDirectories("\\shaders\\SimplePixelShader.cso"), pSimplePixelShader.GetAddressOf());
+	pixelShaders.push_back(pSimplePixelShader);
+
 	wrl::ComPtr<ID3D11PixelShader> pPixelShader;
-	d3d11Renderer->CreatePixelShader(searchFileInParentDirectories("\\shaders\\SimplePixelShader.cso"), pPixelShader.Get());
+	d3d11Renderer->CreatePixelShader(searchFileInParentDirectories("\\shaders\\PixelShader.cso"), pPixelShader.GetAddressOf());
 	pixelShaders.push_back(pPixelShader);
 
-	d3d11Renderer->CreatePixelShader(searchFileInParentDirectories("\\shaders\\PixelShader.cso"), pPixelShader.Get());
-	pixelShaders.push_back(pPixelShader);
-
-	d3d11Renderer->CreatePixelShader(searchFileInParentDirectories("\\shaders\\SkyPixelShader.cso"), pPixelShader.Get());
-	pixelShaders.push_back(pPixelShader);
+	wrl::ComPtr<ID3D11PixelShader> pSkyPixelShader;
+	d3d11Renderer->CreatePixelShader(searchFileInParentDirectories("\\shaders\\SkyPixelShader.cso"), pSkyPixelShader.GetAddressOf());
+	pixelShaders.push_back(pSkyPixelShader);
 #endif
 
 	return true;
+}
+
+bool ResourceManager::loadDefaultMaterial()
+{
+#ifdef DX11_ENABLED
+	DX11Material defaultMaterial;
+
+	// Default shaders (VertexShader.cso & PixelShader.cso)
+	defaultMaterial.pVertexShader = vertexShaders[0];
+	defaultMaterial.pPixelShader = pixelShaders[1];
+
+    defaultMaterial.ambient    = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+    defaultMaterial.diffuse    = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+    defaultMaterial.specular   = XMFLOAT4(0.2f, 0.2f, 0.2f, 1.0f);
+
+	materialResourceMap.insert({ "DefaultMaterial", defaultMaterial});
+#endif
+
+	return true;
+
 }
 
 bool ResourceManager::processSceneResources(SceneData& scene)
