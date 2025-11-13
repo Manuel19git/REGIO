@@ -19,6 +19,7 @@ void OpaquePass::setup(IRenderer& renderer, ResourceManager& resourceManager, HW
 	d3d11renderer->ConfigureRenderPass(hwnd);
 #endif
 }
+
 // I think that in execute I should also have the resourceManager, to access the resources referenced in RenderItems.
 // This way, the renderer doesn't need to know of the existence of a resourceManager 
 void OpaquePass::execute(SceneData& scene, const std::vector<RenderItem>& items)
@@ -29,7 +30,7 @@ void OpaquePass::execute(SceneData& scene, const std::vector<RenderItem>& items)
 #ifdef DX11_ENABLED
 
 	D3D11Renderer* d3d11renderer = (D3D11Renderer*)m_renderer;
-	// 1. Begin frame (toda la limpia del frame anterior y eso? establecer target y eso va aquí)
+	// 1. Begin frame (toda la limpia del frame anterior y eso? establecer target y eso va aquï¿½)
 	d3d11renderer->BeginRenderPass();
 
 	for (auto renderItem : items)

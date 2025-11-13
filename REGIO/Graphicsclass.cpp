@@ -20,7 +20,7 @@ GraphicsClass::~GraphicsClass()
 }
 
 // Everything besides scene is output parameter. For this to work the scene meshes should in world space
-void computeBoundingBox(const aiScene* scene, float& left, float& right, float& top, float& bottom, float &nearPlane, float &farPlane)
+void computeBoundingBox(const SceneData& scene, float& left, float& right, float& top, float& bottom, float &nearPlane, float &farPlane)
 {
 	PROFILE_SCOPE();
 
@@ -31,35 +31,35 @@ void computeBoundingBox(const aiScene* scene, float& left, float& right, float& 
 	nearPlane = FLT_MAX;
 	farPlane = -FLT_MAX;
 
-	for (int i = 0; i < scene->mNumMeshes; i++)
+	for (int i = 0; i < scene.meshes.size(); ++i)
 	{
-		aiMesh* mesh = scene->mMeshes[i];
-		for (int j = 0; j < mesh->mNumVertices; j++)
+		MeshNode mesh = scene.meshes[i];
+		for (int j = 0; j < mesh.vertices.size(); j++)
 		{
-			aiVector3D vertex = mesh->mVertices[j];
-			if (vertex.x < left)
+			Vertex vertex = mesh.vertices[j];
+			if (vertex.pos.x < left)
 			{
-				left = vertex.x;
+				left = vertex.pos.x;
 			}
-			if (vertex.x > right)
+			if (vertex.pos.x > right)
 			{
-				right = vertex.x;
+				right = vertex.pos.x;
 			}
-			if (vertex.y > top)
+			if (vertex.pos.y > top)
 			{
-				top = vertex.y;
+				top = vertex.pos.y;
 			}
-			if (vertex.y < bottom)
+			if (vertex.pos.y < bottom)
 			{
-				bottom = vertex.y;
+				bottom = vertex.pos.y;
 			}
-			if (vertex.z < nearPlane)
+			if (vertex.pos.z < nearPlane)
 			{
-				nearPlane = vertex.z;
+				nearPlane = vertex.pos.z;
 			}
-			if (vertex.z > farPlane)
+			if (vertex.pos.z > farPlane)
 			{
-				farPlane = vertex.z;
+				farPlane = vertex.pos.z;
 			}
 		}
 	}
@@ -105,8 +105,10 @@ void buildRenderItems(SceneData::Node& node, std::vector<RenderItem>& items)
 	{
 		RenderItem item;
 		item.meshHandle = node.name;
-		//item.materialHandle = node.materialName?;
+		item.materialHandle = node.materialName;
 		item.worldTransform = node.transform;
+
+		items.push_back(item);
 	}
 	//Emitters?
 
@@ -118,13 +120,6 @@ void buildRenderItems(SceneData::Node& node, std::vector<RenderItem>& items)
 		}
 	}
 }
-//std::vector<RenderItem> buildRenderItems(const SceneData& scene)
-//{
-//	std::vector<RenderItem> items;
-//	buildR(*scene.rootNode, items);
-//
-//	return items;
-//}
 
 bool GraphicsClass::Initialize(int screenWidth, int screenHeight, HWND hwnd, InputClass* m_Input, std::wstring wideScenePath)
 {
@@ -139,45 +134,46 @@ bool GraphicsClass::Initialize(int screenWidth, int screenHeight, HWND hwnd, Inp
 
 	//------------------------------------------------------------- NEW -------------------------------------------------------------
 #ifdef DX11_ENABLED
-	m_renderer = std::make_unique<D3D11Renderer>();
+	m_renderer = std::make_shared<D3D11Renderer>(hwnd);
 #endif
 
-
 	// 1. Load scene and generate Scene Data
-	SceneLoader loader;
-	loader.loadScene(scenePath);
-
+	m_sceneLoader = std::make_unique<SceneLoader>();
+	m_sceneLoader->loadScene(scenePath);
+	
 	// 2. Process scene and create RenderItems with its resources.
+	m_resourceManager = std::make_unique<ResourceManager>();
 	m_resourceManager->initialize(m_renderer.get());
-	m_resourceManager->processSceneResources(*loader.pScene.get()); // Now resource manager has its resources (meshes only for now)
 	m_resourceManager->loadDefaultShaders(); // Now resource manager has its resources (meshes only for now)
+	m_resourceManager->loadDefaultMaterial(); 
+
+	m_resourceManager->processSceneResources(*m_sceneLoader->pScene.get()); // Now resource manager has its resources (meshes only for now)
 
 	// 3. Process Scene Data with resources to generate batch of Render Items sharing same shader
-	std::vector<RenderItem> renderItems;
-	buildRenderItems(*loader.pScene->rootNode, renderItems);
+	buildRenderItems(*m_sceneLoader->pScene->rootNode, renderItems);
 
 	// 4. We use the passes on render Items
-
+	
 
 	//------------------------------------------------------------- OLD -------------------------------------------------------------
 
 	// Read mesh
-	importer = new Assimp::Importer();
-	//mScene = importer->ReadFile("..\\output\\NIER\\Props\\turnstile_wall.usdc", //USD is not fully supported by assimp yet
+	//importer = new Assimp::Importer();
+	////mScene = importer->ReadFile("..\\output\\NIER\\Props\\turnstile_wall.usdc", //USD is not fully supported by assimp yet
+	////	aiProcess_Triangulate | aiProcess_ConvertToLeftHanded);
+	//mScene = importer->ReadFile(scenePath,
 	//	aiProcess_Triangulate | aiProcess_ConvertToLeftHanded);
-	mScene = importer->ReadFile(scenePath,
-		aiProcess_Triangulate | aiProcess_ConvertToLeftHanded);
-	//mScene = importer->ReadFile("..\\output\\NIER\\nier_park.obj",
-	//	aiProcess_Triangulate | aiProcess_ConvertToLeftHanded);
-	//mScene = importer->ReadFile("..\\output\\NIER\\nier_park.glb",
-	//	aiProcess_Triangulate | aiProcess_ConvertToLeftHanded);
-	if (!mScene)
-	{
-		MessageBoxA(nullptr, importer->GetErrorString(), "Assimp Importer error", 0);
-	}
+	////mScene = importer->ReadFile("..\\output\\NIER\\nier_park.obj",
+	////	aiProcess_Triangulate | aiProcess_ConvertToLeftHanded);
+	////mScene = importer->ReadFile("..\\output\\NIER\\nier_park.glb",
+	////	aiProcess_Triangulate | aiProcess_ConvertToLeftHanded);
+	//if (!mScene)
+	//{
+	//	MessageBoxA(nullptr, importer->GetErrorString(), "Assimp Importer error", 0);
+	//}
 
 	// Compute bounding box
-	computeBoundingBox(mScene, scenebbox.left, scenebbox.right, scenebbox.top, scenebbox.bottom, scenebbox.nearPlane, scenebbox.farPlane);
+	computeBoundingBox(*m_sceneLoader->pScene, scenebbox.left, scenebbox.right, scenebbox.top, scenebbox.bottom, scenebbox.nearPlane, scenebbox.farPlane);
 
 	// Initialize player camera before directX
 	XMFLOAT3 startPosition = XMFLOAT3(0.5f, 2.0f, -4.0f);
@@ -186,17 +182,20 @@ bool GraphicsClass::Initialize(int screenWidth, int screenHeight, HWND hwnd, Inp
 	mainCamera->setResolution(screenWidth, screenHeight);
 	mainCamera->setSceneBBox(scenebbox);
 
-	// TODO: Renderer is the one that should be initialized and used. With this we can add new APIs in the future
-	//m_Renderer = std::make_unique<D3DClass>();
+	//// TODO: Renderer is the one that should be initialized and used. With this we can add new APIs in the future
+	////m_Renderer = std::make_unique<D3DClass>();
 
-	// Create window
-	m_D3D = new D3DClass();
-	bool result = m_D3D->Initialize(hwnd, mScene, mainCamera);
-	if (!result)
-	{
-		return false;
-	}
+	//// Create window
+	//m_D3D = new D3DClass();
+	//bool result = m_D3D->Initialize(hwnd, mScene, mainCamera);
+	//if (!result)
+	//{
+	//	return false;
+	//}
 	//-------------------------------------------------------------------------------------------------------------------------------
+	m_opaquePass = std::make_unique<OpaquePass>();
+	m_opaquePass->setup(*m_renderer, *m_resourceManager, hwnd, mainCamera);
+
 
 	return true;
 }
@@ -205,27 +204,30 @@ bool GraphicsClass::Frame()
 {
 	PROFILE_SCOPE();
 
-	// In the future I may want to dynamically change sun position, hence we create sunCamera here :)
-	float scale = 1.0f;
-	//offset -= (fabs(offset) < 3) ? 0.001 : 0.0;
-	offset = 0;
-	//XMFLOAT3 sunPosition = XMFLOAT3(1.0f * scale, 0.5f * scale, -0.5f + offset);
-	XMFLOAT3 sunPosition = XMFLOAT3(0.0f, 100.0f , 0.0f ) ;
-	XMVECTOR sunDirection = XMVector3Normalize(XMVectorSubtract(XMVectorZero(), XMLoadFloat3(&sunPosition)));
-	Camera* sunCamera = new Camera(sunPosition, sunDirection);
-	sunCamera->setResolution(mainCamera->getResolution().first, mainCamera->getResolution().second);
-	m_D3D->sunCamera = sunCamera;
-	m_D3D->sunActive = sunActive;
+	//// In the future I may want to dynamically change sun position, hence we create sunCamera here :)
+	//float scale = 1.0f;
+	////offset -= (fabs(offset) < 3) ? 0.001 : 0.0;
+	//offset = 0;
+	////XMFLOAT3 sunPosition = XMFLOAT3(1.0f * scale, 0.5f * scale, -0.5f + offset);
+	//XMFLOAT3 sunPosition = XMFLOAT3(0.0f, 100.0f , 0.0f ) ;
+	//XMVECTOR sunDirection = XMVector3Normalize(XMVectorSubtract(XMVectorZero(), XMLoadFloat3(&sunPosition)));
+	//Camera* sunCamera = new Camera(sunPosition, sunDirection);
+	//sunCamera->setResolution(mainCamera->getResolution().first, mainCamera->getResolution().second);
+	//m_D3D->sunCamera = sunCamera;
+	//m_D3D->sunActive = sunActive;
 
-	m_D3D->ClearBuffer(0.0f, 0.0f, 0.0f);
-	//m_D3D->DrawShadowMap(mScene, sunCamera);
+	//m_D3D->ClearBuffer(0.0f, 0.0f, 0.0f);
+	////m_D3D->DrawShadowMap(mScene, sunCamera);
 
-	scenebbox = m_D3D->ComputeSunFrustum();
-	sunCamera->setSceneBBox(scenebbox);
-	m_D3D->DrawScene(mScene, mainCamera);
-	m_D3D->DrawSky(mScene, mainCamera);
-	m_D3D->DrawDebug(mScene, mainCamera);
-	m_D3D->EndScene();
+	//scenebbox = m_D3D->ComputeSunFrustum();
+	//sunCamera->setSceneBBox(scenebbox);
+	//m_D3D->DrawScene(mScene, mainCamera);
+	//m_D3D->DrawSky(mScene, mainCamera);
+	//m_D3D->DrawDebug(mScene, mainCamera);
+	//m_D3D->EndScene();
+
+	m_opaquePass->sunActive = sunActive;
+	m_opaquePass->execute(*m_sceneLoader->pScene.get(), renderItems);
 
 	//float color = sin(count);
 	//count += 0.03f;
@@ -274,20 +276,20 @@ bool GraphicsClass::RotateCamera(int sign)
 
 void GraphicsClass::Shutdown()
 {
-	if (importer != nullptr)
-	{
-		delete importer;
-	}
-	else if (mScene != nullptr)
-	{
-		delete mScene;
-	}
-	else if (mainCamera != nullptr)
-	{
-		delete mainCamera;
-	}
+	//if (importer != nullptr)
+	//{
+	//	�delete importer;
+	//}
+	//else if (mScene != nullptr)
+	//{
+	//	delete mScene;
+	//}
+	//else if (mainCamera != nullptr)
+	//{
+	//	delete mainCamera;
+	//}
 
-	m_D3D->Shutdown();
+	//m_D3D->Shutdown();
 	return;
 }
 

@@ -14,6 +14,7 @@
 #include "Interfaces/IRenderer.h"
 #include "ResourceManager.h"
 #include "SceneLoader.h"
+#include "OpaquePass.h"
 
 /////////////
 // GLOBALS //
@@ -47,8 +48,14 @@ public:
 
 private:
 	
-	std::unique_ptr<IRenderer> m_renderer;
+	std::shared_ptr<IRenderer> m_renderer;
 	std::unique_ptr<ResourceManager> m_resourceManager;
+	std::unique_ptr<SceneLoader> m_sceneLoader;
+
+	std::unique_ptr<OpaquePass> m_opaquePass;
+
+	std::vector<RenderItem> renderItems;
+	
 
 	D3DClass* m_D3D;
 	Mouse* mouse;
