@@ -170,7 +170,7 @@ private:
 	PointLight pointLight;
 	PointLight pointLights[6];
 	SpotLight spotLight;
-	Material material;
+	MaterialGPU material;
 
 	// Show fps
 	std::unique_ptr<SpriteFont> spriteFont;

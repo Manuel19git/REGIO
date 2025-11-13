@@ -1,6 +1,6 @@
 #pragma once
 
-struct Material
+struct MaterialGPU
 {
 	float4 Ambient;
 	float4 Diffuse;
@@ -47,7 +47,7 @@ struct SpotLight
     float Intensity;
 };
 
-void ComputeDirectionalLight(Material mat, DirectionalLight light,
+void ComputeDirectionalLight(MaterialGPU mat, DirectionalLight light,
 	float3 normal, float3 toEye,
 	out float4 ambient,
 	out float4 diffuse,
@@ -75,7 +75,7 @@ void ComputeDirectionalLight(Material mat, DirectionalLight light,
     }
 }
 
- void ComputePointLight(Material mat, PointLight light,
+ void ComputePointLight(MaterialGPU mat, PointLight light,
 	float3 pos, float3 normal, float3 toEye,
 	out float4 ambient,
 	out float4 diffuse,
@@ -117,7 +117,7 @@ void ComputeDirectionalLight(Material mat, DirectionalLight light,
     specular *= att;
 }
 
-void ComputeSpotLight(Material mat, SpotLight light,
+void ComputeSpotLight(MaterialGPU mat, SpotLight light,
 	float3 pos, float3 normal, float3 toEye,
 	out float4 ambient,
 	out float4 diffuse,

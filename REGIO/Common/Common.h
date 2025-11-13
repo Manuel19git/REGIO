@@ -155,4 +155,5 @@ struct MaterialNode
 	Vector ambient = Vector(1,1,1,1);
 	Vector diffuse = Vector(1,1,1,1);
 	Vector specular = Vector(0.2,0.2,0.2,1.0);
+	Vector reflect = Vector(0,0,0,1);
 };
