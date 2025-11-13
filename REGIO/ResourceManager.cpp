@@ -63,34 +63,6 @@ bool ResourceManager::processNode(SceneData& scene, const SceneData::Node& node)
 		{
 			// What should I do with emitters? (Think about this)
 		}
-		else if (node.type == NodeType::MATERIAL)
-		{
-#ifdef DX11_ENABLED
-			DX11Material materialResource;
-			MaterialNode material = scene.materials[node.id];
-
-			// Default shaders (VertexShader.cso & PixelShader.cso)
-			materialResource.pVertexShader = vertexShaders[0];
-			materialResource.pPixelShader = pixelShaders[1];
-			
-			if (material.diffuseTexturePath != "")
-				d3d11Renderer->CreateTexture(material.diffuseTexturePath, materialResource.pDiffuseTexture.GetAddressOf());
-
-			if (material.specularTexturePath != "")
-				d3d11Renderer->CreateTexture(material.specularTexturePath, materialResource.pSpecularTexture.GetAddressOf());
-
-			if (material.normalTexturePath != "")
-				d3d11Renderer->CreateTexture(material.normalTexturePath, materialResource.pNormalTexture.GetAddressOf());
-
-			materialResource.ambient = XMFLOAT4(material.ambient.x, material.ambient.y, material.ambient.z, material.ambient.w);
-			materialResource.diffuse = XMFLOAT4(material.diffuse.x, material.diffuse.y, material.diffuse.z, material.diffuse.w);
-			materialResource.specular = XMFLOAT4(material.specular.x, material.specular.y, material.specular.z, material.specular.w);
-			materialResource.reflect = XMFLOAT4(material.reflect.x, material.reflect.y, material.reflect.z, material.reflect.w);
-
-
-			materialResourceMap.insert({ node.name, materialResource });
-#endif
-		}
 	}
 
 	return true;
@@ -151,11 +123,34 @@ bool ResourceManager::processSceneResources(SceneData& scene)
 	processNode(scene, *scene.rootNode);
 
 	// Process materials
-	//for (const auto& material : scene.materials)
+#ifdef DX11_ENABLED
+	D3D11Renderer* d3d11Renderer = (D3D11Renderer*)m_renderer;
+
+	for (const auto& material : scene.materials)
 	{
-		// Load material resources here
-		// ...
+		DX11Material materialResource;
+
+		// Default shaders (VertexShader.cso & PixelShader.cso)
+		materialResource.pVertexShader = vertexShaders[0];
+		materialResource.pPixelShader = pixelShaders[1];
+
+		if (material.diffuseTexturePath != "")
+			d3d11Renderer->CreateTexture(material.diffuseTexturePath, materialResource.pDiffuseTexture.GetAddressOf());
+
+		if (material.specularTexturePath != "")
+			d3d11Renderer->CreateTexture(material.specularTexturePath, materialResource.pSpecularTexture.GetAddressOf());
+
+		if (material.normalTexturePath != "")
+			d3d11Renderer->CreateTexture(material.normalTexturePath, materialResource.pNormalTexture.GetAddressOf());
+
+		materialResource.ambient = XMFLOAT4(material.ambient.x, material.ambient.y, material.ambient.z, material.ambient.w);
+		materialResource.diffuse = XMFLOAT4(material.diffuse.x, material.diffuse.y, material.diffuse.z, material.diffuse.w);
+		materialResource.specular = XMFLOAT4(material.specular.x, material.specular.y, material.specular.z, material.specular.w);
+		materialResource.reflect = XMFLOAT4(material.reflect.x, material.reflect.y, material.reflect.z, material.reflect.w);
+
+		materialResourceMap.insert({ material.name, materialResource });
 	}
+#endif
 
 	return true;
 }

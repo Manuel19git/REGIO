@@ -59,6 +59,8 @@ struct SceneData
 class SceneLoader
 {
 private:
+	void loadMaterials(const aiScene* scene);
+
 	void processNode(SceneData::Node& parentNode, const aiScene* scene, const aiNode* node);
 
 public:

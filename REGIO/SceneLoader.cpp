@@ -16,6 +16,9 @@ void SceneLoader::loadScene(std::string scenePath)
 		MessageBoxA(nullptr, importer->GetErrorString(), "Assimp Importer error", 0);
 	}
 
+	// Materials are not represented as "nodes" on the scene, so we load them separately
+	loadMaterials(aiScene);
+
 	//Process aiScene to fill SceneData with the data we need
 	pScene->rootNode = new SceneData::Node();
 	pScene->rootNode->type = NodeType::EMPTY;
@@ -65,6 +68,58 @@ std::pair<NodeType,int> getNodeTypeAndID(const aiScene* aiScene, std::string nod
 		}
 	}
 	return std::pair(NodeType::EMPTY, -1);
+}
+
+void SceneLoader::loadMaterials(const aiScene* scene)
+{
+	for (int i = 0; i < scene->mNumMaterials; ++i)
+	{
+		aiMaterial* aiMaterial = scene->mMaterials[i];
+
+		MaterialNode material;
+		material.name = aiMaterial->GetName().C_Str();
+
+		aiColor3D ambient;
+		aiColor3D diffuse;
+		aiColor3D specular;
+		aiColor3D reflect;
+
+		if (AI_SUCCESS == aiMaterial->Get(AI_MATKEY_COLOR_AMBIENT, ambient))
+		{
+			material.ambient = Vector(ambient.r, ambient.g, ambient.b, 1.0f);
+		}
+		if (AI_SUCCESS == aiMaterial->Get(AI_MATKEY_COLOR_DIFFUSE, diffuse))
+		{
+			material.diffuse = Vector(diffuse.r, diffuse.g, diffuse.b, 1.0f);
+		}
+		if (AI_SUCCESS == aiMaterial->Get(AI_MATKEY_COLOR_SPECULAR, specular))
+		{
+			material.specular = Vector(specular.r, specular.g, specular.b, 1.0f);
+		}
+		if (AI_SUCCESS == aiMaterial->Get(AI_MATKEY_COLOR_REFLECTIVE, reflect))
+		{
+			material.reflect = Vector(reflect.r, reflect.g, reflect.b, 1.0f);
+		}
+
+
+		aiString normalTexture;
+		aiString diffuseTexture;
+		aiString specularTexture;
+		if (AI_SUCCESS == aiMaterial->GetTexture(aiTextureType_DIFFUSE, 0, &diffuseTexture))
+		{
+			material.diffuseTexturePath = diffuseTexture.C_Str();
+		}
+		if (AI_SUCCESS == aiMaterial->GetTexture(aiTextureType_SPECULAR, 0, &specularTexture))
+		{
+			material.specularTexturePath = specularTexture.C_Str();
+		}
+		if (AI_SUCCESS == aiMaterial->GetTexture(aiTextureType_NORMALS, 0, &normalTexture))
+		{
+			material.normalTexturePath = normalTexture.C_Str();
+		}
+
+		pScene->materials.push_back(material);
+	}
 }
 
 //TODO: Nodes with children will be "empty" for now
@@ -163,58 +218,6 @@ void SceneLoader::processNode(SceneData::Node& parentNode,const aiScene* aiScene
 
 			leafNode.id = pScene->cameras.size() - 1;
 		}
-		// Are we sure materials are found in nodes?
-		// How do I connect mesh with material. Maybe I should load materials before meshes
-		else if (leafNode.type == NodeType::MATERIAL)
-		{
-			aiMaterial* aiMaterial = aiScene->mMaterials[nodeId];
-
-			MaterialNode material;
-			aiColor3D ambient;
-			aiColor3D diffuse;
-			aiColor3D specular;
-			aiColor3D reflect;
-			
-			if (AI_SUCCESS == aiMaterial->Get(AI_MATKEY_COLOR_AMBIENT, ambient))
-			{
-				material.ambient = Vector(ambient.r, ambient.g, ambient.b, 1.0f);
-			}
-			if (AI_SUCCESS == aiMaterial->Get(AI_MATKEY_COLOR_DIFFUSE, diffuse))
-			{
-				material.diffuse = Vector(diffuse.r, diffuse.g, diffuse.b, 1.0f);
-			}
-			if (AI_SUCCESS == aiMaterial->Get(AI_MATKEY_COLOR_SPECULAR, specular))
-			{
-				material.specular = Vector(specular.r, specular.g, specular.b, 1.0f);
-			}
-			if (AI_SUCCESS == aiMaterial->Get(AI_MATKEY_COLOR_REFLECTIVE, reflect))
-			{
-				material.reflect = Vector(reflect.r, reflect.g, reflect.b, 1.0f);
-			}
-
-
-			aiString normalTexture;
-			aiString diffuseTexture;
-			aiString specularTexture;
-			if (AI_SUCCESS == aiMaterial->GetTexture(aiTextureType_DIFFUSE, 0, &diffuseTexture))
-			{
-				material.diffuseTexturePath = diffuseTexture.C_Str();
-			}
-			if (AI_SUCCESS == aiMaterial->GetTexture(aiTextureType_SPECULAR, 0, &specularTexture))
-			{
-				material.specularTexturePath = specularTexture.C_Str();
-			}
-			if (AI_SUCCESS == aiMaterial->GetTexture(aiTextureType_NORMALS, 0, &normalTexture))
-			{
-				material.normalTexturePath = normalTexture.C_Str();
-			}
-
-			// Do materials come with shaderPaths?
-
-			pScene->materials.push_back(material);
-			leafNode.id = pScene->materials.size() - 1;
-		}
-
 		parentNode.children.push_back(leafNode);
 	}
 

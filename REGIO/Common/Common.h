@@ -145,6 +145,8 @@ struct EmitterNode
 
 struct MaterialNode
 {
+	std::string name;
+
 	//Pointer to shaders
 	std::string normalTexturePath = "";
 	std::string diffuseTexturePath = "";
