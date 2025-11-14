@@ -3,9 +3,9 @@
 #include "Interfaces/IRenderer.h"
 #include "Common/Common.h"
 #include "Common/LightHelper.h"
+#include "Common/Macros.h"
 
 // DirectX11 includes
-#include "DX11Buffer.h"
 #include <d3d11_2.h>
 #include <d3dcompiler.h>
 #include "MyException.h"

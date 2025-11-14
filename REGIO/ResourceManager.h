@@ -14,13 +14,6 @@
 #endif
 
 
-struct MeshGPUResource
-{
-	IGPUBuffer* vertexBuffer;
-	IGPUBuffer* indexBuffer;
-	int indexCount;
-};
-
 class ResourceManager
 {
 public:

@@ -4,9 +4,11 @@
 // Unless we define this NOMINMAX, whenever we includ winowds.h its going to give an error
 #define NOMINMAX 
 #include "Windows.h" // HWND
+#include "wrl.h"
+#include "../Common/RenderItem.h"
+#include "../Common/Profiler.h"
 
-#include "Common/RenderItem.h"
-#include "Common/Profiler.h"
+namespace wrl = Microsoft::WRL;
 
 class IRenderer
 {
