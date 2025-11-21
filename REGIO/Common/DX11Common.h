@@ -23,6 +23,8 @@ struct DX11Material
 	wrl::ComPtr<ID3D11ShaderResourceView> pSpecularTexture;
 	wrl::ComPtr<ID3D11ShaderResourceView> pNormalTexture;
 
+	Microsoft::WRL::ComPtr<ID3D11SamplerState> pSamplerState;
+
 	wrl::ComPtr<ID3D11InputLayout> pInputLayout;
 
 	DirectX::XMFLOAT4 ambient;

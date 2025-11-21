@@ -15,10 +15,10 @@ class IRenderer
 	// This is not needed if we end up implementing render passes
 	//virtual void DrawItem(RenderItem& renderItem) = 0;
 	virtual void ConfigureRenderPass(HWND hWnd) = 0;
-	virtual void BeginRenderPass() = 0;
 
 
-	virtual void EndRenderPass() = 0;
+	virtual void BeginRenderFrame() = 0;
+	virtual void EndRenderFrame() = 0;
 
 
 	// I am still not sure if this should go here

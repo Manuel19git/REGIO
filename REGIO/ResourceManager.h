@@ -21,12 +21,12 @@ public:
 	~ResourceManager();
 
 	bool initialize(IRenderer* renderer);
-	bool processSceneResources(SceneData& scene);
-	bool processNode(SceneData& scene, const SceneData::Node& node);
-
-	uint32_t loadMeshToGPU(std::string meshPath);
+	bool loadSceneResources(SceneData& scene);
+	std::string loadDefaultMaterialResource();
 	bool loadDefaultShaders();
-	bool loadDefaultMaterial();
+
+	std::string loadSkyMeshResource();
+	std::string loadSkyMaterialResource();
 
 #ifdef DX11_ENABLED
 	// TODO: I would like to abstract this resources, but I still need to study other render APIs
@@ -40,5 +40,8 @@ public:
 #endif
 
 private :
+	bool processNode(SceneData& scene, const SceneData::Node& node);
+
+private:
 	IRenderer* m_renderer;
 };

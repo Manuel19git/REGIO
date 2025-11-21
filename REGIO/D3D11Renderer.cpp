@@ -170,6 +170,43 @@ bool D3D11Renderer::CreateTexture(std::string texturePath, ID3D11ShaderResourceV
     return true;
 }
 
+bool D3D11Renderer::CreateDDSTexture(std::string texturePath, ID3D11ShaderResourceView** textureResourceView)
+{
+    HRESULT hr;
+
+	// Convert the string to the right type before feeding it to the following function
+	const size_t pathSize = strlen(texturePath.c_str()) + 1;
+	wchar_t* pathWideString = new wchar_t[pathSize];
+	size_t retVal;
+	mbstowcs_s(&retVal, pathWideString, pathSize, texturePath.c_str(), pathSize - 1);
+
+	GFX_THROW_INFO(CreateDDSTextureFromFile(
+		pDevice.Get(),
+		pathWideString,
+		nullptr,
+		textureResourceView));
+
+    return true;
+}
+
+bool D3D11Renderer::CreateSamplerState(D3D11_FILTER filterMode, D3D11_TEXTURE_ADDRESS_MODE addressMode, D3D11_COMPARISON_FUNC compFunc, ID3D11SamplerState** samplerState)
+{
+    HRESULT hr;
+
+    D3D11_SAMPLER_DESC sampDesc;
+    ZeroMemory(&sampDesc, sizeof(sampDesc));
+    sampDesc.Filter = filterMode;
+    sampDesc.AddressU = addressMode;
+    sampDesc.AddressV = addressMode;
+    sampDesc.AddressW = addressMode;
+	sampDesc.BorderColor[0] = sampDesc.BorderColor[1] = sampDesc.BorderColor[2] = sampDesc.BorderColor[3] = 0;
+    sampDesc.ComparisonFunc = compFunc;
+
+    GFX_THROW_INFO(pDevice->CreateSamplerState(&sampDesc, samplerState));
+
+    return true;
+}
+
 
 // In here I would put everything that needs to be done before the render/game loop
 void D3D11Renderer::ConfigureRenderPass(HWND hwnd)
@@ -195,17 +232,6 @@ void D3D11Renderer::ConfigureRenderPass(HWND hwnd)
     rasterizerDesc.DepthClipEnable = true;
     GFX_THROW_INFO(pDevice->CreateRasterizerState(&rasterizerDesc, &pNoCullRS));
 
-
-    // Sampler states (I don't think this will be changed every iteration)
-    D3D11_SAMPLER_DESC sampDesc;
-    ZeroMemory(&sampDesc, sizeof(sampDesc));
-    sampDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
-    sampDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
-    sampDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
-    sampDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
-    GFX_THROW_INFO(pDevice->CreateSamplerState(&sampDesc, pSamplerState.GetAddressOf()));
-
-
     // Create the structs for constant buffers
 	D3D11_BUFFER_DESC constDesc = {};
     constDesc.Usage = D3D11_USAGE_DYNAMIC;
@@ -217,7 +243,6 @@ void D3D11Renderer::ConfigureRenderPass(HWND hwnd)
 
     constDesc.ByteWidth = sizeof(cbPerObject);
     GFX_THROW_INFO(pDevice->CreateBuffer(&constDesc, nullptr, &pObjectConstantBuffer));
-
 
 
     // Set viewport here
@@ -283,10 +308,10 @@ void D3D11Renderer::SetFrameConstantBufferPS(const void* bufferData, size_t buff
     GFX_THROW_INFO_ONLY(pDeviceContext->PSSetConstantBuffers(registerId, 1, pFrameConstantBuffer.GetAddressOf()));
 }
 
-// This sucks!
-void D3D11Renderer::SetShaderResourcePS(ID3D11ShaderResourceView* shaderResource, int registerId)
+void D3D11Renderer::SetTextureAndSamplerResourcePS(ID3D11ShaderResourceView* textureResource, int registerId, ID3D11SamplerState* samplerState)
 {
-    GFX_THROW_INFO_ONLY(pDeviceContext->PSSetShaderResources(registerId, 1, &shaderResource));
+    GFX_THROW_INFO_ONLY(pDeviceContext->PSSetSamplers(0, 1, &samplerState));
+    GFX_THROW_INFO_ONLY(pDeviceContext->PSSetShaderResources(registerId, 1, &textureResource));
 }
 
 void D3D11Renderer::SetShaders(ID3D11VertexShader* vertexShader, ID3D11PixelShader* pixelShader)
@@ -301,7 +326,7 @@ void D3D11Renderer::DrawItem(uint32_t indexCount)
 	pDeviceContext->DrawIndexed(indexCount, 0, 0);
 }
 
-void D3D11Renderer::BeginRenderPass()
+void D3D11Renderer::BeginRenderFrame()
 {
     // Clear buffer
     const float color[] = { 0.0f, 0.0f, 0.0f, 1.0f };
@@ -312,7 +337,7 @@ void D3D11Renderer::BeginRenderPass()
     pDeviceContext->RSSetState(pNoCullRS.Get());
 }
 
-void D3D11Renderer::EndRenderPass()
+void D3D11Renderer::EndRenderFrame()
 {
     PROFILE_SCOPE();
 

@@ -20,8 +20,7 @@ void OpaquePass::setup(IRenderer& renderer, ResourceManager& resourceManager, HW
 #endif
 }
 
-// I think that in execute I should also have the resourceManager, to access the resources referenced in RenderItems.
-// This way, the renderer doesn't need to know of the existence of a resourceManager 
+// scene is only needed to traverse camera from scene. TODO: improve if more than one camera present
 void OpaquePass::execute(SceneData& scene, const std::vector<RenderItem>& items)
 {
 	if (!scene.cameras.empty())
@@ -30,13 +29,9 @@ void OpaquePass::execute(SceneData& scene, const std::vector<RenderItem>& items)
 #ifdef DX11_ENABLED
 
 	D3D11Renderer* d3d11renderer = (D3D11Renderer*)m_renderer;
-	// 1. Begin frame (toda la limpia del frame anterior y eso? establecer target y eso va aqu�)
-	d3d11renderer->BeginRenderPass();
 
 	for (auto renderItem : items)
 	{
-		// Should I do a single drawItem call or individual calls?
-
 		// Input layout and topology, this info should come from material but we can have default ones
 		d3d11renderer->SetVertexLayoutAndTopology(m_resourceManager->pInputLayout.Get(), D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
@@ -48,7 +43,6 @@ void OpaquePass::execute(SceneData& scene, const std::vector<RenderItem>& items)
 		DX11Material material = m_resourceManager->materialResourceMap[renderItem.materialHandle];
 		cbPerObject cbObject;
 		cbObject.gTransform = renderItem.worldTransform.ToXMMATRIX() * mainCamera->getTransform();
-		//cbObject.gTransform = mainCamera->getTransform();
 		cbObject.hasTexture = (material.pDiffuseTexture || material.pSpecularTexture || material.pNormalTexture) ? true : false;
 
 		cbObject.gMaterial.Ambient = material.ambient;
@@ -77,7 +71,7 @@ void OpaquePass::execute(SceneData& scene, const std::vector<RenderItem>& items)
 
 		// Bind shader resources such as textures (shadow map bind here if any)
 		if (material.pDiffuseTexture)
-			d3d11renderer->SetShaderResourcePS(material.pDiffuseTexture.Get(), 1);
+			d3d11renderer->SetTextureAndSamplerResourcePS(material.pDiffuseTexture.Get(), 1, material.pSamplerState.Get());
 
 		// Set vertex/pixel shaders
 		d3d11renderer->SetShaders(material.pVertexShader.Get(), material.pPixelShader.Get());
@@ -88,8 +82,6 @@ void OpaquePass::execute(SceneData& scene, const std::vector<RenderItem>& items)
 		d3d11renderer->DrawItem(mesh.indexCount);
 
 	}
-	// End frame (Presentamos? y limpiamos)
-	d3d11renderer->EndRenderPass();
 #endif
 }
 

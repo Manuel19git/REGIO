@@ -15,6 +15,7 @@
 #include "ResourceManager.h"
 #include "SceneLoader.h"
 #include "OpaquePass.h"
+#include "SkyPass.h"
 
 /////////////
 // GLOBALS //
@@ -53,8 +54,10 @@ private:
 	std::unique_ptr<SceneLoader> m_sceneLoader;
 
 	std::unique_ptr<OpaquePass> m_opaquePass;
+	std::unique_ptr<SkyPass> m_skyPass;
 
 	std::vector<RenderItem> renderItems;
+	RenderItem skyItem;
 	
 
 	D3DClass* m_D3D;

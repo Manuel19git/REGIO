@@ -11,7 +11,7 @@
 #include "MyException.h"
 #include "DxgiInfoManager.h"
 #include <WICTextureLoader.h>
-//#include "DDSTextureLoader.h"
+#include "DDSTextureLoader.h"
 
 // Debugging
 #include "SpriteFont.h"
@@ -35,19 +35,21 @@ public:
 	void SetObjectConstantBufferVS(const void* bufferData, size_t bufferSize, int registerId);
 	void SetObjectConstantBufferPS(const void* bufferData, size_t bufferSize, int registerId);
 	void SetFrameConstantBufferPS(const void* bufferData, size_t bufferSize, int registerId);
-	void SetShaderResourcePS(ID3D11ShaderResourceView* shaderResource, int registerId);
+	void SetTextureAndSamplerResourcePS(ID3D11ShaderResourceView* textureResource, int registerId, ID3D11SamplerState* samplerState);
 	void SetShaders(ID3D11VertexShader* vertexShader, ID3D11PixelShader* pixelShader);
 	void DrawItem(uint32_t indexCount);
 
 
-	void BeginRenderPass() override;
-	void EndRenderPass() override;
+	void BeginRenderFrame() override;
+	void EndRenderFrame() override;
 	void DrawSky() override;
 
 	bool CreateBuffer(const void* data, ID3D11Buffer** outBuffer, D3D11_BUFFER_DESC bufferDesc);
 	bool CreateVertexShader(std::string shaderPath, ID3D11VertexShader** pVertexShader, ID3D11InputLayout** pInputLayout);
 	bool CreatePixelShader(std::string shaderPath, ID3D11PixelShader** pPixelShader);
 	bool CreateTexture(std::string texturePath, ID3D11ShaderResourceView** textureResourceView);
+	bool CreateDDSTexture(std::string texturePath, ID3D11ShaderResourceView** textureResourceView);
+	bool CreateSamplerState(D3D11_FILTER filterMode, D3D11_TEXTURE_ADDRESS_MODE addressMode, D3D11_COMPARISON_FUNC compFunc, ID3D11SamplerState** samplerState);
 
 	bool ClearBuffer() override;
 
@@ -62,10 +64,10 @@ public:
 	Microsoft::WRL::ComPtr<IDXGISwapChain> pSwap;
 	Microsoft::WRL::ComPtr<ID3D11RenderTargetView> pTarget;
 	Microsoft::WRL::ComPtr<ID3D11DepthStencilView> pDepthStencilView;
-
 	Microsoft::WRL::ComPtr<ID3D11DepthStencilState> pDepthBuffer;
 
 	Microsoft::WRL::ComPtr<ID3D11SamplerState> pSamplerState;
+	Microsoft::WRL::ComPtr<ID3D11SamplerState> pShadowSamplerState;
 
 	// States
 	Microsoft::WRL::ComPtr<ID3D11RasterizerState> pNoCullRS;

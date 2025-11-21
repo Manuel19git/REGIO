@@ -1,26 +1,21 @@
 #pragma once
 
-#include "Common/DX11Common.h"
-#include "D3D11Renderer.h"
-
 #include "Interfaces/IRenderPass.h"
 #include "Interfaces/IRenderer.h"
 
-class OpaquePass /*: public IRenderPass*/
+class SkyPass
 {
 public:
-	OpaquePass();
-	~OpaquePass();
+	SkyPass();
+	~SkyPass();
 
 	void setup(IRenderer& renderer, ResourceManager& resourceManager, HWND hwnd, Camera* camera);
-	void execute(SceneData& scene, const std::vector<RenderItem>& items);
-
-
-	bool sunActive = false;
+	void execute(SceneData& scene, const RenderItem& skyItem);
 
 private:
 	IRenderer* m_renderer;
 	ResourceManager* m_resourceManager;
 
 	Camera* mainCamera;
+
 };

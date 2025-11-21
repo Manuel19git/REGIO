@@ -95,7 +95,7 @@ bool ResourceManager::loadDefaultShaders()
 	return true;
 }
 
-bool ResourceManager::loadDefaultMaterial()
+std::string ResourceManager::loadDefaultMaterialResource()
 {
 #ifdef DX11_ENABLED
 	DX11Material defaultMaterial;
@@ -111,11 +111,139 @@ bool ResourceManager::loadDefaultMaterial()
 	materialResourceMap.insert({ "DefaultMaterial", defaultMaterial});
 #endif
 
-	return true;
+	return "DefaultMaterial";
 
 }
 
-bool ResourceManager::processSceneResources(SceneData& scene)
+std::string ResourceManager::loadSkyMeshResource()
+{
+	std::string skyResourceName = "Im-Singing_In.the+rain";
+
+#ifdef DX11_ENABLED
+	D3D11Renderer* d3d11Renderer = (D3D11Renderer*)m_renderer;
+
+    float scale = 300.0f;
+	Vertex vertices[] = {
+		// Back Face
+		{ {-1.0f * scale, -1.0f * scale, -1.0f * scale}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f} },
+		{ {1.0f * scale, -1.0f * scale, -1.0f * scale}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f} },
+		{ {1.0f * scale,  1.0f * scale, -1.0f * scale}, {0.0f, 0.0f, 1.0f}, {1.0f, 0.0f} },
+		{ {-1.0f * scale,  1.0f * scale, -1.0f * scale}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f} },
+
+		// Front Face
+		{ {-1.0f * scale, -1.0f * scale,  1.0f * scale}, {0.0f, 0.0f, -1.0f}, {0.0f, 1.0f} },
+		{ {1.0f * scale, -1.0f * scale,  1.0f * scale}, {0.0f, 0.0f, -1.0f}, {1.0f, 1.0f} },
+		{ {1.0f * scale,  1.0f * scale,  1.0f * scale}, {0.0f, 0.0f, -1.0f}, {1.0f, 0.0f} },
+		{ {-1.0f * scale,  1.0f * scale,  1.0f * scale}, {0.0f, 0.0f, -1.0f}, {0.0f, 0.0f} },
+
+		// Left Face
+		{ {-1.0f * scale, -1.0f * scale,  1.0f * scale}, {1.0f, 0.0f, 0.0f}, {0.0f, 1.0f} },
+		{ {-1.0f * scale, -1.0f * scale, -1.0f * scale}, {1.0f, 0.0f, 0.0f}, {1.0f, 1.0f} },
+		{ {-1.0f * scale,  1.0f * scale, -1.0f * scale}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f} },
+		{ {-1.0f * scale,  1.0f * scale,  1.0f * scale}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f} },
+
+		// Right Face
+		{ {1.0f * scale, -1.0f * scale,  1.0f * scale}, {-1.0f, 0.0f, 0.0f}, {0.0f, 1.0f} },
+		{ {1.0f * scale, -1.0f * scale, -1.0f * scale}, {-1.0f, 0.0f, 0.0f}, {1.0f, 1.0f} },
+		{ {1.0f * scale,  1.0f * scale, -1.0f * scale}, {-1.0f, 0.0f, 0.0f}, {1.0f, 0.0f} },
+		{ {1.0f * scale,  1.0f * scale,  1.0f * scale}, {-1.0f, 0.0f, 0.0f}, {0.0f, 0.0f} },
+
+		// Top Face
+		{ {-1.0f * scale,  1.0f * scale, -1.0f * scale}, {0.0f, -1.0f, 0.0f}, {0.0f, 1.0f} },
+		{ {1.0f * scale,  1.0f * scale, -1.0f * scale}, {0.0f, -1.0f, 0.0f}, {1.0f, 1.0f} },
+		{ {1.0f * scale,  1.0f * scale,  1.0f * scale}, {0.0f, -1.0f, 0.0f}, {1.0f, 0.0f} },
+		{ {-1.0f * scale,  1.0f * scale,  1.0f * scale}, {0.0f, -1.0f, 0.0f}, {0.0f, 0.0f} },
+
+
+		// Bottom Face
+		{ {-1.0f * scale, -1.0f * scale, -1.0f * scale}, {0.0f, 1.0f, 0.0f}, {0.0f, 1.0f} },
+		{ {1.0f * scale, -1.0f * scale, -1.0f * scale}, {0.0f, 1.0f, 0.0f}, {1.0f, 1.0f} },
+		{ {1.0f * scale, -1.0f * scale,  1.0f * scale}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f} },
+		{ {-1.0f * scale, -1.0f * scale,  1.0f * scale}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f} },
+	};
+
+
+	unsigned int indices[] = {
+		// Back Face
+		0, 1, 2,
+		0, 2, 3,
+
+		// Front Face
+		4, 6, 5,
+		4, 7, 6,
+
+		// Left Face
+		8, 9, 10,
+		8, 10, 11,
+
+		// Right Face
+		12, 14, 13,
+		12, 15, 14,
+
+		// Top Face
+		16, 17, 18,
+		16, 18, 19,
+
+		// Bottom Face
+		20, 22, 21,
+		20, 23, 22
+	};
+
+	DX11Mesh skyMeshResource = {};
+
+	D3D11_BUFFER_DESC bufferDesc = {};
+	bufferDesc.Usage = D3D11_USAGE_DEFAULT;
+	bufferDesc.CPUAccessFlags = 0;
+	bufferDesc.MiscFlags = 0;
+
+	// Vertex buffer
+	bufferDesc.ByteWidth = sizeof(vertices);
+	bufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+	bufferDesc.StructureByteStride = sizeof(Vertex);
+
+	d3d11Renderer->CreateBuffer(vertices, &skyMeshResource.vertexBuffer, bufferDesc);
+
+	// Index buffer
+	bufferDesc.ByteWidth = sizeof(indices);
+	bufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
+	bufferDesc.StructureByteStride = sizeof(UINT);
+
+	d3d11Renderer->CreateBuffer(indices, &skyMeshResource.indexBuffer, bufferDesc);
+	skyMeshResource.indexCount = sizeof(indices)/sizeof(indices[0]);
+
+	meshResourceMap.insert({ skyResourceName, skyMeshResource});
+#endif
+
+	return skyResourceName;
+}
+
+std::string ResourceManager::loadSkyMaterialResource()
+{
+	std::string skyResourceName = "Im-Singing_In.the+rain";
+
+#ifdef DX11_ENABLED
+	D3D11Renderer* d3d11Renderer = (D3D11Renderer*)m_renderer;
+
+	DX11Material skyMaterialResource;
+	skyMaterialResource.pVertexShader = vertexShaders[0];
+	skyMaterialResource.pPixelShader = pixelShaders[2];
+
+	d3d11Renderer->CreateSamplerState(
+		D3D11_FILTER_MIN_MAG_MIP_LINEAR,
+		D3D11_TEXTURE_ADDRESS_WRAP,
+		D3D11_COMPARISON_NEVER,
+		skyMaterialResource.pSamplerState.GetAddressOf());
+
+	std::string skyMapTexturePath = searchFileInParentDirectories("\\output\\NIER\\Props\\textures\\otro_cielo.dds");
+	d3d11Renderer->CreateDDSTexture(skyMapTexturePath, skyMaterialResource.pDiffuseTexture.GetAddressOf());
+
+	materialResourceMap.insert({ skyResourceName, skyMaterialResource});
+#endif
+
+	return skyResourceName;
+}
+
+bool ResourceManager::loadSceneResources(SceneData& scene)
 {
 	HRESULT hr;
 
@@ -133,6 +261,12 @@ bool ResourceManager::processSceneResources(SceneData& scene)
 		// Default shaders (VertexShader.cso & PixelShader.cso)
 		materialResource.pVertexShader = vertexShaders[0];
 		materialResource.pPixelShader = pixelShaders[1];
+
+		d3d11Renderer->CreateSamplerState(
+			D3D11_FILTER_MIN_MAG_MIP_LINEAR,
+			D3D11_TEXTURE_ADDRESS_WRAP,
+			D3D11_COMPARISON_NEVER, 
+			materialResource.pSamplerState.GetAddressOf());
 
 		if (material.diffuseTexturePath != "")
 			d3d11Renderer->CreateTexture(material.diffuseTexturePath, materialResource.pDiffuseTexture.GetAddressOf());

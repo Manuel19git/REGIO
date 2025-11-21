@@ -98,7 +98,7 @@ void computeBoundingBox(const SceneData& scene, float& left, float& right, float
 
 }
 
-void buildRenderItems(SceneData::Node& node, std::vector<RenderItem>& items)
+void buildSceneRenderItems(SceneData::Node& node, std::vector<RenderItem>& items)
 {
 	// Using preorder traverse method for no particular reason :)
 	if (node.type == NodeType::MESH)
@@ -116,7 +116,7 @@ void buildRenderItems(SceneData::Node& node, std::vector<RenderItem>& items)
 	{
 		for (auto child : node.children)
 		{
-			buildRenderItems(child, items);
+			buildSceneRenderItems(child, items);
 		}
 	}
 }
@@ -145,15 +145,16 @@ bool GraphicsClass::Initialize(int screenWidth, int screenHeight, HWND hwnd, Inp
 	m_resourceManager = std::make_unique<ResourceManager>();
 	m_resourceManager->initialize(m_renderer.get());
 	m_resourceManager->loadDefaultShaders(); // Now resource manager has its resources (meshes only for now)
-	m_resourceManager->loadDefaultMaterial(); 
+	m_resourceManager->loadDefaultMaterialResource(); 
 
-	m_resourceManager->processSceneResources(*m_sceneLoader->pScene.get()); // Now resource manager has its resources (meshes only for now)
+	m_resourceManager->loadSceneResources(*m_sceneLoader->pScene.get()); // Now resource manager has its resources (meshes only for now)
 
 	// 3. Process Scene Data with resources to generate batch of Render Items sharing same shader
-	buildRenderItems(*m_sceneLoader->pScene->rootNode, renderItems);
+	buildSceneRenderItems(*m_sceneLoader->pScene->rootNode, renderItems);
 
-	// 4. We use the passes on render Items
-	
+	// Build sky render item
+	skyItem.meshHandle = m_resourceManager->loadSkyMeshResource();
+	skyItem.materialHandle = m_resourceManager->loadSkyMaterialResource();
 
 	//------------------------------------------------------------- OLD -------------------------------------------------------------
 
@@ -196,6 +197,8 @@ bool GraphicsClass::Initialize(int screenWidth, int screenHeight, HWND hwnd, Inp
 	m_opaquePass = std::make_unique<OpaquePass>();
 	m_opaquePass->setup(*m_renderer, *m_resourceManager, hwnd, mainCamera);
 
+	m_skyPass = std::make_unique<SkyPass>();
+	m_skyPass->setup(*m_renderer, *m_resourceManager, hwnd, mainCamera);
 
 	return true;
 }
@@ -226,8 +229,15 @@ bool GraphicsClass::Frame()
 	//m_D3D->DrawDebug(mScene, mainCamera);
 	//m_D3D->EndScene();
 
+	// I should clear target and here
+	((D3D11Renderer*)m_renderer.get())->BeginRenderFrame(); // ugly :(
+
 	m_opaquePass->sunActive = sunActive;
 	m_opaquePass->execute(*m_sceneLoader->pScene.get(), renderItems);
+	m_skyPass->execute(*m_sceneLoader->pScene.get(), skyItem);
+
+	// I should present and swap here
+	((D3D11Renderer*)m_renderer.get())->EndRenderFrame(); // ugly :(
 
 	//float color = sin(count);
 	//count += 0.03f;
