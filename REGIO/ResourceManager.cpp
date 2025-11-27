@@ -97,21 +97,37 @@ bool ResourceManager::loadDefaultShaders()
 
 std::string ResourceManager::loadDefaultMaterialResource()
 {
+	std::string defaultMaterialName = "REGIO-DefaultMaterial";
 #ifdef DX11_ENABLED
-	DX11Material defaultMaterial;
+	D3D11Renderer* d3d11Renderer = (D3D11Renderer*)m_renderer;
+
+	materialResourceMap.emplace(defaultMaterialName, DX11Material());
+	DX11Material* defaultMaterial = &materialResourceMap[defaultMaterialName];
 
 	// Default shaders (VertexShader.cso & PixelShader.cso)
-	defaultMaterial.pVertexShader = vertexShaders[0];
-	defaultMaterial.pPixelShader = pixelShaders[1];
+	defaultMaterial->pVertexShader = vertexShaders[0];
+	defaultMaterial->pPixelShader = pixelShaders[1];
 
-    defaultMaterial.ambient    = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-    defaultMaterial.diffuse    = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-    defaultMaterial.specular   = XMFLOAT4(0.2f, 0.2f, 0.2f, 1.0f);
+	d3d11Renderer->CreateSamplerState(
+		D3D11_FILTER_MIN_MAG_MIP_LINEAR,
+		D3D11_TEXTURE_ADDRESS_WRAP,
+		D3D11_COMPARISON_NEVER,
+		defaultMaterial->pSamplerState.GetAddressOf());
 
-	materialResourceMap.insert({ "DefaultMaterial", defaultMaterial});
+	// I don't think that each object will have different sampler for shadow map, but I can't think of anything else for now
+	d3d11Renderer->CreateSamplerState(
+		D3D11_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT,
+		D3D11_TEXTURE_ADDRESS_BORDER,
+		D3D11_COMPARISON_LESS_EQUAL,
+		defaultMaterial->pShadowSamplerState.GetAddressOf());
+
+    defaultMaterial->ambient    = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+    defaultMaterial->diffuse    = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+    defaultMaterial->specular   = XMFLOAT4(0.2f, 0.2f, 0.2f, 1.0f);
+
 #endif
 
-	return "DefaultMaterial";
+	return defaultMaterialName;
 
 }
 
@@ -256,33 +272,41 @@ bool ResourceManager::loadSceneResources(SceneData& scene)
 
 	for (const auto& material : scene.materials)
 	{
-		DX11Material materialResource;
+		materialResourceMap.emplace(material.name, DX11Material());
+
+		DX11Material* materialResource = &materialResourceMap[material.name];
 
 		// Default shaders (VertexShader.cso & PixelShader.cso)
-		materialResource.pVertexShader = vertexShaders[0];
-		materialResource.pPixelShader = pixelShaders[1];
+		materialResource->pVertexShader = vertexShaders[0];
+		materialResource->pPixelShader = pixelShaders[1];
 
 		d3d11Renderer->CreateSamplerState(
 			D3D11_FILTER_MIN_MAG_MIP_LINEAR,
 			D3D11_TEXTURE_ADDRESS_WRAP,
 			D3D11_COMPARISON_NEVER, 
-			materialResource.pSamplerState.GetAddressOf());
+			materialResource->pSamplerState.GetAddressOf());
+
+		// I don't think that each object will have different sampler for shadow map, but I can't think of anything else for now
+		d3d11Renderer->CreateSamplerState(
+			D3D11_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT,
+			D3D11_TEXTURE_ADDRESS_BORDER,
+			D3D11_COMPARISON_LESS_EQUAL,
+			materialResource->pShadowSamplerState.GetAddressOf());
+
 
 		if (material.diffuseTexturePath != "")
-			d3d11Renderer->CreateTexture(material.diffuseTexturePath, materialResource.pDiffuseTexture.GetAddressOf());
+			d3d11Renderer->CreateTexture(material.diffuseTexturePath, materialResource->pDiffuseTexture.GetAddressOf());
 
 		if (material.specularTexturePath != "")
-			d3d11Renderer->CreateTexture(material.specularTexturePath, materialResource.pSpecularTexture.GetAddressOf());
+			d3d11Renderer->CreateTexture(material.specularTexturePath, materialResource->pSpecularTexture.GetAddressOf());
 
 		if (material.normalTexturePath != "")
-			d3d11Renderer->CreateTexture(material.normalTexturePath, materialResource.pNormalTexture.GetAddressOf());
-
-		materialResource.ambient = XMFLOAT4(material.ambient.x, material.ambient.y, material.ambient.z, material.ambient.w);
-		materialResource.diffuse = XMFLOAT4(material.diffuse.x, material.diffuse.y, material.diffuse.z, material.diffuse.w);
-		materialResource.specular = XMFLOAT4(material.specular.x, material.specular.y, material.specular.z, material.specular.w);
-		materialResource.reflect = XMFLOAT4(material.reflect.x, material.reflect.y, material.reflect.z, material.reflect.w);
-
-		materialResourceMap.insert({ material.name, materialResource });
+			d3d11Renderer->CreateTexture(material.normalTexturePath, materialResource->pNormalTexture.GetAddressOf());
+		
+		materialResource->ambient = XMFLOAT4(material.ambient.x, material.ambient.y, material.ambient.z, material.ambient.w);
+		materialResource->diffuse = XMFLOAT4(material.diffuse.x, material.diffuse.y, material.diffuse.z, material.diffuse.w);
+		materialResource->specular = XMFLOAT4(material.specular.x, material.specular.y, material.specular.z, material.specular.w);
+		materialResource->reflect = XMFLOAT4(material.reflect.x, material.reflect.y, material.reflect.z, material.reflect.w);
 	}
 #endif
 

@@ -179,7 +179,12 @@ void buildSceneRenderItems(SceneData::Node& node, std::vector<RenderItem>& items
 	{
 		RenderItem item;
 		item.meshHandle = node.name;
-		item.materialHandle = node.materialName;
+
+		// This defaultMaterial is added by assimp and I don't want to use it
+		if (node.materialName == "DefaultMaterial")
+			item.materialHandle = "REGIO-DefaultMaterial";
+		else
+			item.materialHandle = node.materialName;
 		item.worldTransform = node.transform;
 
 		items.push_back(item);
