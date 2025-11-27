@@ -209,7 +209,7 @@ bool D3D11Renderer::CreateSamplerState(D3D11_FILTER filterMode, D3D11_TEXTURE_AD
 
 
 // In here I would put everything that needs to be done before the render/game loop
-void D3D11Renderer::ConfigureRenderPass(HWND hwnd)
+void D3D11Renderer::ConfigureRenderPass(HWND hwnd, float screenWidth, float screenHeight)
 {
     HRESULT hr;
 
@@ -246,14 +246,13 @@ void D3D11Renderer::ConfigureRenderPass(HWND hwnd)
 
 
     // Set viewport here
-    D3D11_VIEWPORT viewport;
-    viewport.Width = monitorWidth;
-    viewport.Height = monitorHeight;
-    viewport.TopLeftX = 0;
-    viewport.TopLeftY = 0;
-    viewport.MinDepth = 0;
-    viewport.MaxDepth = 1;
-    pDeviceContext->RSSetViewports(1, &viewport);
+    renderViewport.Width = screenWidth;
+    renderViewport.Height = screenHeight;
+    renderViewport.TopLeftX = 0;
+    renderViewport.TopLeftY = 0;
+    renderViewport.MinDepth = 0;
+    renderViewport.MaxDepth = 1;
+    pDeviceContext->RSSetViewports(1, &renderViewport);
 
     //Initialize sprint font and batch to render text (for debugging purposes)
 	std::wstring spriteFontPath = string2WideString(searchFileInParentDirectories("/Data/Fonts/arial.spritefont"));

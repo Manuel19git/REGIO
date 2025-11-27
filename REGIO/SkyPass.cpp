@@ -16,7 +16,7 @@ void SkyPass::setup(IRenderer& renderer, ResourceManager& resourceManager, HWND 
 
 #ifdef DX11_ENABLED
 	D3D11Renderer* d3d11renderer = (D3D11Renderer*)m_renderer;
-	d3d11renderer->ConfigureRenderPass(hwnd);
+	d3d11renderer->ConfigureRenderPass(hwnd, mainCamera->getResolution().first, mainCamera->getResolution().second);
 #endif
 }
 

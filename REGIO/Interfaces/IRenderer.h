@@ -14,7 +14,7 @@ class IRenderer
 {
 	// This is not needed if we end up implementing render passes
 	//virtual void DrawItem(RenderItem& renderItem) = 0;
-	virtual void ConfigureRenderPass(HWND hWnd) = 0;
+	virtual void ConfigureRenderPass(HWND hWnd, float screenWidth, float screenHeight) = 0;
 
 
 	virtual void BeginRenderFrame() = 0;

@@ -26,7 +26,7 @@ public:
 	~D3D11Renderer();
 
 	//void DrawItem(RenderItem& renderItem) override;
-	void ConfigureRenderPass(HWND hwnd) override;
+	void ConfigureRenderPass(HWND hwnd, float screenWidth, float screenHeight) override;
 
 	// I don't like having to define a method for each action done with the API 
 	// (TODO: rework this in the future with a little bit more of knowledge)
@@ -85,5 +85,6 @@ public:
 	int monitorHeight;
 	int screenWidth;
 	int screenHeight;
+	D3D11_VIEWPORT renderViewport;
 
 };
