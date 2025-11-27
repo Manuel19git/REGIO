@@ -16,6 +16,6 @@ private:
 	IRenderer* m_renderer;
 	ResourceManager* m_resourceManager;
 
-	Camera* mainCamera;
+	Camera* m_mainCamera;
 
 };

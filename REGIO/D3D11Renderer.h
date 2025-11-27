@@ -27,6 +27,7 @@ public:
 
 	//void DrawItem(RenderItem& renderItem) override;
 	void ConfigureRenderPass(HWND hwnd, float screenWidth, float screenHeight) override;
+	void ConfigureShadowPass(HWND hwnd, ID3D11ShaderResourceView** shadowMapRSV);
 
 	// I don't like having to define a method for each action done with the API 
 	// (TODO: rework this in the future with a little bit more of knowledge)
@@ -39,6 +40,9 @@ public:
 	void SetShaders(ID3D11VertexShader* vertexShader, ID3D11PixelShader* pixelShader);
 	void DrawItem(uint32_t indexCount);
 
+	// Shadow map functions
+	void SetNullTargetAndRS();
+	void RestoreTargetAndRS();
 
 	void BeginRenderFrame() override;
 	void EndRenderFrame() override;
@@ -64,6 +68,7 @@ public:
 	Microsoft::WRL::ComPtr<IDXGISwapChain> pSwap;
 	Microsoft::WRL::ComPtr<ID3D11RenderTargetView> pTarget;
 	Microsoft::WRL::ComPtr<ID3D11DepthStencilView> pDepthStencilView;
+	Microsoft::WRL::ComPtr<ID3D11DepthStencilView> pShadowDepthStencilView;
 	Microsoft::WRL::ComPtr<ID3D11DepthStencilState> pDepthBuffer;
 
 	Microsoft::WRL::ComPtr<ID3D11SamplerState> pSamplerState;
@@ -71,6 +76,8 @@ public:
 
 	// States
 	Microsoft::WRL::ComPtr<ID3D11RasterizerState> pNoCullRS;
+	Microsoft::WRL::ComPtr<ID3D11RasterizerState> pShadowRS;
+	Microsoft::WRL::ComPtr<ID3D11RasterizerState> pAuxRS;
 
 	// Constant buffers
 	Microsoft::WRL::ComPtr<ID3D11Buffer> pObjectConstantBuffer;
@@ -86,5 +93,6 @@ public:
 	int screenWidth;
 	int screenHeight;
 	D3D11_VIEWPORT renderViewport;
+	D3D11_VIEWPORT shadowViewport;
 
 };

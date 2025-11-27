@@ -37,6 +37,8 @@ public:
 	std::vector<wrl::ComPtr<ID3D11PixelShader>> pixelShaders; // 0: SimplePixelShader, 1: PixelShader, 2: SkyPixelShader
 
 	wrl::ComPtr<ID3D11InputLayout> pInputLayout;
+
+	wrl::ComPtr<ID3D11ShaderResourceView> pShadowMap; // For now we only have one shadow map
 #endif
 
 private :

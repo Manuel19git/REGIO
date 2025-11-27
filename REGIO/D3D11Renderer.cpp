@@ -263,6 +263,83 @@ void D3D11Renderer::ConfigureRenderPass(HWND hwnd, float screenWidth, float scre
     start = std::chrono::system_clock::now();
 }
 
+void D3D11Renderer::ConfigureShadowPass(HWND hwnd, ID3D11ShaderResourceView** shadowMapRSV)
+{
+    HRESULT hr;
+    float shadowMapWidth = 2048;
+    float shadowMapHeight = 2048;
+    // Viewport
+    shadowViewport.Width = shadowMapWidth;
+    shadowViewport.Height = shadowMapHeight;
+    shadowViewport.TopLeftX = 0;
+    shadowViewport.TopLeftY = 0;
+    shadowViewport.MinDepth = 0;
+    shadowViewport.MaxDepth = 1;
+
+	// Create Depth Stencil Texture
+    D3D11_TEXTURE2D_DESC depthTextureDesc = {};
+    depthTextureDesc.Width = shadowMapWidth; 
+    depthTextureDesc.Height = shadowMapHeight; 
+    depthTextureDesc.MipLevels = 1;
+    depthTextureDesc.ArraySize = 1;
+    depthTextureDesc.Format = DXGI_FORMAT_R32_TYPELESS; //Typeless bcause SRV and DSV have different formats
+    depthTextureDesc.SampleDesc.Count = 1;
+    depthTextureDesc.SampleDesc.Quality = 0;
+    depthTextureDesc.Usage = D3D11_USAGE_DEFAULT;
+    depthTextureDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL |
+                                 D3D11_BIND_SHADER_RESOURCE;
+
+    Microsoft::WRL::ComPtr<ID3D11Texture2D> pDepthTexture;
+    GFX_THROW_INFO(pDevice->CreateTexture2D(&depthTextureDesc, nullptr, &pDepthTexture));
+
+    // We may need a different depth stencil view assocciated with a new texture
+    D3D11_DEPTH_STENCIL_VIEW_DESC depthStencilViewDesc = {};
+    depthStencilViewDesc.Format = DXGI_FORMAT_D32_FLOAT;
+    depthStencilViewDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
+    depthStencilViewDesc.Texture2D.MipSlice = 0;
+    GFX_THROW_INFO(pDevice->CreateDepthStencilView(pDepthTexture.Get(), &depthStencilViewDesc, &pShadowDepthStencilView));
+
+    // Create shader resource view of depth texture
+    D3D11_SHADER_RESOURCE_VIEW_DESC shaderResourceViewDesc = {};
+    shaderResourceViewDesc.Format = DXGI_FORMAT_R32_FLOAT;
+    shaderResourceViewDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+    shaderResourceViewDesc.Texture2D.MipLevels = depthTextureDesc.MipLevels;
+    shaderResourceViewDesc.Texture2D.MostDetailedMip = 0;
+    GFX_THROW_INFO(pDevice->CreateShaderResourceView(pDepthTexture.Get(), &shaderResourceViewDesc, shadowMapRSV));
+
+    //Create depth bias state
+    D3D11_RASTERIZER_DESC depthBiasDesc = {};
+    ZeroMemory(&depthBiasDesc, sizeof(D3D11_RASTERIZER_DESC));
+    depthBiasDesc.FillMode = D3D11_FILL_SOLID;
+    depthBiasDesc.CullMode = D3D11_CULL_NONE;
+    depthBiasDesc.DepthBias = 1000;
+    depthBiasDesc.DepthBiasClamp = 0.02f;
+    depthBiasDesc.SlopeScaledDepthBias = 4.75f;
+    GFX_THROW_INFO(pDevice->CreateRasterizerState(&depthBiasDesc, pShadowRS.GetAddressOf()));
+}
+
+
+void D3D11Renderer::SetNullTargetAndRS()
+{
+    GFX_THROW_INFO_ONLY(pDeviceContext->RSSetViewports(1,&shadowViewport));
+
+    // We set pTargets to null because we are not going to render anything. We are only going to write to the depth buffer texture
+    ID3D11RenderTargetView* pTargets[1] = {0};
+	GFX_THROW_INFO_ONLY(pDeviceContext->OMSetRenderTargets(1, pTargets, pShadowDepthStencilView.Get()));
+    GFX_THROW_INFO_ONLY(pDeviceContext->ClearDepthStencilView(pShadowDepthStencilView.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0));
+
+    GFX_THROW_INFO_ONLY(pDeviceContext->RSSetState(pShadowRS.Get()));
+    GFX_THROW_INFO_ONLY(pDeviceContext->RSGetState(pAuxRS.GetAddressOf()));
+}
+
+void D3D11Renderer::RestoreTargetAndRS()
+{
+    GFX_THROW_INFO_ONLY(pDeviceContext->OMSetRenderTargets(1, pTarget.GetAddressOf(), pDepthStencilView.Get()));
+
+    GFX_THROW_INFO_ONLY(pDeviceContext->RSSetState(pAuxRS.Get()));
+    GFX_THROW_INFO_ONLY(pDeviceContext->RSSetViewports(1,&renderViewport));
+}
+
 void D3D11Renderer::SetVertexLayoutAndTopology(ID3D11InputLayout* inputLayout, D3D_PRIMITIVE_TOPOLOGY topology)
 {
     pDeviceContext->IASetInputLayout(inputLayout);

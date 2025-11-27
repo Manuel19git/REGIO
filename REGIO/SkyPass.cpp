@@ -10,13 +10,13 @@ SkyPass::~SkyPass()
 
 void SkyPass::setup(IRenderer& renderer, ResourceManager& resourceManager, HWND hwnd, Camera* camera)
 {
-	mainCamera = camera;
+	m_mainCamera = camera;
 	m_renderer = &renderer;
 	m_resourceManager = &resourceManager;
 
 #ifdef DX11_ENABLED
 	D3D11Renderer* d3d11renderer = (D3D11Renderer*)m_renderer;
-	d3d11renderer->ConfigureRenderPass(hwnd, mainCamera->getResolution().first, mainCamera->getResolution().second);
+	d3d11renderer->ConfigureRenderPass(hwnd, m_mainCamera->getResolution().first, m_mainCamera->getResolution().second);
 #endif
 }
 
@@ -24,7 +24,7 @@ void SkyPass::setup(IRenderer& renderer, ResourceManager& resourceManager, HWND 
 void SkyPass::execute(SceneData& scene, const RenderItem& skyItem)
 {
 	if (!scene.cameras.empty())
-		mainCamera = &scene.cameras[0];
+		m_mainCamera = &scene.cameras[0];
 
 #ifdef DX11_ENABLED
 
@@ -40,9 +40,9 @@ void SkyPass::execute(SceneData& scene, const RenderItem& skyItem)
 
 		// Bind constant buffers? (transform and such)
 		cbPerObject cbObject;
-		DirectX::XMMATRIX viewMatrix = mainCamera->getViewMatrix();
+		DirectX::XMMATRIX viewMatrix = m_mainCamera->getViewMatrix();
 		viewMatrix.r[3] = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f); // Remove translation part of matrix
-		DirectX::XMMATRIX projectionMatrix = mainCamera->getProjectionMatrix();
+		DirectX::XMMATRIX projectionMatrix = m_mainCamera->getProjectionMatrix();
 		cbObject.gTransform = DirectX::XMMatrixTranspose(viewMatrix * projectionMatrix);
 
 		d3d11renderer->SetObjectConstantBufferVS(&cbObject, sizeof(cbObject), 0);

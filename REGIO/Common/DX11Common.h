@@ -24,6 +24,7 @@ struct DX11Material
 	wrl::ComPtr<ID3D11ShaderResourceView> pNormalTexture;
 
 	Microsoft::WRL::ComPtr<ID3D11SamplerState> pSamplerState;
+	Microsoft::WRL::ComPtr<ID3D11SamplerState> pShadowSamplerState;
 
 	wrl::ComPtr<ID3D11InputLayout> pInputLayout;
 

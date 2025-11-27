@@ -8,15 +8,16 @@ OpaquePass::~OpaquePass()
 {
 }
 
-void OpaquePass::setup(IRenderer& renderer, ResourceManager& resourceManager, HWND hwnd, Camera* camera)
+void OpaquePass::setup(IRenderer& renderer, ResourceManager& resourceManager, HWND hwnd, Camera* camera, Camera* sunCamera)
 {
-	mainCamera = camera;
+	m_mainCamera = camera;
+	m_sunCamera = sunCamera;
 	m_renderer = &renderer;
 	m_resourceManager = &resourceManager;
 
 #ifdef DX11_ENABLED
 	D3D11Renderer* d3d11renderer = (D3D11Renderer*)m_renderer;
-	d3d11renderer->ConfigureRenderPass(hwnd, mainCamera->getResolution().first, mainCamera->getResolution().second);
+	d3d11renderer->ConfigureRenderPass(hwnd, m_mainCamera->getResolution().first, m_mainCamera->getResolution().second);
 #endif
 }
 
@@ -24,12 +25,14 @@ void OpaquePass::setup(IRenderer& renderer, ResourceManager& resourceManager, HW
 void OpaquePass::execute(SceneData& scene, const std::vector<RenderItem>& items)
 {
 	if (!scene.cameras.empty())
-		mainCamera = &scene.cameras[0];
+		m_mainCamera = &scene.cameras[0];
 
 #ifdef DX11_ENABLED
 
 	D3D11Renderer* d3d11renderer = (D3D11Renderer*)m_renderer;
 
+	XMMATRIX transform = m_mainCamera->getTransform();
+	XMMATRIX transformSun = m_sunCamera->getTransform(true);
 	for (auto renderItem : items)
 	{
 		// Input layout and topology, this info should come from material but we can have default ones
@@ -42,7 +45,8 @@ void OpaquePass::execute(SceneData& scene, const std::vector<RenderItem>& items)
 		// Bind constant buffers? (transform and such)
 		DX11Material material = m_resourceManager->materialResourceMap[renderItem.materialHandle];
 		cbPerObject cbObject;
-		cbObject.gTransform = renderItem.worldTransform.ToXMMATRIX() * mainCamera->getTransform();
+		cbObject.gTransform = renderItem.worldTransform.ToXMMATRIX() * transform;
+		cbObject.gTransformSun = renderItem.worldTransform.ToXMMATRIX() * transformSun;
 		cbObject.hasTexture = (material.pDiffuseTexture || material.pSpecularTexture || material.pNormalTexture) ? true : false;
 
 		cbObject.gMaterial.Ambient = material.ambient;
@@ -55,7 +59,7 @@ void OpaquePass::execute(SceneData& scene, const std::vector<RenderItem>& items)
 
 		// Bind per frame buffer
 		cbPerFrame cbFrame;
-		cbFrame.gEyePosW = mainCamera->getPosition();
+		cbFrame.gEyePosW = m_mainCamera->getPosition();
 
 		// I don't whink this emitter info should be uploaded every frame
 		float down = 10.0f;
@@ -68,15 +72,14 @@ void OpaquePass::execute(SceneData& scene, const std::vector<RenderItem>& items)
 
 		d3d11renderer->SetFrameConstantBufferPS(&cbFrame, sizeof(cbPerFrame), 1);
 
-
 		// Bind shader resources such as textures (shadow map bind here if any)
 		if (material.pDiffuseTexture)
 			d3d11renderer->SetTextureAndSamplerResourcePS(material.pDiffuseTexture.Get(), 1, material.pSamplerState.Get());
+		if (m_resourceManager->pShadowMap != NULL)
+			d3d11renderer->SetTextureAndSamplerResourcePS(m_resourceManager->pShadowMap.Get(), 0, material.pShadowSamplerState.Get());
 
 		// Set vertex/pixel shaders
 		d3d11renderer->SetShaders(material.pVertexShader.Get(), material.pPixelShader.Get());
-
-		// Set sampler states with shadow maps
 
 		// Draw the object
 		d3d11renderer->DrawItem(mesh.indexCount);

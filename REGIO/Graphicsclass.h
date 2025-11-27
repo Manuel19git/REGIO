@@ -16,6 +16,7 @@
 #include "SceneLoader.h"
 #include "OpaquePass.h"
 #include "SkyPass.h"
+#include "ShadowPass.h"
 
 /////////////
 // GLOBALS //
@@ -53,6 +54,7 @@ private:
 	std::unique_ptr<ResourceManager> m_resourceManager;
 	std::unique_ptr<SceneLoader> m_sceneLoader;
 
+	std::unique_ptr<ShadowPass> m_shadowPass;
 	std::unique_ptr<OpaquePass> m_opaquePass;
 	std::unique_ptr<SkyPass> m_skyPass;
 
@@ -65,6 +67,7 @@ private:
 	HWND m_hwnd;
 
 	Camera* mainCamera;
+	Camera* sunCamera;
 
 	//Scene and mesh persists as long as the importer
 	Assimp::Importer* importer;

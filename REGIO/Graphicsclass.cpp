@@ -98,6 +98,80 @@ void computeBoundingBox(const SceneData& scene, float& left, float& right, float
 
 }
 
+BoundingBox ComputeSunFrustum(Camera* mainCamera, Camera* sunCamera)
+{
+    BoundingBox frustum = BoundingBox();
+
+    // We want to get the shadow map with a good quality without it changing the main camera far which is very far
+    // so we set far of the mainCamera to the 
+    float farDefault = mainCamera->getFar();
+    mainCamera->setFar(std::abs(mainCamera->getSceneBBox().farPlane - mainCamera->getSceneBBox().nearPlane)); // WARNING: Shitty way of solving this, might break in the future
+
+    // 1. Coger la matriz de transformacion de la camara principal
+    DirectX::XMMATRIX view = mainCamera->getViewMatrix();
+    DirectX::XMMATRIX proj = mainCamera->getProjectionMatrix();
+    DirectX::XMMATRIX viewProj = DirectX::XMMatrixMultiply(view, proj);
+    DirectX::XMMATRIX invViewProj = DirectX::XMMatrixInverse(nullptr, viewProj );
+    DirectX::XMMATRIX sunViewProj = sunCamera->getViewMatrix();
+
+    mainCamera->setFar(farDefault);
+
+    // 2. Multiplicarla por la posicion del cubo can�nico
+    DirectX::XMVECTOR ndcCorners[8] = {
+        {-1,-1,0,1}, {+1,-1,0,1}, {-1,+1,0,1}, {+1,+1,0,1},
+        {-1,-1,1,1}, {+1,-1,1,1}, {-1,+1,1,1}, {+1,+1,1,1}
+	};
+    DirectX::XMVECTOR sunViewCorners[8];
+    for (int i = 0; i < 8; ++i)
+    {
+        DirectX::XMVECTOR worldPos = DirectX::XMVector4Transform(ndcCorners[i], invViewProj);
+        DirectX::XMFLOAT4 worldPosFloat = { 0,0,0,0 };
+
+        DirectX::XMStoreFloat4(&worldPosFloat, worldPos);
+
+        // From homogeneous space to cartesian world
+        worldPos /= worldPosFloat.w;
+
+        // From cartesian world to sun view space
+        sunViewCorners[i] = DirectX::XMVector4Transform(worldPos, sunViewProj);
+    }
+
+
+    for (DirectX::XMVECTOR corner : sunViewCorners)
+    {
+        DirectX::XMFLOAT4 cornerFloat = { 0,0,0,0 };
+        DirectX::XMStoreFloat4(&cornerFloat, corner);
+        if (cornerFloat.x < frustum.left)
+        {
+            frustum.left = cornerFloat.x;
+        }
+        if (cornerFloat.x > frustum.right)
+        {
+            frustum.right = cornerFloat.x;
+        }
+        if (cornerFloat.y > frustum.top)
+        {
+            frustum.top = cornerFloat.y;
+        }
+        if (cornerFloat.y < frustum.bottom)
+        {
+            frustum.bottom = cornerFloat.y;
+        }
+        if (cornerFloat.z < frustum.nearPlane)
+        {
+            frustum.nearPlane = cornerFloat.z;
+        }
+        if (cornerFloat.z > frustum.farPlane)
+        {
+            frustum.farPlane = cornerFloat.z;
+        }
+    }
+
+
+    return frustum;
+}
+
+
 void buildSceneRenderItems(SceneData::Node& node, std::vector<RenderItem>& items)
 {
 	// Using preorder traverse method for no particular reason :)
@@ -183,6 +257,13 @@ bool GraphicsClass::Initialize(int screenWidth, int screenHeight, HWND hwnd, Inp
 	mainCamera->setResolution(screenWidth, screenHeight);
 	mainCamera->setSceneBBox(scenebbox);
 
+	// Initialize sun camera
+	XMFLOAT3 sunPosition = XMFLOAT3(0.0f, 100.0f , 0.0f ) ;
+	XMVECTOR sunForward = XMVector3Normalize(XMVectorSubtract(XMVectorZero(), XMLoadFloat3(&sunPosition)));
+	sunCamera = new Camera(sunPosition, sunForward);
+	sunCamera->setResolution(mainCamera->getResolution().first, mainCamera->getResolution().second);
+
+
 	//// TODO: Renderer is the one that should be initialized and used. With this we can add new APIs in the future
 	////m_Renderer = std::make_unique<D3DClass>();
 
@@ -194,8 +275,11 @@ bool GraphicsClass::Initialize(int screenWidth, int screenHeight, HWND hwnd, Inp
 	//	return false;
 	//}
 	//-------------------------------------------------------------------------------------------------------------------------------
+	m_shadowPass = std::make_unique<ShadowPass>();
+	m_shadowPass->setup(*m_renderer, m_resourceManager, hwnd, sunCamera);
+
 	m_opaquePass = std::make_unique<OpaquePass>();
-	m_opaquePass->setup(*m_renderer, *m_resourceManager, hwnd, mainCamera);
+	m_opaquePass->setup(*m_renderer, *m_resourceManager, hwnd, mainCamera, sunCamera); //sunCamera needed for shadowPass
 
 	m_skyPass = std::make_unique<SkyPass>();
 	m_skyPass->setup(*m_renderer, *m_resourceManager, hwnd, mainCamera);
@@ -228,14 +312,15 @@ bool GraphicsClass::Frame()
 	//m_D3D->DrawSky(mScene, mainCamera);
 	//m_D3D->DrawDebug(mScene, mainCamera);
 	//m_D3D->EndScene();
+	sunCamera->setSceneBBox(ComputeSunFrustum(mainCamera, sunCamera));
 
 	// I should clear target and here
 	((D3D11Renderer*)m_renderer.get())->BeginRenderFrame(); // ugly :(
-
+	// Shadow pass here. where do i save the generated shadow map
+	m_shadowPass->execute(*m_sceneLoader->pScene.get(), renderItems);
 	m_opaquePass->sunActive = sunActive;
 	m_opaquePass->execute(*m_sceneLoader->pScene.get(), renderItems);
 	m_skyPass->execute(*m_sceneLoader->pScene.get(), skyItem);
-
 	// I should present and swap here
 	((D3D11Renderer*)m_renderer.get())->EndRenderFrame(); // ugly :(
 
@@ -288,7 +373,7 @@ void GraphicsClass::Shutdown()
 {
 	//if (importer != nullptr)
 	//{
-	//	�delete importer;
+	//	delete importer;
 	//}
 	//else if (mScene != nullptr)
 	//{

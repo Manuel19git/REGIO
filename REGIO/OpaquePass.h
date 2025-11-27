@@ -12,15 +12,17 @@ public:
 	OpaquePass();
 	~OpaquePass();
 
-	void setup(IRenderer& renderer, ResourceManager& resourceManager, HWND hwnd, Camera* camera);
+	void setup(IRenderer& renderer, ResourceManager& resourceManager, HWND hwnd, Camera* camera, Camera* sunCamera);
 	void execute(SceneData& scene, const std::vector<RenderItem>& items);
 
 
 	bool sunActive = false;
 
+
 private:
 	IRenderer* m_renderer;
 	ResourceManager* m_resourceManager;
 
-	Camera* mainCamera;
+	Camera* m_mainCamera;
+	Camera* m_sunCamera;
 };

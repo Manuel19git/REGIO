@@ -60,6 +60,7 @@ set(SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/D3D11Renderer.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/OpaquePass.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/SkyPass.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/ShadowPass.cpp"
 
     "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/dxerr.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/DxgiInfoManager.cpp"
@@ -77,6 +78,7 @@ set(HEADERS
     "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/D3D11Renderer.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/OpaquePass.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/SkyPass.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/ShadowPass.h"
 
     "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/ResourceManager.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/SceneLoader.h"
@@ -98,7 +100,13 @@ set(HEADERS
 
 #file(GLOB SOURCES "REGIO/*.cpp") # find files matching the GLOBbing-expression and store it 
 #file(GLOB HEADERS "REGIO/*.h")
-file(GLOB EFFECTS "REGIO/*.fx")
+#file(GLOB EFFECTS "REGIO/*.fx")
+
+# Configure effects (not used in the project)
+set(EFFECTS
+    "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/Effects/LightEffect.fx"
+    "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/Effects/LightHelper.fx"
+)
 
 # Configure shaders
 set(SHADERS 
