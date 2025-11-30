@@ -2,6 +2,33 @@
 
 using namespace DirectX;
 
+// At the moment camera depends on directx to calculate matrices and everything else
+Camera::Camera(Vector& startPosition, Vector& startForward)
+{
+    translationSpeed = 0.3f;
+	rotationSpeed = 0.005f;
+	lookSensitivity = 0.02;
+
+	yaw = 0.0f;
+	pitch = 0.0f;
+	roll = 0.0f;
+
+	m_orientation = DirectX::XMQuaternionIdentity();
+	position = XMFLOAT3(startPosition.x, startPosition.y, startPosition.z);
+	forwardVector = XMVectorSet(startForward.x, startForward.y, startForward.z, 1.0f);
+	startForwardVector = XMVectorSet(startForward.x, startForward.y, startForward.z, 1.0f);
+
+	rightVector = DirectX::XMVectorSet(1.0f, 0.0f, 0.0f, 1.0f);
+	upVector = DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 1.0f);
+	lookAtVector = DirectX::XMVectorSet(0.0f, 0.0f, 20.0f, 1.0f);
+
+	nearPlane = 0.5f;
+	farPlane = 10000.0; //culprit
+
+	screenWidth = 0.0f;
+	screenHeight = 0.0f;
+
+}
 Camera::Camera(DirectX::XMFLOAT3 &startPosition, DirectX::XMVECTOR &startForward)
 {
     translationSpeed = 0.3f;
@@ -139,9 +166,9 @@ float Camera::getFar()
 {
 	return farPlane;
 }
-void Camera::setFar(float far)
+void Camera::setFar(float far_plane)
 {
-	farPlane = far;
+	farPlane = far_plane;
 }
 
 float Camera::getYaw()
@@ -154,6 +181,7 @@ float Camera::getPitch()
 	return pitch;
 }
 
+// I can have this method be API specific (DirectX)
 DirectX::XMMATRIX Camera::getTransform(bool isOrthographic)
 {
 	// Save previous orientation to ensure camera doesn't turn around 180� when pitching (gimball lock)
@@ -202,17 +230,22 @@ DirectX::XMMATRIX Camera::getTransform(bool isOrthographic)
 
 	lookAtVector = XMVectorAdd(posVector, forwardVector);
 
+	//scenebbox.left = -20;
+	//scenebbox.right = 20;
+	//scenebbox.bottom = -10;
+	//scenebbox.top = 10;
+	//scenebbox.nearPlane = 0;
+	//scenebbox.farPlane = 100;
 	// Right now orthographic is only used for shadow maps
 	XMMATRIX projectionMatrix = (isOrthographic) ?
 		//XMMatrixOrthographicLH(10, 10, nearPlane, farPlane) :
 		XMMatrixOrthographicOffCenterLH(scenebbox.left, scenebbox.right, scenebbox.bottom, scenebbox.top, scenebbox.nearPlane , scenebbox.farPlane ) :
-		XMMatrixPerspectiveLH(1.0f, screenHeight / screenWidth, nearPlane, farPlane);
+		//DirectX::XMMatrixPerspectiveLH(1.0f, 3.0f / 4.0f, nearPlane, farPlane)		//800x600 screen size
+		XMMatrixPerspectiveLH(1.0f, screenHeight / screenWidth, nearPlane, farPlane);	//2048x1133 screen size
 
-    return DirectX::XMMatrixTranspose(
-		XMMatrixLookAtLH(posVector, lookAtVector, upVector) *
-		//DirectX::XMMatrixPerspectiveLH(1.0f, 3.0f / 4.0f, nearPlane, farPlane)     //800x600 screen size
-		projectionMatrix //2048x1133 screen size
-	);
+	XMMATRIX viewMatrix = XMMatrixLookAtLH(posVector, lookAtVector, upVector);
+
+    return DirectX::XMMatrixTranspose( viewMatrix *	projectionMatrix );
 }
 // updateTransform has to be the same as getTransform
 void Camera::updateTransform(bool isOrthographic)

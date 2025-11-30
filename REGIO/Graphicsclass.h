@@ -8,9 +8,15 @@
 //////////////
 // INCLUDES //
 //////////////
-#include "d3dclass.h"
+#include "D3dclass.h"
 #include "MyException.h"
-#include "inputclass.h"
+#include "Inputclass.h"
+#include "Interfaces/IRenderer.h"
+#include "ResourceManager.h"
+#include "SceneLoader.h"
+#include "OpaquePass.h"
+#include "SkyPass.h"
+#include "ShadowPass.h"
 
 /////////////
 // GLOBALS //
@@ -44,11 +50,24 @@ public:
 
 private:
 	
+	std::shared_ptr<IRenderer> m_renderer;
+	std::unique_ptr<ResourceManager> m_resourceManager;
+	std::unique_ptr<SceneLoader> m_sceneLoader;
+
+	std::unique_ptr<ShadowPass> m_shadowPass;
+	std::unique_ptr<OpaquePass> m_opaquePass;
+	std::unique_ptr<SkyPass> m_skyPass;
+
+	std::vector<RenderItem> renderItems;
+	RenderItem skyItem;
+	
+
 	D3DClass* m_D3D;
 	Mouse* mouse;
 	HWND m_hwnd;
 
 	Camera* mainCamera;
+	Camera* sunCamera;
 
 	//Scene and mesh persists as long as the importer
 	Assimp::Importer* importer;

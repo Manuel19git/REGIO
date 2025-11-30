@@ -2,7 +2,7 @@
 
 #include <d3d11_2.h>
 #include <wrl.h> //ComPtr
-#include "Macros.h"
+#include "Common/Macros.h"
 #include "DxgiInfoManager.h"
 #include "MyException.h"
 

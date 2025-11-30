@@ -3,9 +3,9 @@
 #include <WinBase.h>
 #include <DirectXMath.h>
 
-struct Material
+struct MaterialGPU
 {
-	Material() { ZeroMemory(this, sizeof(this)); }
+	MaterialGPU() { ZeroMemory(this, sizeof(this)); }
 
 	DirectX::XMFLOAT4 Ambient;
 	DirectX::XMFLOAT4 Diffuse;
@@ -65,7 +65,7 @@ struct cbPerObject
 {
 	DirectX::XMMATRIX gTransform;
 	DirectX::XMMATRIX gTransformSun;
-	Material gMaterial;
+	MaterialGPU gMaterial;
 	int hasTexture;
 };
 

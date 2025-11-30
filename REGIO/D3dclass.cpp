@@ -1,5 +1,5 @@
 #include <iostream>
-#include "d3dclass.h"
+#include "D3dclass.h"
 
 #pragma comment(lib, "d3d11.lib")
 #pragma comment(lib, "D3DCompiler.lib")
@@ -8,51 +8,51 @@
 // FUNCTIONS //
 ///////////////
 
-std::string searchFileInParentDirectories(std::string path)
-{
-	PROFILE_SCOPE();
-
-	char buffer[MAX_PATH];
-	GetModuleFileNameA(NULL, buffer, MAX_PATH);
-	std::string modulePath = std::string(buffer);
-	std::string moduleDir = modulePath.substr(0, modulePath.find_last_of("\\/"));
-
-	while (moduleDir != "C:")
-	{
-		std::string fullPath = moduleDir + path;
-		std::ifstream file(fullPath);
-		if (file.good())
-		{
-			return fullPath;
-		}
-		moduleDir = moduleDir.substr(0, moduleDir.find_last_of("\\/"));
-	}
-	return "";
-}
-// Function to transform regular string to wide string 
-std::wstring string2WideString(const std::string& s)
-{
-	PROFILE_SCOPE();
-
-	//setup converter
-	using convert_type = std::codecvt_utf8<wchar_t>;
-	std::wstring_convert<convert_type, wchar_t> converter;
-
-	//use converter (.to_bytes: wstr->str, .from_bytes: str->wstr)
-    return converter.from_bytes(s);
-}
-
-std::string wideString2String(const std::wstring& s)
-{
-	PROFILE_SCOPE();
-
-	//setup converter
-	using convert_type = std::codecvt_utf8<wchar_t>;
-	std::wstring_convert<convert_type, wchar_t> converter;
-
-	//use converter (.to_bytes: wstr->str, .from_bytes: str->wstr)
-    return converter.to_bytes(s);
-}
+//std::string searchFileInParentDirectories(std::string path)
+//{
+//	PROFILE_SCOPE();
+//
+//	char buffer[MAX_PATH];
+//	GetModuleFileNameA(NULL, buffer, MAX_PATH);
+//	std::string modulePath = std::string(buffer);
+//	std::string moduleDir = modulePath.substr(0, modulePath.find_last_of("\\/"));
+//
+//	while (moduleDir != "C:")
+//	{
+//		std::string fullPath = moduleDir + path;
+//		std::ifstream file(fullPath);
+//		if (file.good())
+//		{
+//			return fullPath;
+//		}
+//		moduleDir = moduleDir.substr(0, moduleDir.find_last_of("\\/"));
+//	}
+//	return "";
+//}
+//// Function to transform regular string to wide string 
+//std::wstring string2WideString(const std::string& s)
+//{
+//	PROFILE_SCOPE();
+//
+//	//setup converter
+//	using convert_type = std::codecvt_utf8<wchar_t>;
+//	std::wstring_convert<convert_type, wchar_t> converter;
+//
+//	//use converter (.to_bytes: wstr->str, .from_bytes: str->wstr)
+//    return converter.from_bytes(s);
+//}
+//
+//std::string wideString2String(const std::wstring& s)
+//{
+//	PROFILE_SCOPE();
+//
+//	//setup converter
+//	using convert_type = std::codecvt_utf8<wchar_t>;
+//	std::wstring_convert<convert_type, wchar_t> converter;
+//
+//	//use converter (.to_bytes: wstr->str, .from_bytes: str->wstr)
+//    return converter.to_bytes(s);
+//}
 D3DClass::D3DClass()
 {}
 
@@ -446,24 +446,6 @@ void D3DClass::ClearBuffer(float red, float green, float blue)
     const float color[] = { red, green, blue, 1.0f };
     pDeviceContext->ClearRenderTargetView(pTarget.Get(), color);
     pDeviceContext->ClearDepthStencilView(pDepthStencilView.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
-}
-
-// I may not need it
-void D3DClass::DrawShadowMap(const aiScene* scene, Camera* sunCamera)
-{
-    HRESULT hr;
-
-    //Bind Vertex Layout and Primitive Topology
-    pDeviceContext->IASetInputLayout(pInputLayout.Get());
-    pDeviceContext->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
-    //Bind Vertex and Index buffer
-    const UINT strides = sizeof(Vertex);
-    const UINT offset = 0;
-    GFX_THROW_INFO_ONLY(pDeviceContext->IASetVertexBuffers(0, 1, pVertexBuffer.GetAddressOf(), &strides, &offset));
-    GFX_THROW_INFO_ONLY(pDeviceContext->IASetIndexBuffer(pIndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0));
-
-
 }
 
 void D3DClass::DrawScene(const aiScene* scene, Camera* camera)

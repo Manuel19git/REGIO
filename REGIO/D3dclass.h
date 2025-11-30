@@ -26,17 +26,18 @@
 #include "DDSTextureLoader.h"
 
 // Light and material structs
-#include "LightHelper.h"
+#include "Common/LightHelper.h"
 
 #include "SpriteFont.h"
 #include <chrono>
 #include <Windows.h>
 
 #include "Camera.h"
-#include "Macros.h"
+#include "Common/Macros.h"
 #include "ShadowMap.h"
 
-#include "profiler.h"
+#include "Common/Profiler.h"
+#include "Common/Common.h"
 
 // Conversion widestring string
 #include<locale>
@@ -49,36 +50,13 @@ namespace wrl = Microsoft::WRL;
 // STRUCTS //
 /////////////
 
-struct Vertex
-{
-	struct
-	{
-		float x;
-		float y;
-		float z;
-	} pos;
-
-	struct
-	{
-		float x;
-		float y;
-		float z;
-	} normal;
-
-	struct
-	{
-		float u;
-		float v;
-	} tex;
-
-};
 
 ///////////////
 // FUNCTIONS //
 ///////////////
-std::string searchFileInParentDirectories(std::string path);
-std::wstring string2WideString(const std::string& s);
-std::string wideString2String(const std::wstring& s);
+//std::string searchFileInParentDirectories(std::string path);
+//std::wstring string2WideString(const std::string& s);
+//std::string wideString2String(const std::wstring& s);
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -98,7 +76,6 @@ public:
 	void BuildVertexLayout();
 	void BuildTextures(const aiScene* scene);
 	void BuildSkymapTexture();
-	void DrawShadowMap(const aiScene* scene, Camera* sunCamera);
 	void DrawScene(const aiScene* scene, Camera* camera);
 	void DrawSky(const aiScene* scene, Camera* camera);
 	void DrawDebug(const aiScene* scene, Camera* camera);
@@ -193,7 +170,7 @@ private:
 	PointLight pointLight;
 	PointLight pointLights[6];
 	SpotLight spotLight;
-	Material material;
+	MaterialGPU material;
 
 	// Show fps
 	std::unique_ptr<SpriteFont> spriteFont;

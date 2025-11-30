@@ -13,6 +13,9 @@ if (CMAKE_SIZEOF_VOID_P EQUAL 8)
     set(W_ARCH "x64")
 endif()
 
+# Here I will put macros used in the project
+option(DIRECTX11 "Render using directx11" ON)
+
 # Function to search for fxc.exe recursively
 function(find_fxc_exe)
     # Set the initial search directory to the Windows Kits folder
@@ -42,23 +45,82 @@ message(STATUS "Found fxc.exe at ${FXC_PATH}")
 # https://cmake.org/cmake/help/latest/command/file.html#glob
 
 # Add executable target
-file(GLOB SOURCES "REGIO/*.cpp") # find files matching the GLOBbing-expression and store it 
-file(GLOB HEADERS "REGIO/*.h")
-file(GLOB EFFECTS "REGIO/*.fx")
+set(SOURCES
+    "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/Main.cpp"
+
+    "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/Inputclass.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/Systemclass.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/Graphicsclass.cpp"
+
+    "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/Camera.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/D3dclass.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/ShadowMap.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/SceneLoader.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/ResourceManager.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/D3D11Renderer.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/OpaquePass.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/SkyPass.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/ShadowPass.cpp"
+
+    "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/dxerr.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/DxgiInfoManager.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/MyException.cpp"
+)
+
+set(HEADERS
+    "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/Inputclass.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/Systemclass.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/Graphicsclass.h"
+
+    "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/Camera.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/D3dclass.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/ShadowMap.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/D3D11Renderer.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/OpaquePass.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/SkyPass.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/ShadowPass.h"
+
+    "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/ResourceManager.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/SceneLoader.h"
+
+    "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/dxerr.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/DxgiInfoManager.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/MyException.h"
+
+    "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/Common/Macros.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/Common/Profiler.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/Common/LightHelper.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/Common/RenderItem.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/Common/Common.h"
+
+    "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/Interfaces/IRenderer.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/Interfaces/IRenderPass.h"
+
+)
+
+#file(GLOB SOURCES "REGIO/*.cpp") # find files matching the GLOBbing-expression and store it 
+#file(GLOB HEADERS "REGIO/*.h")
+#file(GLOB EFFECTS "REGIO/*.fx")
+
+# Configure effects (not used in the project)
+set(EFFECTS
+    "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/Effects/LightEffect.fx"
+    "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/Effects/LightHelper.fx"
+)
 
 # Configure shaders
 set(SHADERS 
-    "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/VertexShader.hlsl"
-    "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/PixelShader.hlsl"
-    "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/SimplePixelShader.hlsl"
-    "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/SkyPixelShader.hlsl"
-    "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/common.hlsl"
+    "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/Shaders/VertexShader.hlsl"
+    "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/Shaders/PixelShader.hlsl"
+    "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/Shaders/SimplePixelShader.hlsl"
+    "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/Shaders/SkyPixelShader.hlsl"
+    "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/Shaders/common.hlsl"
 )
-set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/REGIO/VertexShader.hlsl PROPERTIES ShaderType "vs")
-set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/REGIO/PixelShader.hlsl PROPERTIES ShaderType "ps")
-set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/REGIO/SimplePixelShader.hlsl PROPERTIES ShaderType "ps")
-set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/REGIO/SkyPixelShader.hlsl PROPERTIES ShaderType "ps")
-set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/REGIO/common.hlsl PROPERTIES ShaderType "ignore")
+set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/REGIO/Shaders/VertexShader.hlsl PROPERTIES ShaderType "vs")
+set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/REGIO/Shaders/PixelShader.hlsl PROPERTIES ShaderType "ps")
+set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/REGIO/Shaders/SimplePixelShader.hlsl PROPERTIES ShaderType "ps")
+set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/REGIO/Shaders/SkyPixelShader.hlsl PROPERTIES ShaderType "ps")
+set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/REGIO/Shaders/common.hlsl PROPERTIES ShaderType "ignore")
 set_source_files_properties(${SHADERS} PROPERTIES ShaderModel "4_0")
 
 # This option tells Visual Studio to treat this file as header, thus not compiling it
@@ -85,6 +147,11 @@ target_include_directories(${PROJECT_NAME} PRIVATE external/assimp/include)
 target_include_directories(${PROJECT_NAME} PRIVATE external/DirectXTK/Inc)
 target_include_directories(${PROJECT_NAME} PRIVATE external/FX11/inc)
 
+# Active options here
+if(DIRECTX11)
+  target_compile_definitions(${PROJECT_NAME} PRIVATE DX11_ENABLED=1)
+endif()
+
 
 # Check the generator used
 if (CMAKE_GENERATOR MATCHES "Visual Studio")
@@ -94,6 +161,17 @@ if (CMAKE_GENERATOR MATCHES "Visual Studio")
     # Define custom filters
     source_group("Shaders" FILES ${SHADERS})
     source_group("Effects" FILES ${EFFECTS})
+    source_group("Common" FILES
+	    "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/Common/Macros.h"
+    	"${CMAKE_CURRENT_SOURCE_DIR}/REGIO/Common/Profiler.h"
+       	"${CMAKE_CURRENT_SOURCE_DIR}/REGIO/Common/LightHelper.h"
+    	"${CMAKE_CURRENT_SOURCE_DIR}/REGIO/Common/RenderItem.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/Common/Common.h"
+    )
+    source_group("Interfaces" FILES
+        "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/Interfaces/IRenderer.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/Interfaces/IRenderPass.h"
+    )
 
     # Set the shader output directory
     set(EFFECT_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/effects)

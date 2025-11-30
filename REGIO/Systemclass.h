@@ -16,8 +16,8 @@
 ///////////////////////
 // MY CLASS INCLUDES //
 ///////////////////////
-#include "inputclass.h"
-#include "graphicsclass.h"
+#include "Inputclass.h"
+#include "Graphicsclass.h"
 
 #define WND_EXCEPT( hr ) SystemClass::HrException( __LINE__,__FILE__,(hr) );
 #define WND_LAST_EXCEPT() SystemClass::HrException( __LINE__,__FILE__,GetLastError() );

@@ -4,7 +4,7 @@ cbuffer cbPerObject : register(b0)
 {
 	matrix gTransform; //matrix is 4x4
     matrix gTransformSun;
-	Material gMaterial;
+	MaterialGPU gMaterial;
     int hasTexture;
 };
 
