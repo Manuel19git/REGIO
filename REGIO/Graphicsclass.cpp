@@ -98,23 +98,23 @@ void computeBoundingBox(const SceneData& scene, float& left, float& right, float
 
 }
 
-BoundingBox ComputeSunFrustum(Camera* mainCamera, Camera* sunCamera)
+BoundingBox ComputeSunFrustum(Camera& mainCamera, Camera& sunCamera)
 {
     BoundingBox frustum = BoundingBox();
 
     // We want to get the shadow map with a good quality without it changing the main camera far which is very far
     // so we set far of the mainCamera to the 
-    float farDefault = mainCamera->getFar();
-    mainCamera->setFar(std::abs(mainCamera->getSceneBBox().farPlane - mainCamera->getSceneBBox().nearPlane)); // WARNING: Shitty way of solving this, might break in the future
+    float farDefault = mainCamera.getFar();
+    mainCamera.setFar(std::abs(mainCamera.getSceneBBox().farPlane - mainCamera.getSceneBBox().nearPlane)); // WARNING: Shitty way of solving this, might break in the future
 
     // 1. Coger la matriz de transformacion de la camara principal
-    DirectX::XMMATRIX view = mainCamera->getViewMatrix();
-    DirectX::XMMATRIX proj = mainCamera->getProjectionMatrix();
+    DirectX::XMMATRIX view = mainCamera.getViewMatrix();
+    DirectX::XMMATRIX proj = mainCamera.getProjectionMatrix();
     DirectX::XMMATRIX viewProj = DirectX::XMMatrixMultiply(view, proj);
     DirectX::XMMATRIX invViewProj = DirectX::XMMatrixInverse(nullptr, viewProj );
-    DirectX::XMMATRIX sunViewProj = sunCamera->getViewMatrix();
+    DirectX::XMMATRIX sunViewProj = sunCamera.getViewMatrix();
 
-    mainCamera->setFar(farDefault);
+    mainCamera.setFar(farDefault);
 
     // 2. Multiplicarla por la posicion del cubo can�nico
     DirectX::XMVECTOR ndcCorners[8] = {
@@ -317,14 +317,20 @@ bool GraphicsClass::Frame()
 	//m_D3D->DrawSky(mScene, mainCamera);
 	//m_D3D->DrawDebug(mScene, mainCamera);
 	//m_D3D->EndScene();
-	sunCamera->setSceneBBox(ComputeSunFrustum(mainCamera, sunCamera));
+ 
+	// We don't want mainCamera modified (should I put const on ComputeSunFrustum?)
+	// Esto no arregla el flickering
+	// Initialize sun camera
+	sunCamera->setSceneBBox(ComputeSunFrustum(*mainCamera, *sunCamera));
 
-	// I should clear target and here
+	// I should clear target here
 	((D3D11Renderer*)m_renderer.get())->BeginRenderFrame(); // ugly :(
 	// Shadow pass here. where do i save the generated shadow map
 	m_shadowPass->execute(*m_sceneLoader->pScene.get(), renderItems);
+
 	m_opaquePass->sunActive = sunActive;
 	m_opaquePass->execute(*m_sceneLoader->pScene.get(), renderItems);
+	
 	m_skyPass->execute(*m_sceneLoader->pScene.get(), skyItem);
 	// I should present and swap here
 	((D3D11Renderer*)m_renderer.get())->EndRenderFrame(); // ugly :(

@@ -328,8 +328,8 @@ void D3D11Renderer::SetNullTargetAndRS()
 	GFX_THROW_INFO_ONLY(pDeviceContext->OMSetRenderTargets(1, pTargets, pShadowDepthStencilView.Get()));
     GFX_THROW_INFO_ONLY(pDeviceContext->ClearDepthStencilView(pShadowDepthStencilView.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0));
 
-    GFX_THROW_INFO_ONLY(pDeviceContext->RSSetState(pShadowRS.Get()));
     GFX_THROW_INFO_ONLY(pDeviceContext->RSGetState(pAuxRS.GetAddressOf()));
+    GFX_THROW_INFO_ONLY(pDeviceContext->RSSetState(pShadowRS.Get()));
 }
 
 void D3D11Renderer::RestoreTargetAndRS()
