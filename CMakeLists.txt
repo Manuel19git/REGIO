@@ -126,13 +126,20 @@ set_source_files_properties(${SHADERS} PROPERTIES ShaderModel "4_0")
 # This option tells Visual Studio to treat this file as header, thus not compiling it
 set_source_files_properties(${SHADERS} PROPERTIES HEADER_FILE_ONLY ON)
 
-add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS} ${EFFECTS} ${SHADERS})
+# If I don't put WIN32 MSVC will search for main as entry point instead of WinMain
+add_executable(${PROJECT_NAME} WIN32 ${SOURCES} ${HEADERS} ${EFFECTS} ${SHADERS})
 
 # Include directories
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 # Add the submodule directory to the CMake build
+# (I am going to disable things I don't need at the moment from assimp)
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build Assimp as a static library")
+set(ASSIMP_BUILD_TESTS OFF CACHE BOOL "Disable Assimp test suite" FORCE)
+set(ASSIMP_BUILD_ASSIMP_TOOLS OFF CACHE BOOL "Disable Assimp command-line tools" FORCE)
+set(ASSIMP_BUILD_SAMPLES OFF CACHE BOOL "Disable Assimp sample apps" FORCE)
+set(ASSIMP_BUILD_ALL_EXPORTERS_BY_DEFAULT OFF CACHE BOOL "Disable exporters" FORCE)
+
 add_subdirectory(external/assimp)
 add_subdirectory(external/DirectXTK)
 add_subdirectory(external/FX11)
@@ -173,74 +180,71 @@ if (CMAKE_GENERATOR MATCHES "Visual Studio")
         "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/Interfaces/IRenderPass.h"
     )
 
-    # Set the shader output directory
-    set(EFFECT_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/effects)
-    set(SHADER_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/shaders)
 
-    # Create the output directory
-    file(MAKE_DIRECTORY ${EFFECT_OUTPUT_DIR})
-    file(MAKE_DIRECTORY ${SHADER_OUTPUT_DIR})
-
-    # Compile each effect file
-    foreach(EFFECT ${EFFECTS})
-        get_filename_component(EFFECT_NAME ${EFFECT} NAME_WE) # Get the effect base name without extension
-
-        # Define output file name
-        set(OUTPUT_FILE ${EFFECT_OUTPUT_DIR}/${EFFECT_NAME}.fxo)
- 
-        # Add a custom command to compile the effect file
-        add_custom_command(
-            OUTPUT ${OUTPUT_FILE}
-            COMMAND ${FXC_PATH} /T fx_5_0 /E Simple /Fo "${OUTPUT_FILE}" "${EFFECT}"
-            DEPENDS "${EFFECT}" # Depend on the original shader file
-            COMMENT "Compiling effect file ${EFFECT} to ${OUTPUT_FILE}"
-        )
-
-        # Create a custom target that depends on the output file
-        add_custom_target(compile_${EFFECT_NAME} ALL DEPENDS ${OUTPUT_FILE})
-        add_dependencies(${PROJECT_NAME} compile_${EFFECT_NAME})
-    endforeach()
-
-    # Compile each shader file
-    foreach(SHADER ${SHADERS})
-        get_filename_component(SHADER_NAME ${SHADER} NAME_WE) # Get the shader base name without extension
-
-        # Define output file name
-        set(OUTPUT_FILE ${SHADER_OUTPUT_DIR}/${SHADER_NAME}.cso)
-
-        # Get shader type and model
-        get_source_file_property(shadertype ${SHADER} ShaderType)
-        get_source_file_property(shadermodel ${SHADER} ShaderModel)
-
-	if (${shadertype} STREQUAL "ignore")
-	    continue()
-	endif()
-        
-        # Add a custom command to compile the shader
-        add_custom_command(
-            OUTPUT ${OUTPUT_FILE}
-            COMMAND ${FXC_PATH} /nologo /Emain /T ${shadertype}_${shadermodel} /Zi /Fo "${OUTPUT_FILE}" "${SHADER}"
-            #COMMAND ${FXC_PATH} /T fx_5_0 /E Simple /Fo "${OUTPUT_FILE}" "${SHADER}"
-            DEPENDS "${SHADER}" # Depend on the original shader file
-            COMMENT "Compiling HLSL shader ${SHADER} to ${OUTPUT_FILE}"
-        )
-
-        # Create a custom target that depends on the output file
-        add_custom_target(compile_${SHADER_NAME} ALL DEPENDS ${OUTPUT_FILE})
-        add_dependencies(${PROJECT_NAME} compile_${SHADER_NAME})
-    endforeach()
-    
     # Example: Set compiler options for Visual Studio
     target_compile_options(${PROJECT_NAME} PRIVATE /W4)  # Set warning level to 4
-
-    # For it to find the windows main
-    set_target_properties(${PROJECT_NAME} PROPERTIES WIN32_EXECUTABLE TRUE)
-
-    # You can also define any Visual Studio specific flags or options here
-    add_definitions(-DUNICODE -D_UNICODE)
-    
 endif()
+# You can also define any specific flags or options here
+add_definitions(-DUNICODE -D_UNICODE)   	  
 
+# Set the shader output directory
+set(EFFECT_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/effects)
+set(SHADER_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/shaders)
+
+# Create the output directory
+file(MAKE_DIRECTORY ${EFFECT_OUTPUT_DIR})
+file(MAKE_DIRECTORY ${SHADER_OUTPUT_DIR})
+
+# Compile each effect file
+foreach(EFFECT ${EFFECTS})
+    get_filename_component(EFFECT_NAME ${EFFECT} NAME_WE) # Get the effect base name without extension
+
+    # Define output file name
+    set(OUTPUT_FILE ${EFFECT_OUTPUT_DIR}/${EFFECT_NAME}.fxo)
+
+    # Add a custom command to compile the effect file
+    add_custom_command(
+    OUTPUT ${OUTPUT_FILE}
+    COMMAND ${FXC_PATH} /T fx_5_0 /E Simple /Fo "${OUTPUT_FILE}" "${EFFECT}"
+    DEPENDS "${EFFECT}" # Depend on the original shader file
+    COMMENT "Compiling effect file ${EFFECT} to ${OUTPUT_FILE}"
+    )
+
+    # Create a custom target that depends on the output file
+    add_custom_target(compile_${EFFECT_NAME} ALL DEPENDS ${OUTPUT_FILE})
+    add_dependencies(${PROJECT_NAME} compile_${EFFECT_NAME})
+endforeach()
+
+# Compile each shader file
+foreach(SHADER ${SHADERS})
+    get_filename_component(SHADER_NAME ${SHADER} NAME_WE) # Get the shader base name without extension
+
+    # Define output file name
+    set(OUTPUT_FILE ${SHADER_OUTPUT_DIR}/${SHADER_NAME}.cso)
+
+    # Get shader type and model
+    get_source_file_property(shadertype ${SHADER} ShaderType)
+    get_source_file_property(shadermodel ${SHADER} ShaderModel)
+
+    if (${shadertype} STREQUAL "ignore")
+       continue()
+    endif()
+
+    # Add a custom command to compile the shader
+    add_custom_command(
+    OUTPUT ${OUTPUT_FILE}
+    COMMAND ${FXC_PATH} /nologo /Emain /T ${shadertype}_${shadermodel} /Zi /Fo "${OUTPUT_FILE}" "${SHADER}"
+    #COMMAND ${FXC_PATH} /T fx_5_0 /E Simple /Fo "${OUTPUT_FILE}" "${SHADER}"
+    DEPENDS "${SHADER}" # Depend on the original shader file
+    COMMENT "Compiling HLSL shader ${SHADER} to ${OUTPUT_FILE}"
+    )
+
+    # Create a custom target that depends on the output file
+    add_custom_target(compile_${SHADER_NAME} ALL DEPENDS ${OUTPUT_FILE})
+    add_dependencies(${PROJECT_NAME} compile_${SHADER_NAME})
+endforeach()
+
+    
 # Install
 install(TARGETS ${PROJECT_NAME}
     DESTINATION ${PROJECT_NAME}
