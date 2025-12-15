@@ -1,6 +1,7 @@
 #pragma once
 
-#include "Interfaces/IRenderPass.h"
+//#include "Interfaces/IRenderPass.h"
+#include "ResourceManager.h"
 #include "Interfaces/IRenderer.h"
 
 class ShadowPass
