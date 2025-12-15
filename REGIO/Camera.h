@@ -1,0 +1,86 @@
+#pragma once
+#include <DirectXMath.h>
+#include <string>
+#include "Common/Common.h"
+
+#define POSITIVE 1
+#define NEGATIVE -1
+
+enum Axis
+{
+	X, 
+	Y,
+	Z
+};
+
+
+struct BoundingBox // TODO put this in a separate file with the rest of auxiliar stuff
+{
+	BoundingBox() = default;
+
+	bool IsCorrect() { return left != right && top != bottom && nearPlane != farPlane; };
+
+	float left = INFINITY;
+	float right = -INFINITY;
+	float top = -INFINITY;
+	float bottom = INFINITY;
+	float nearPlane = INFINITY;
+	float farPlane = -INFINITY;
+};
+
+class Camera
+{
+public:
+	Camera(Vector& startPosition, Vector& startForward);
+	Camera(DirectX::XMFLOAT3 &startPosition, DirectX::XMVECTOR &startForward);
+
+	void moveCamera(Axis axis, int sign);
+	void updateYawPitch(float x, float y);
+	void updateRoll(int sign);
+	void setResolution(const float width, const float height);
+	std::pair<float, float> getResolution();
+
+	DirectX::XMFLOAT3 getPosition();
+	DirectX::XMVECTOR getLookAt();
+	DirectX::XMVECTOR getForward();
+	DirectX::XMVECTOR getRight();
+	DirectX::XMVECTOR getUp();
+	DirectX::XMMATRIX getViewMatrix();
+	DirectX::XMMATRIX getProjectionMatrix(bool isOrthographic = false);
+	DirectX::XMMATRIX getViewProjMatrix(bool isOrthographic = false);
+	float getNear();
+	float getFar();
+	void setFar(float far);
+	float getYaw();
+	float getPitch();
+	DirectX::XMMATRIX getTransform(bool isOrthographic = false);
+	void updateTransform(bool isOrthographic = false);
+
+	BoundingBox getSceneBBox();
+	void setSceneBBox(BoundingBox& bbox);
+
+public:
+	float translationSpeed;
+	float rotationSpeed;
+	float lookSensitivity;
+
+private:
+	DirectX::XMVECTOR m_orientation;
+	DirectX::XMVECTOR lookAtVector;
+	DirectX::XMFLOAT3 position;
+
+	DirectX::XMVECTOR startForwardVector;
+	DirectX::XMVECTOR forwardVector;
+	DirectX::XMVECTOR rightVector;
+	DirectX::XMVECTOR upVector;
+
+	float yaw;
+	float pitch;
+	float roll;
+
+	float nearPlane;
+	float farPlane;
+	float screenWidth;
+	float screenHeight;
+	BoundingBox scenebbox;
+};

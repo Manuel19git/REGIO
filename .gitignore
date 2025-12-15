@@ -9,9 +9,26 @@
 *.user
 *.userosscache
 *.sln.docstates
+*.drawio
+*.vcxproj
+*.cso
+*.fxo
+*.sln
+*.vcxproj
+*.filters
+*.$Diagrama_clases.drawio.bkp
+
+# Folders
+Data/
+Images/
+output/
+build/
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
+profile.json
+Tareas.txt
+Errores que me he encontrado.txt
 
 # Mono auto generated files
 mono_crash.*

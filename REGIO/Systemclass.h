@@ -5,27 +5,50 @@
 // PRE-PROCESSING DIRECTIVES //
 ///////////////////////////////
 #define WIN32_LEAN_AND_MEAN
+//Unless we define this NOMINMAX, whenever we includ winowds.h its going to give an error
+#define NOMINMAX
 
 ///////////////////////////////
 // INCLUDES //
 ///////////////////////////////
-#include<Windows.h>
+//#include<Windows.h>
 
 ///////////////////////
 // MY CLASS INCLUDES //
 ///////////////////////
-#include "inputclass.h"
-#include "graphicsclass.h"
+#include "Inputclass.h"
+#include "Graphicsclass.h"
 
+#define WND_EXCEPT( hr ) SystemClass::HrException( __LINE__,__FILE__,(hr) );
+#define WND_LAST_EXCEPT() SystemClass::HrException( __LINE__,__FILE__,GetLastError() );
+#define WND_NOGFX_EXCEPT() SystemClass::NoGfxException( __LINE__,__FILE__ );
 
 class SystemClass
 {
+public:
+	class HrException : public MyException
+	{
+	public:
+		HrException(int line, const char* file, HRESULT hr);
+		const char* what() const override;
+		const char* GetType() const override;
+		HRESULT GetErrorCode() const;
+		std::string GetErrorDescription() const;
+	private:
+		HRESULT hr;
+	};
+	class NoGfxException : public MyException
+	{
+	public:
+		using MyException::MyException;
+		const char* GetType() const override;
+	};
 public:
 	SystemClass();
 	SystemClass(const SystemClass&);
 	~SystemClass();
 
-	bool Initialize();
+	bool Initialize(std::wstring scenePath);
 	void Shutdown();
 	void Run();
 
@@ -43,6 +66,10 @@ private:
 
 	InputClass* m_Input;
 	GraphicsClass* m_Graphics;
+
+	bool isPause = false;
+	int screenWidth;
+	int screenHeight;
 };
 
 /////////////////////////
