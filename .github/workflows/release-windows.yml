@@ -19,10 +19,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Install CMake (optional; GitHub runners already have CMake)
-      #- name: Install latest CMake
-      #  uses: ssrobins/install-cmake@v1  # install cmake if you want control :contentReference[oaicite:0]{index=0}
-
       # In windows use $env:GITHUB_ENV and in ubuntu $GITHUB_ENV
       - name: Extract tag name
         run: echo "TAG_NAME=${{ github.ref_name }}" >> $env:GITHUB_ENV
@@ -30,7 +26,7 @@ jobs:
       - name: Print tag
         run: "${{ env.TAG_NAME }}"
 
-	# Configure & build
+      # Configure & build
       - name: Configure with CMake
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DVERSION=${{ env.TAG_NAME}}
 
