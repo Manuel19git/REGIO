@@ -254,9 +254,6 @@ install(TARGETS ${PROJECT_NAME}
 install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/shaders/
 	DESTINATION shaders
 )
-install(DIRECTORY ${CMAKE_SOURCE_DIR}/output/Maxwell_cat
-	DESTINATION output
-)
 install(DIRECTORY ${CMAKE_SOURCE_DIR}/Data/
 	DESTINATION Data
 )

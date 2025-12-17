@@ -31,7 +31,7 @@ jobs:
 
       # Configure & build
       - name: Configure with CMake
-        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DVERSION=${{ env.TAG_NAME}}
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DVERSION="${{ env.TAG_NAME}}"
 
       - name: Build
         run: cmake --build build --config Release
