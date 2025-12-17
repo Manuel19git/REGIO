@@ -18,6 +18,9 @@ jobs:
       # Check out your repo
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+            submodules: recursive
+            fetch-depth: 0
 
       # In windows use $env:GITHUB_ENV and in ubuntu $GITHUB_ENV
       - name: Extract tag name
