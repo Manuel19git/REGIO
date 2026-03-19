@@ -2,30 +2,30 @@
 
 struct MaterialGPU
 {
-	float4 Ambient;
-	float4 Diffuse;
-	float4 Specular;
-	float4 Reflect;
+    float4 Ambient;
+    float4 Diffuse;
+    float4 Specular;
+    float4 Reflect;
 };
 
 struct DirectionalLight
 {
-	float4 Ambient;
-	float4 Diffuse;
-	float4 Specular;
+    float4 Ambient;
+    float4 Diffuse;
+    float4 Specular;
 	
-	float3 Direction;
-	float Intensity;
+    float3 Direction;
+    float Intensity;
 };
 
 struct PointLight
 {
-	float4 Ambient;
-	float4 Diffuse;
-	float4 Specular;
+    float4 Ambient;
+    float4 Diffuse;
+    float4 Specular;
 	
-	float3 Position;
-	float Range;
+    float3 Position;
+    float Range;
 	
     float3 Att;
     float Intensity;
@@ -33,12 +33,12 @@ struct PointLight
 
 struct SpotLight
 {
-	float4 Ambient;
-	float4 Diffuse;
-	float4 Specular;
+    float4 Ambient;
+    float4 Diffuse;
+    float4 Specular;
 	
-	float3 Position;
-	float Range;
+    float3 Position;
+    float Range;
 	
     float3 Direction;
     float spot;
@@ -48,69 +48,69 @@ struct SpotLight
 };
 
 void ComputeDirectionalLight(MaterialGPU mat, DirectionalLight light,
-	float3 normal, float3 toEye,
-	out float4 ambient,
-	out float4 diffuse,
-	out float4 specular)
-{
-	ambient = float4(0.0f, 0.0f, 0.0f, 0.0f);
-	diffuse = float4(0.0f, 0.0f, 0.0f, 0.0f);
-	specular = float4(0.0f, 0.0f, 0.0f, 0.0f);
-
-	//light vector aims opposite the direction the light rays travel -> Luna's book
-	float3 lightVec = -light.Direction;
-
-    ambient = mat.Ambient * light.Ambient * light.Intensity;
-
-    float diffuseFactor = dot(lightVec, normal);
-
-	[flatten]
-    if (diffuseFactor > 0.0f)
-    {
-        float3 reflectedVec = reflect(-lightVec, normal);
-        float specularFactor = pow(max(dot(reflectedVec, toEye), 0.0f), mat.Specular.w);
-
-        diffuse = diffuseFactor * mat.Diffuse * light.Diffuse * light.Intensity;
-        specular = specularFactor * mat.Specular * light.Specular * light.Intensity;
-    }
-}
-
- void ComputePointLight(MaterialGPU mat, PointLight light,
-	float3 pos, float3 normal, float3 toEye,
-	out float4 ambient,
-	out float4 diffuse,
-	out float4 specular)
+			     float3 normal, float3 toEye,
+			     out float4 ambient,
+			     out float4 diffuse,
+			     out float4 specular)
 {
     ambient = float4(0.0f, 0.0f, 0.0f, 0.0f);
     diffuse = float4(0.0f, 0.0f, 0.0f, 0.0f);
     specular = float4(0.0f, 0.0f, 0.0f, 0.0f);
 
-	//light vector aims opposite the direction the light rays travel -> Luna's book
+    //light vector aims opposite the direction the light rays travel -> Luna's book
+    float3 lightVec = -light.Direction;
+
+    ambient = mat.Ambient * light.Ambient * light.Intensity;
+
+    float diffuseFactor = dot(lightVec, normal);
+
+    [flatten]
+	if (diffuseFactor > 0.0f)
+	{
+	    float3 reflectedVec = reflect(-lightVec, normal);
+	    float specularFactor = pow(max(dot(reflectedVec, toEye), 0.0f), mat.Specular.w);
+
+	    diffuse = diffuseFactor * mat.Diffuse * light.Diffuse * light.Intensity;
+	    specular = specularFactor * mat.Specular * light.Specular * light.Intensity;
+	}
+}
+
+void ComputePointLight(MaterialGPU mat, PointLight light,
+		       float3 pos, float3 normal, float3 toEye,
+		       out float4 ambient,
+		       out float4 diffuse,
+		       out float4 specular)
+{
+    ambient = float4(0.0f, 0.0f, 0.0f, 0.0f);
+    diffuse = float4(0.0f, 0.0f, 0.0f, 0.0f);
+    specular = float4(0.0f, 0.0f, 0.0f, 0.0f);
+
+    //light vector aims opposite the direction the light rays travel -> Luna's book
     float3 lightVec = light.Position - pos;
 	
-	//Don't opperate light too far from object
+    //Don't opperate light too far from object
     float distance = length(lightVec);
-	if (distance > light.Range)
+    if (distance > light.Range)
         return;
 	
-	//Normalize light vector
+    //Normalize light vector
     lightVec /= distance;
 
     ambient = mat.Ambient * light.Ambient * light.Intensity;
 
     float diffuseFactor = dot(lightVec, normal);
 
-	[flatten]
-    if (diffuseFactor > 0.0f)
-    {
-        float3 reflectedVec = reflect(-lightVec, normal);
-        float specularFactor = pow(max(dot(reflectedVec, toEye), 0.0f), mat.Specular.w);
+    [flatten]
+	if (diffuseFactor > 0.0f)
+	{
+	    float3 reflectedVec = reflect(-lightVec, normal);
+	    float specularFactor = pow(max(dot(reflectedVec, toEye), 0.0f), mat.Specular.w);
 
-        diffuse = diffuseFactor * mat.Diffuse * light.Diffuse * light.Intensity;
-        specular = specularFactor * mat.Specular * light.Specular * light.Intensity;
-    }
+	    diffuse = diffuseFactor * mat.Diffuse * light.Diffuse * light.Intensity;
+	    specular = specularFactor * mat.Specular * light.Specular * light.Intensity;
+	}
 
-	//Scale by spotlight factor and attenuate
+    //Scale by spotlight factor and attenuate
     float att = 1.0f / dot(light.Att, float3(1.0f, distance, distance * distance));
 
     diffuse *= att;
@@ -118,43 +118,43 @@ void ComputeDirectionalLight(MaterialGPU mat, DirectionalLight light,
 }
 
 void ComputeSpotLight(MaterialGPU mat, SpotLight light,
-	float3 pos, float3 normal, float3 toEye,
-	out float4 ambient,
-	out float4 diffuse,
-	out float4 specular)
+		      float3 pos, float3 normal, float3 toEye,
+		      out float4 ambient,
+		      out float4 diffuse,
+		      out float4 specular)
 {
     ambient = float4(0.0f, 0.0f, 0.0f, 0.0f);
     diffuse = float4(0.0f, 0.0f, 0.0f, 0.0f);
     specular = float4(0.0f, 0.0f, 0.0f, 0.0f);
 
-	//light vector aims opposite the direction the light rays travel -> Luna's book
+    //light vector aims opposite the direction the light rays travel -> Luna's book
     float3 lightVec = light.Position - pos;
 	
-	//Don't opperate light too far from object
+    //Don't opperate light too far from object
     float distance = length(lightVec);
-	if (distance > light.Range)
+    if (distance > light.Range)
         return;
 	
-	//Normalize light vector
+    //Normalize light vector
     lightVec /= distance;
 	
     ambient = mat.Ambient * light.Ambient * light.Intensity;
 
     float diffuseFactor = dot(lightVec, normal);
 
-	[flatten]
-    if (diffuseFactor > 0.0f)
-    {
-        float3 reflectedVec = reflect(-lightVec, normal);
-        float specularFactor = pow(max(dot(reflectedVec, toEye), 0.0f), mat.Specular.w);
+    [flatten]
+	if (diffuseFactor > 0.0f)
+	{
+	    float3 reflectedVec = reflect(-lightVec, normal);
+	    float specularFactor = pow(max(dot(reflectedVec, toEye), 0.0f), mat.Specular.w);
 
-        diffuse = diffuseFactor * mat.Diffuse * light.Diffuse * light.Intensity;
-        specular = specularFactor * mat.Specular * light.Specular * light.Intensity;
-    }
-	//Scale by spotlight factor and attenuate
+	    diffuse = diffuseFactor * mat.Diffuse * light.Diffuse * light.Intensity;
+	    specular = specularFactor * mat.Specular * light.Specular * light.Intensity;
+	}
+    //Scale by spotlight factor and attenuate
     float spot = pow(max(dot(-lightVec, light.Direction), 0.0f), light.spot);
 	
-	//Scale by spotlight factor and attenuate
+    //Scale by spotlight factor and attenuate
     float att = spot / dot(light.Att, float3(1.0f, distance, distance * distance));
 	
     ambient *= spot;
@@ -172,7 +172,7 @@ SamplerState samTriLinearSam
 
 float CalcShadowFactor(SamplerComparisonState sampShadow, Texture2D shadowMap, float4 shadowPosNDC)
 {
-	// Projection
+    // Projection
     shadowPosNDC.xyz /= shadowPosNDC.w;
 
     // NDC Space
@@ -184,8 +184,8 @@ float CalcShadowFactor(SamplerComparisonState sampShadow, Texture2D shadowMap, f
 
     // PFC Filtering
     float percentLit = 0.0f;
-	float2 texelSize = 1.0f / float2(2048, 2048);
-	for (int y = -1; y <= 1; ++y)
+    float2 texelSize = 1.0f / float2(2048, 2048);
+    for (int y = -1; y <= 1; ++y)
     {
         for (int x = -1; x <= 1; ++x)
         {
@@ -193,7 +193,7 @@ float CalcShadowFactor(SamplerComparisonState sampShadow, Texture2D shadowMap, f
             percentLit += shadowMap.SampleCmpLevelZero(sampShadow, shadowTexCoords + offset, depth);
         }
     }
-	// Average samples
+    // Average samples
     percentLit /= 9;
     //float textureDepth = shadowMap.Sample(samTriLinearSam, shadowTexCoords).r;
     return percentLit;

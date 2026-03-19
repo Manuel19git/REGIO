@@ -6,10 +6,10 @@ SamplerState samplerState : register(s0);
 
 struct PS_INPUT
 {
-	float4 pos : SV_POSITION;
-	float3 posOrig : POSITION; //World Space
-	float3 norm : NORMAL; //World Space
-	float2 tex : TEXCOORD;
+    float4 pos : SV_POSITION;
+    float3 posOrig : POSITION; //World Space
+    float3 norm : NORMAL; //World Space
+    float2 tex : TEXCOORD;
     float4 shadowPosNDC : TEXCOORD1;
 };
 
