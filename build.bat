@@ -1,5 +1,4 @@
 @echo off
-REM Example batch with options
 
 REM Check first argument
 if "%~1" == "" goto usage
@@ -22,25 +21,37 @@ rd /S /Q build
 goto end
 
 :do_build
+rem Time to build on Asus V3 (~8 min)
 echo Building project...
-REM e.g. cmake + build
+set "MAKE_ERROR=0"
+
 mkdir build
-cmake -S . -B .\build -DCMAKE_CXX_COMPILER=cl -G "MinGW Makefiles"
+rem TODO: generate makefiles with ninja (mingw and windows doesn't seem to get along)
+cmake -S . -B .\build -DCMAKE_CXX_COMPILER=cl -G "MinGW Makefiles" -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 call pushd build
-call mingw32-make -s 2>&1 | findstr /V /C:"Nota:"
-if ERRORLEVEL 1 (
+(mingw32-make -s || echo !errorlevel! > error.tag) | findstr /V /C:"Nota:"
+rem call mingw32-make -s > build_output.tmp 2>&1
+rem set MAKE_ERROR=%ERRORLEVEL%
+rem type build_output.tmp | findstr /V /C:"Nota:"
+if not exist error.tag (
+  call .\REGIO.exe
+)
+if exist error.tag (
   rem The filter removed everything — maybe there were no other lines
   rem But ensure we still have correct exit code if build failed
-  mingw32-make -s
-  exit /B %ERRORLEVEL%
+  del error.tag
+  call popd
+  exit /B 1
 )
-call .\REGIO.exe
+
 call popd 
 goto end
 
 :do_vs_build
+rem Time to build on Asus V3 (~7 min)
 mkdir build
-call cmake -S . -B .\build
+call cmake -S . -B .\build -DCMAKE_BUILD_TYPE=Release
+call cmake --build build --config Release
 goto end
 
 :do_rebuild
