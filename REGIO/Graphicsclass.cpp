@@ -235,23 +235,6 @@ bool GraphicsClass::Initialize(int screenWidth, int screenHeight, HWND hwnd, Inp
 	skyItem.meshHandle = m_resourceManager->loadSkyMeshResource();
 	skyItem.materialHandle = m_resourceManager->loadSkyMaterialResource();
 
-	//------------------------------------------------------------- OLD -------------------------------------------------------------
-
-	// Read mesh
-	//importer = new Assimp::Importer();
-	////mScene = importer->ReadFile("..\\output\\NIER\\Props\\turnstile_wall.usdc", //USD is not fully supported by assimp yet
-	////	aiProcess_Triangulate | aiProcess_ConvertToLeftHanded);
-	//mScene = importer->ReadFile(scenePath,
-	//	aiProcess_Triangulate | aiProcess_ConvertToLeftHanded);
-	////mScene = importer->ReadFile("..\\output\\NIER\\nier_park.obj",
-	////	aiProcess_Triangulate | aiProcess_ConvertToLeftHanded);
-	////mScene = importer->ReadFile("..\\output\\NIER\\nier_park.glb",
-	////	aiProcess_Triangulate | aiProcess_ConvertToLeftHanded);
-	//if (!mScene)
-	//{
-	//	MessageBoxA(nullptr, importer->GetErrorString(), "Assimp Importer error", 0);
-	//}
-
 	// Compute bounding box
 	computeBoundingBox(*m_sceneLoader->pScene, scenebbox.left, scenebbox.right, scenebbox.top, scenebbox.bottom, scenebbox.nearPlane, scenebbox.farPlane);
 
@@ -321,7 +304,8 @@ bool GraphicsClass::Frame()
 	// We don't want mainCamera modified (should I put const on ComputeSunFrustum?)
 	// Esto no arregla el flickering
 	// Initialize sun camera
-	sunCamera->setSceneBBox(ComputeSunFrustum(*mainCamera, *sunCamera));
+	BoundingBox frustumBBox = ComputeSunFrustum(*mainCamera, *sunCamera);
+	sunCamera->setSceneBBox(frustumBBox);
 
 	// I should clear target here
 	((D3D11Renderer*)m_renderer.get())->BeginRenderFrame(); // ugly :(
