@@ -10,6 +10,7 @@
 #include<codecvt>
 
 #include <Windows.h>
+#include <vector>
 
 struct Vector
 {
@@ -87,25 +88,13 @@ struct Matrix4x4
 
 };
 
-inline std::string searchFileInParentDirectories(std::string path)
-{
-	char buffer[MAX_PATH];
-	GetModuleFileNameA(NULL, buffer, MAX_PATH);
-	std::string modulePath = std::string(buffer);
-	std::string moduleDir = modulePath.substr(0, modulePath.find_last_of("\\/"));
+// File Related functions
 
-	while (moduleDir != "C:")
-	{
-		std::string fullPath = moduleDir + path;
-		std::ifstream file(fullPath);
-		if (file.good())
-		{
-			return fullPath;
-		}
-		moduleDir = moduleDir.substr(0, moduleDir.find_last_of("\\/"));
-	}
-	return "";
-}
+extern std::vector<std::string> commonSearchDirectories; // This variable is shared for every cpp that includes this header
+std::string getDirectory(std::string filePath, char separator = '\\');
+std::string searchFile(std::string path);
+
+
 // Function to transform regular string to wide string 
 inline std::wstring string2WideString(const std::string& s)
 {
@@ -151,8 +140,8 @@ struct MaterialNode
 	std::string normalTexturePath = "";
 	std::string diffuseTexturePath = "";
 	std::string specularTexturePath = "";
-	std::string vertexShaderPath = searchFileInParentDirectories("\\shaders\\VertexShader.cso");
-	std::string pixelShaderPath = searchFileInParentDirectories("\\shaders\\PixelShader.cso");
+	std::string vertexShaderPath = searchFile("\\shaders\\VertexShader.cso");
+	std::string pixelShaderPath = searchFile("\\shaders\\PixelShader.cso");
 	// In the future this will hold parameters for bsdf (I still don't know if this will be added)
 	Vector ambient = Vector(1,1,1,1);
 	Vector diffuse = Vector(1,1,1,1);

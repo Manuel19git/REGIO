@@ -186,7 +186,7 @@ void D3DClass::BuildSkymapTexture()
 
     HRESULT hr;
 
-	std::wstring skyMapTexture = string2WideString( searchFileInParentDirectories("\\output\\NIER\\Props\\textures\\otro_cielo.dds"));
+	std::wstring skyMapTexture = string2WideString( searchFile("\\output\\NIER\\Props\\textures\\otro_cielo.dds"));
 
     // CreateDDSTextureFromFile sets automatically description and its properties. 
     // From the DDS file it should read metadata and wether it is a cubemap or not 
@@ -318,19 +318,19 @@ bool D3DClass::Initialize(HWND hWnd, const aiScene* pScene, Camera* mainCamera)
 
     //Initialize shaders
     wrl::ComPtr<ID3DBlob> pBlob;
-	std::wstring shaderPath = string2WideString(searchFileInParentDirectories("\\shaders\\SkyPixelShader.cso"));
+	std::wstring shaderPath = string2WideString(searchFile("\\shaders\\SkyPixelShader.cso"));
 	GFX_THROW_INFO_ONLY(D3DReadFileToBlob(shaderPath.c_str(), &pBlob));
     GFX_THROW_INFO_ONLY(pDevice->CreatePixelShader(pBlob->GetBufferPointer(), pBlob->GetBufferSize(), nullptr, &pSkyPixelShader));
 
-	shaderPath = string2WideString(searchFileInParentDirectories("\\shaders\\SimplePixelShader.cso"));
+	shaderPath = string2WideString(searchFile("\\shaders\\SimplePixelShader.cso"));
 	GFX_THROW_INFO_ONLY(D3DReadFileToBlob(shaderPath.c_str(), &pBlob));
     GFX_THROW_INFO_ONLY(pDevice->CreatePixelShader(pBlob->GetBufferPointer(), pBlob->GetBufferSize(), nullptr, &pSimplePixelShader));
 
-	shaderPath = string2WideString(searchFileInParentDirectories("\\shaders\\PixelShader.cso"));
+	shaderPath = string2WideString(searchFile("\\shaders\\PixelShader.cso"));
     GFX_THROW_INFO_ONLY(D3DReadFileToBlob(shaderPath.c_str(), &pBlob));
     GFX_THROW_INFO_ONLY(pDevice->CreatePixelShader(pBlob->GetBufferPointer(), pBlob->GetBufferSize(), nullptr, &pPixelShader));
 
-	shaderPath = string2WideString(searchFileInParentDirectories("\\shaders\\VertexShader.cso"));
+	shaderPath = string2WideString(searchFile("\\shaders\\VertexShader.cso"));
     GFX_THROW_INFO_ONLY(D3DReadFileToBlob(shaderPath.c_str(), &pBlob));
     GFX_THROW_INFO_ONLY(pDevice->CreateVertexShader(pBlob->GetBufferPointer(), pBlob->GetBufferSize(), nullptr, &pVertexShader));
 
@@ -432,7 +432,7 @@ bool D3DClass::Initialize(HWND hWnd, const aiScene* pScene, Camera* mainCamera)
     //fxPointLights->SetRawValue(&pointLights, 0, sizeof(PointLight) * 6);
 
     //Initialize sprint font and batch to render text
-	std::wstring spriteFontPath = string2WideString(searchFileInParentDirectories("/Data/Fonts/arial.spritefont"));
+	std::wstring spriteFontPath = string2WideString(searchFile("/Data/Fonts/arial.spritefont"));
     spriteBatch = std::make_unique<SpriteBatch>(pDeviceContext.Get());
     spriteFont = std::make_unique<SpriteFont>(pDevice.Get(), spriteFontPath.c_str());
 

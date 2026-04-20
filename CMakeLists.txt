@@ -65,6 +65,8 @@ set(SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/dxerr.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/DxgiInfoManager.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/MyException.cpp"
+
+    "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/Common/Common.cpp"
 )
 
 set(HEADERS

@@ -209,7 +209,7 @@ bool GraphicsClass::Initialize(int screenWidth, int screenHeight, HWND hwnd, Inp
 
 	std::string scenePath = wideString2String(wideScenePath);
 	if ( scenePath == "")
-		scenePath = searchFileInParentDirectories("\\output\\Maxwell_cat\\source\\maxwell_scene.obj");
+		scenePath = searchFile("\\output\\Maxwell_cat\\source\\maxwell_scene.obj");
 
 	//------------------------------------------------------------- NEW -------------------------------------------------------------
 #ifdef DX11_ENABLED

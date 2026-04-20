@@ -1,4 +1,5 @@
 #include "SceneLoader.h"
+#include "Common/Common.h"
 
 SceneLoader::SceneLoader()
 {
@@ -7,6 +8,8 @@ SceneLoader::SceneLoader()
 
 void SceneLoader::loadScene(std::string scenePath)
 {
+	commonSearchDirectories.push_back(getDirectory(scenePath));
+
 	Assimp::Importer* importer = new Assimp::Importer();
 	const aiScene* aiScene = importer->ReadFile(scenePath,
 		aiProcess_Triangulate | aiProcess_ConvertToLeftHanded);
