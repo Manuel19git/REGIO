@@ -1,4 +1,5 @@
 #include "SceneLoader.h"
+#include "Common/Common.h"
 
 SceneLoader::SceneLoader()
 {
@@ -7,6 +8,8 @@ SceneLoader::SceneLoader()
 
 void SceneLoader::loadScene(std::string scenePath)
 {
+	commonSearchDirectories.push_back(getDirectory(scenePath));
+
 	Assimp::Importer* importer = new Assimp::Importer();
 	const aiScene* aiScene = importer->ReadFile(scenePath,
 		aiProcess_Triangulate | aiProcess_ConvertToLeftHanded);
@@ -209,10 +212,10 @@ void SceneLoader::processNode(SceneData::Node& parentNode,const aiScene* aiScene
 			aiCamera* aiCamera = aiScene->mCameras[nodeId];
 
 			// No need to compose camera with Node (transformation is already in aiCamera)
-			Camera camera(
-				Vector(aiCamera->mPosition.x,aiCamera->mPosition.y, aiCamera->mPosition.z, 1.0f), 
-				Vector(aiCamera->mLookAt.x,aiCamera->mLookAt.y, aiCamera->mLookAt.z, 1.0f)
-			);
+			Vector startPos = Vector(aiCamera->mPosition.x,aiCamera->mPosition.y, aiCamera->mPosition.z, 1.0f);
+			Vector startForward = Vector(aiCamera->mLookAt.x,aiCamera->mLookAt.y, aiCamera->mLookAt.z, 1.0f);
+			
+			Camera camera( startPos, startForward );
 
 			pScene->cameras.push_back(camera);
 

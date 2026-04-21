@@ -255,7 +255,7 @@ void D3D11Renderer::ConfigureRenderPass(HWND hwnd, float screenWidth, float scre
     pDeviceContext->RSSetViewports(1, &renderViewport);
 
     //Initialize sprint font and batch to render text (for debugging purposes)
-	std::wstring spriteFontPath = string2WideString(searchFileInParentDirectories("/Data/Fonts/arial.spritefont"));
+	std::wstring spriteFontPath = string2WideString(searchFile("/Data/Fonts/arial.spritefont"));
     spriteBatch = std::make_unique<SpriteBatch>(pDeviceContext.Get());
     spriteFont = std::make_unique<SpriteFont>(pDevice.Get(), spriteFontPath.c_str());
 

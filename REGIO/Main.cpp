@@ -1,6 +1,21 @@
 #include "Systemclass.h"
 #include "Common/Profiler.h"
+#include <consoleapi.h>
 #include <shellapi.h>
+#include <iostream>
+
+#ifdef _DEBUG
+void CreateDebuggingConsole() {
+	if (!AttachConsole(ATTACH_PARENT_PROCESS))
+	{
+		AllocConsole();
+	}
+	
+	// Redirige stdout (printf, cout) a la nueva consola
+	freopen_s((FILE**)stdout, "CONOUT$", "w", stdout);	
+	std::ios::sync_with_stdio();
+}
+#endif
 
 //Punto de entrada para aplicaciones de windows
 //hInstance -> Sistema operativo lo usa para localizar el EXE
@@ -24,6 +39,12 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
 				break;
 			}
 		}
+		
+#ifdef _DEBUG
+		CreateDebuggingConsole();
+		std::cout << "DEBUG MODE" << std::endl;
+#endif
+		
 		SystemClass* systemClass = new SystemClass();
 		bool result;
 
