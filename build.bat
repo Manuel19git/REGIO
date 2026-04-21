@@ -3,7 +3,15 @@
 REM Check first argument
 if "%~1" == "" goto usage
 
-set ACTION=%~1
+set ACTION=%1
+set CONFIG=%2
+
+if /I "%CONFIG%" == "" set CONFIG=Debug
+if /I "%CONFIG%" == "release" set CONFIG=Release
+
+echo Action: %ACTION%
+echo Config: %CONFIG%
+
 
 REM parse action
 if /I "%ACTION%"=="clean" goto do_clean
@@ -33,10 +41,11 @@ if not defined VCINSTALLDIR (
 )
 
 rem mingw32 should not be in the env path for cmake to find the correct linker
-call cmake -S . -B .\build -DCMAKE_CXX_COMPILER=cl -G "Ninja" -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
-call cmake --build .\build
+call cmake -S . -B .\build -DCMAKE_CXX_COMPILER=cl -G "Ninja Multi-Config" -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+call cmake --build .\build --config %CONFIG%
 if %ERRORLEVEL% == 0 (
-   call .\build\REGIO.exe	
+   echo Launching .\build\%CONFIG%\REGIO.exe
+   call .\build\%CONFIG%\REGIO.exe
 )
 if %ERRORLEVEL% == 1 (
    exit /B1
