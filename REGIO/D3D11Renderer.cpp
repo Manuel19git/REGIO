@@ -117,7 +117,10 @@ bool D3D11Renderer::CreateBuffer( const void* data, ID3D11Buffer** outBuffer, D3
 bool D3D11Renderer::CreateVertexShader(std::string shaderPath, ID3D11VertexShader** pVertexShader, ID3D11InputLayout** pInputLayout)
 {
     HRESULT hr;
-
+	
+	// Solve relative paths
+	shaderPath = searchFile(shaderPath);
+	
     // Read vertex shader
     wrl::ComPtr<ID3DBlob> pBlob;
 	std::wstring wShaderPath = string2WideString(shaderPath);
@@ -141,6 +144,9 @@ bool D3D11Renderer::CreatePixelShader(std::string shaderPath, ID3D11PixelShader*
 {
     HRESULT hr;
 
+	// Solve relative paths
+	shaderPath = searchFile(shaderPath);
+	
     // Read pixel shader
     wrl::ComPtr<ID3DBlob> pBlob;
 	std::wstring wShaderPath = string2WideString(shaderPath);
@@ -155,6 +161,9 @@ bool D3D11Renderer::CreateTexture(std::string texturePath, ID3D11ShaderResourceV
 {
     HRESULT hr;
 
+	// Solve relative paths
+	texturePath = searchFile(texturePath);
+	
 	// Convert the string to the right type before feeding it to the following function
 	const size_t pathSize = strlen(texturePath.c_str()) + 1;
 	wchar_t* pathWideString = new wchar_t[pathSize];
@@ -173,6 +182,9 @@ bool D3D11Renderer::CreateTexture(std::string texturePath, ID3D11ShaderResourceV
 bool D3D11Renderer::CreateDDSTexture(std::string texturePath, ID3D11ShaderResourceView** textureResourceView)
 {
     HRESULT hr;
+
+	// Solve relative paths
+	texturePath = searchFile(texturePath);
 
 	// Convert the string to the right type before feeding it to the following function
 	const size_t pathSize = strlen(texturePath.c_str()) + 1;

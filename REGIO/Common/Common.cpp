@@ -16,6 +16,13 @@ std::string getDirectory(std::string filePath, char separator)
 
 std::string searchFile(std::string path)
 {
+	// We don't need to search if path is allready a full path
+	std::ifstream file(path);
+	if (file.good())
+	{
+		return path;
+	}
+	
 	// Check for unix separators
 	char separator = '\\';
 	if (path.rfind('/') != std::string::npos)
