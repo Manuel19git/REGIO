@@ -31,8 +31,8 @@ struct BoundingBox // TODO put this in a separate file with the rest of auxiliar
 class Camera
 {
 public:
-	Camera(Vector& startPosition, Vector& startForward);
-	Camera(DirectX::XMFLOAT3 &startPosition, DirectX::XMVECTOR &startForward);
+	Camera(Vector& startPosition, Vector& startForward, std::string name = "camera");
+	Camera(DirectX::XMFLOAT3 &startPosition, DirectX::XMVECTOR &startForward, std::string name = "camera");
 
 	void moveCamera(Axis axis, int sign);
 	void updateYawPitch(float x, float y);
@@ -83,4 +83,6 @@ private:
 	float screenWidth;
 	float screenHeight;
 	BoundingBox scenebbox;
+
+	std::string m_name;
 };

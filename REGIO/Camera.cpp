@@ -3,8 +3,10 @@
 using namespace DirectX;
 
 // At the moment camera depends on directx to calculate matrices and everything else
-Camera::Camera(Vector& startPosition, Vector& startForward)
+Camera::Camera(Vector& startPosition, Vector& startForward, std::string name)
 {
+	m_name = name;
+	
     translationSpeed = 0.3f;
 	rotationSpeed = 0.005f;
 	lookSensitivity = 0.02;
@@ -29,8 +31,10 @@ Camera::Camera(Vector& startPosition, Vector& startForward)
 	screenHeight = 0.0f;
 
 }
-Camera::Camera(DirectX::XMFLOAT3 &startPosition, DirectX::XMVECTOR &startForward)
+Camera::Camera(DirectX::XMFLOAT3 &startPosition, DirectX::XMVECTOR &startForward, std::string name)
 {
+	m_name = name;
+	
     translationSpeed = 0.3f;
 	rotationSpeed = 0.005f;
 	lookSensitivity = 0.02;
