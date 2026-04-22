@@ -69,5 +69,8 @@ public:
 	void loadScene(std::string scenePath);
 
 	std::unique_ptr<SceneData> pScene;
-	
+
+#ifdef _DEBUG
+	void logDebugInfo();
+#endif
 };

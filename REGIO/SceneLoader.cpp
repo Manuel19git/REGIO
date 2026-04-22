@@ -1,6 +1,10 @@
 #include "SceneLoader.h"
 #include "Common/Common.h"
 
+#ifdef _DEBUG
+#include <iostream>
+#endif
+
 SceneLoader::SceneLoader()
 {
 	pScene = std::make_unique<SceneData>();
@@ -27,12 +31,17 @@ void SceneLoader::loadScene(std::string scenePath)
 	pScene->rootNode->type = NodeType::EMPTY;
 	pScene->rootNode->name = aiScene->mRootNode->mName.C_Str();
 	pScene->rootNode->transform = aiScene->mRootNode->mTransformation;
-	
+
 	for (int i = 0; i < aiScene->mRootNode->mNumChildren; ++i)
 	{
 		processNode(*pScene->rootNode, aiScene, aiScene->mRootNode->mChildren[i]);
 	}
 	delete importer;
+
+#ifdef _DEBUG
+	std::cout << "Reading scene: " << scenePath << std::endl;
+	logDebugInfo();
+#endif
 }
 
 std::pair<NodeType,int> getNodeTypeAndID(const aiScene* aiScene, std::string nodeName)
@@ -225,3 +234,13 @@ void SceneLoader::processNode(SceneData::Node& parentNode,const aiScene* aiScene
 	}
 
 }
+
+#ifdef _DEBUG
+void SceneLoader::logDebugInfo()
+{
+	std::cout << "Meshes:" << pScene->meshes.size() << std::endl;
+	std::cout << "Cameras:" << pScene->cameras.size() << std::endl;
+	std::cout << "Materials:" << pScene->materials.size() << std::endl;
+	std::cout << "Emitters:" << pScene->emitters.size() << std::endl;
+}
+#endif
