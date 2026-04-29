@@ -18,11 +18,11 @@
 
 enum NodeType
 {
-	EMPTY,
-	MESH,
-	CAMERA,
-	EMITTER,
-	MATERIAL
+	EMPTY,   // 0
+	MESH,    // 1
+	CAMERA,  // 2
+	EMITTER, // 3
+	MATERIAL // 4
 };
 struct SceneData
 {
