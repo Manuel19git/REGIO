@@ -53,7 +53,6 @@ set(SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/Graphicsclass.cpp"
 
     "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/Camera.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/D3dclass.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/ShadowMap.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/SceneLoader.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/ResourceManager.cpp"
@@ -75,7 +74,6 @@ set(HEADERS
     "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/Graphicsclass.h"
 
     "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/Camera.h"
-    "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/D3dclass.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/ShadowMap.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/D3D11Renderer.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/REGIO/OpaquePass.h"
@@ -146,7 +144,9 @@ add_subdirectory(external/assimp)
 add_subdirectory(external/DirectXTK)
 add_subdirectory(external/FX11)
 
-# Link the library to your target
+# Link libraries
+target_link_libraries(${PROJECT_NAME} PRIVATE d3d11.lib D3DCompiler.lib)
+
 target_link_libraries(${PROJECT_NAME} PRIVATE assimp)
 target_link_libraries(${PROJECT_NAME} PRIVATE DirectXTK)
 target_link_libraries(${PROJECT_NAME} PRIVATE Effects11) # name defined in their own CMakeLists.txt in add_library

@@ -8,7 +8,6 @@
 //////////////
 // INCLUDES //
 //////////////
-#include "D3dclass.h"
 #include "MyException.h"
 #include "Inputclass.h"
 #include "Interfaces/IRenderer.h"
@@ -62,7 +61,6 @@ private:
 	RenderItem skyItem;
 	
 
-	D3DClass* m_D3D;
 	Mouse* mouse;
 	HWND m_hwnd;
 
