@@ -241,14 +241,14 @@ bool GraphicsClass::Initialize(int screenWidth, int screenHeight, HWND hwnd, Inp
 	// Initialize player camera before directX
 	XMFLOAT3 startPosition = XMFLOAT3(0.5f, 2.0f, -4.0f);
 	XMVECTOR startForward = XMVectorSet(0.0f, 0.0f, 1.0f, 1.0f);
-	mainCamera = new Camera(startPosition, startForward);
+	mainCamera = new Camera(startPosition, startForward, "DefaultMainCamera");
 	mainCamera->setResolution(screenWidth, screenHeight);
 	mainCamera->setSceneBBox(scenebbox);
 
 	// Initialize sun camera
 	XMFLOAT3 sunPosition = XMFLOAT3(0.0f, 100.0f , 0.0f ) ;
 	XMVECTOR sunForward = XMVector3Normalize(XMVectorSubtract(XMVectorZero(), XMLoadFloat3(&sunPosition)));
-	sunCamera = new Camera(sunPosition, sunForward);
+	sunCamera = new Camera(sunPosition, sunForward, "SunCamera");
 	sunCamera->setResolution(mainCamera->getResolution().first, mainCamera->getResolution().second);
 
 

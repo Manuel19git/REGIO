@@ -68,17 +68,17 @@ void Camera::moveCamera(Axis axis, int sign)
 	{
 	case X:
 		posVector = XMLoadFloat3(&position);
-		posVector += rightVector * translationSpeed * sign;
+		posVector += rightVector * (translationSpeed * sign);
 		XMStoreFloat3(&position, posVector);
 		break;
 	case Y:
 		posVector = XMLoadFloat3(&position);
-		posVector += upVector * translationSpeed * sign;
+		posVector += upVector * (translationSpeed * sign);
 		XMStoreFloat3(&position, posVector);
 		break;
 	case Z:
 		posVector = XMLoadFloat3(&position);
-		posVector += forwardVector * translationSpeed * sign;
+		posVector += forwardVector * (translationSpeed * sign);
 		XMStoreFloat3(&position, posVector);
 		break;
 	default:

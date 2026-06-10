@@ -24,8 +24,8 @@ void OpaquePass::setup(IRenderer& renderer, ResourceManager& resourceManager, HW
 // scene is only needed to traverse camera from scene. TODO: improve if more than one camera present
 void OpaquePass::execute(SceneData& scene, const std::vector<RenderItem>& items)
 {
-	if (!scene.cameras.empty())
-		m_mainCamera = &scene.cameras[0];
+	//if (!scene.cameras.empty())
+	//	m_mainCamera = &scene.cameras[0];
 
 #ifdef DX11_ENABLED
 
@@ -45,8 +45,17 @@ void OpaquePass::execute(SceneData& scene, const std::vector<RenderItem>& items)
 		// Bind constant buffers? (transform and such)
 		DX11Material material = m_resourceManager->materialResourceMap[renderItem.materialHandle];
 		cbPerObject cbObject;
-		cbObject.gTransform = renderItem.worldTransform.ToXMMATRIX() * transform;
-		cbObject.gTransformSun = renderItem.worldTransform.ToXMMATRIX() * transformSun;
+		
+		XMMATRIX worldTransform = renderItem.worldTransform.ToXMMATRIX();
+		XMMATRIX viewTransform = m_mainCamera->getViewMatrix();
+		XMMATRIX projTransform = m_mainCamera->getProjectionMatrix();
+		
+		cbObject.gTransform = XMMatrixTranspose(worldTransform * viewTransform * projTransform);
+		
+		XMMATRIX sunViewTransform = m_sunCamera->getViewMatrix();
+		XMMATRIX sunProjTransform = m_sunCamera->getProjectionMatrix(true);
+		cbObject.gTransformSun = XMMatrixTranspose(worldTransform * sunViewTransform * sunProjTransform);
+		
 		cbObject.hasTexture = (material.pDiffuseTexture || material.pSpecularTexture || material.pNormalTexture) ? true : false;
 
 		cbObject.gMaterial.Ambient = material.ambient;

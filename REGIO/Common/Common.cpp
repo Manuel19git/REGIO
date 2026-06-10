@@ -14,6 +14,17 @@ std::string getDirectory(std::string filePath, char separator)
 	return "";
 }
 
+std::string getExtension(std::string filePath)
+{
+	const size_t idx = filePath.rfind('.');
+	if (std::string::npos != idx)
+	{
+		return filePath.substr(idx);
+	}
+	
+	return "";
+}
+
 std::string searchFile(std::string path)
 {
 	// We don't need to search if path is allready a full path

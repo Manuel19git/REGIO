@@ -61,7 +61,7 @@ class SceneLoader
 private:
 	void loadMaterials(const aiScene* scene);
 
-	void processNode(SceneData::Node& parentNode, const aiScene* scene, const aiNode* node);
+	void processNode(SceneData::Node& parentNode, const aiScene* scene, const aiNode* node, std::string ext);
 
 public:
 	SceneLoader();

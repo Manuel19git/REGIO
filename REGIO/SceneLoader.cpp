@@ -15,7 +15,8 @@ SceneLoader::SceneLoader()
 void SceneLoader::loadScene(std::string scenePath)
 {
 	commonSearchDirectories.push_back(getDirectory(scenePath));
-
+	std::string ext = getExtension(scenePath);
+	
 	Assimp::Importer* importer = new Assimp::Importer();
 	const aiScene* aiScene = importer->ReadFile(scenePath,
 		aiProcess_Triangulate | aiProcess_ConvertToLeftHanded);
@@ -32,15 +33,16 @@ void SceneLoader::loadScene(std::string scenePath)
 	pScene->rootNode->type = NodeType::EMPTY;
 	pScene->rootNode->name = aiScene->mRootNode->mName.C_Str();
 	pScene->rootNode->transform = aiScene->mRootNode->mTransformation;
+	if (ext == ".fbx" || ext == ".gltf" || ext == ".glb")
+		pScene->rootNode->transform.Transpose();
 
 	for (int i = 0; i < aiScene->mRootNode->mNumChildren; ++i)
 	{
-		processNode(*pScene->rootNode, aiScene, aiScene->mRootNode->mChildren[i]);
+		processNode(*pScene->rootNode, aiScene, aiScene->mRootNode->mChildren[i], ext);
 	}
 	delete importer;
 
 #ifdef _DEBUG
-	std::cout << "Reading scene: " << scenePath << std::endl;
 	logDebugInfo();
 #endif
 }
@@ -135,29 +137,33 @@ void SceneLoader::loadMaterials(const aiScene* scene)
 	}
 }
 
-void SceneLoader::processNode(SceneData::Node& parentNode,const aiScene* aiScene, const aiNode* aiNode)
+void SceneLoader::processNode(SceneData::Node& parentNode,const aiScene* aiScene, const aiNode* aiNode, std::string ext)
 {
 	int numChildren = aiNode->mNumChildren;
+
+	// fbx,gltf/glb are column major, thus we transpose them
+	Matrix4x4 auxNodeTransform = aiNode->mTransformation;
+	if (ext == ".fbx" || ext == ".gltf" || ext == ".glb")
+		auxNodeTransform.Transpose();
+	
 	if (numChildren > 0) // Still process
 	{
 		SceneData::Node node;
 		node.type = NodeType::EMPTY;
 		node.name = aiNode->mName.C_Str();
-		node.transform = aiNode->mTransformation;
-
+		node.transform = auxNodeTransform * parentNode.transform;
 		parentNode.children.push_back(node);
 
 		for (int i = 0; i < aiNode->mNumChildren; ++i)
 		{
-			processNode(parentNode.children.back(), aiScene, aiNode->mChildren[i]);
+			processNode(parentNode.children.back(), aiScene, aiNode->mChildren[i], ext);
 		}
 	}
 	else // Leaf node
 	{
 		SceneData::Node leafNode;
 		leafNode.name = aiNode->mName.C_Str();
-		leafNode.transform = aiNode->mTransformation;
-
+  		leafNode.transform =  auxNodeTransform * parentNode.transform;
 		if (aiNode->mNumMeshes > 0)
 		{
 			leafNode.type = NodeType::MESH;

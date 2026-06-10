@@ -1,4 +1,5 @@
 #pragma once
+#include "assimp/matrix4x4.h"
 #include <fstream>
 #include <cstdint>
 #include <string>
@@ -54,6 +55,26 @@ struct Matrix4x4
 {
 	float m[4][4];
 
+	Matrix4x4()
+	{
+		// Initialize as an Identity Matrix by default
+        m[0][0] = 1.0f; m[0][1] = 0.0f; m[0][2] = 0.0f; m[0][3] = 0.0f;
+        m[1][0] = 0.0f; m[1][1] = 1.0f; m[1][2] = 0.0f; m[1][3] = 0.0f;
+        m[2][0] = 0.0f; m[2][1] = 0.0f; m[2][2] = 1.0f; m[2][3] = 0.0f;
+        m[3][0] = 0.0f; m[3][1] = 0.0f; m[3][2] = 0.0f; m[3][3] = 1.0f;
+	}
+	
+	Matrix4x4(const aiMatrix4x4& other)
+	{
+		for (int rowIndex = 0; rowIndex < 4; ++rowIndex)
+		{
+			for (int colIndex = 0; colIndex < 4; ++colIndex)
+			{
+				m[rowIndex][colIndex] = other[rowIndex][colIndex];
+			}
+		}
+	}
+
 	DirectX::XMMATRIX ToXMMATRIX() const
 	{
 		return DirectX::XMMATRIX(
@@ -74,6 +95,35 @@ struct Matrix4x4
 		return out_m;
     }
 
+	Matrix4x4& Transpose()
+	{
+		float temp;
+		// Swap (0,1) with (1,0)
+		temp = m[0][1]; m[0][1] = m[1][0]; m[1][0] = temp;
+		// Swap (0,2) with (2,0)
+		temp = m[0][2]; m[0][2] = m[2][0]; m[2][0] = temp;
+		// Swap (0,3) with (3,0)
+		temp = m[0][3]; m[0][3] = m[3][0]; m[3][0] = temp;
+    
+		// Swap (1,2) with (2,1)
+		temp = m[1][2]; m[1][2] = m[2][1]; m[2][1] = temp;
+		// Swap (1,3) with (3,1)
+		temp = m[1][3]; m[1][3] = m[3][1]; m[3][1] = temp;
+    	// Swap (2,3) with (3,2)
+		temp = m[2][3]; m[2][3] = m[3][2]; m[3][2] = temp;
+
+		return *this;
+	}
+
+	// Overload subscript to access rows: myMatrix[row][col]
+    float* operator[](int index) {
+        return m[index];
+    }
+
+    const float* operator[](int index) const {
+        return m[index];
+    }
+
 	Matrix4x4& operator=(const aiMatrix4x4& other)
 	{
 		for (int rowIndex = 0; rowIndex < 4; ++rowIndex)
@@ -86,12 +136,30 @@ struct Matrix4x4
 		return *this;
 	}
 
+	Matrix4x4 operator*(Matrix4x4& other)
+	{
+		Matrix4x4 result;
+		for (int rowIndex = 0; rowIndex < 4; ++rowIndex)
+		{
+			for (int colIndex = 0; colIndex < 4; ++colIndex)
+			{
+				result[rowIndex][colIndex] = m[rowIndex][0] * other[0][colIndex] +
+										m[rowIndex][1] * other[1][colIndex] +
+										m[rowIndex][2] * other[2][colIndex] +
+										m[rowIndex][3] * other[3][colIndex];
+			}
+		}
+		
+		return result;
+	}
+
 };
 
 // File Related functions
 
 extern std::vector<std::string> commonSearchDirectories; // This variable is shared for every cpp that includes this header
 std::string getDirectory(std::string filePath, char separator = '\\');
+std::string getExtension(std::string filePath);
 std::string searchFile(std::string path);
 
 
