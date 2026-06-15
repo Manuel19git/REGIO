@@ -32,9 +32,7 @@ void ShadowPass::execute(SceneData& scene, const std::vector<RenderItem>& items)
 
 	// we bind new targets
 	d3d11renderer->SetNullTargetAndRS();
-
-	XMMATRIX transform = m_mainCamera->getTransform(true);
-
+	
 	for (auto renderItem : items)
 	{
 		// Input layout and topology, this info should come from material but we can have default ones
@@ -47,8 +45,18 @@ void ShadowPass::execute(SceneData& scene, const std::vector<RenderItem>& items)
 		// Bind constant buffers
 		DX11Material material = m_resourceManager->materialResourceMap[renderItem.materialHandle];
 		cbPerObject cbObject;
-		cbObject.gTransform = renderItem.worldTransform.ToXMMATRIX() * transform;
-		cbObject.gTransformSun = renderItem.worldTransform.ToXMMATRIX() * transform;
+		XMMATRIX worldTransform = renderItem.worldTransform.ToXMMATRIX();
+		XMMATRIX viewTransform = m_mainCamera->getViewMatrix(true);
+		XMMATRIX projTransform = m_mainCamera->getProjectionMatrix(true);
+		XMMATRIX normalTransform = worldTransform;
+		normalTransform.r[3] = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
+		XMVECTOR det = XMMatrixDeterminant(normalTransform);
+		normalTransform = XMMatrixTranspose(XMMatrixInverse(&det, normalTransform));
+		
+		cbObject.gTransformWVP = XMMatrixTranspose(worldTransform * viewTransform * projTransform);
+		cbObject.gTransformWorld = XMMatrixTranspose(worldTransform);
+		cbObject.gTransformNormal = XMMatrixTranspose(normalTransform);
+
 		d3d11renderer->SetObjectConstantBufferVS(&cbObject, sizeof(cbObject), 0);
 
 		// We don't need pixel shader with shadow pass

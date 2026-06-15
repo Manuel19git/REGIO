@@ -4,9 +4,11 @@
 // but because all objects come in world coordinates (.obj) I don't have world matrix yet
 cbuffer cbPerObject : register(b0)
 {
-	matrix gTransform; //matrix is 4x4
-    matrix gTransformSun;
-    MaterialGPU material;
+	matrix gTransformWVP;      //matrix is 4x4
+	matrix gTransformWorld;    //matrix is 4x4
+	matrix gTransformNormal;   //matrix is 4x4
+    matrix gTransformSun;      //matrix is 4x4
+    MaterialGPU gMaterial;
     int hasTexture;
 };
 
@@ -21,8 +23,8 @@ struct VS_INPUT
 struct VS_OUTPUT
 {
 	float4 pos : SV_POSITION;
-	float3 posOrig : POSITION; //World Space
-	float3 norm : NORMAL; //World Space
+	float3 posWorld : POSITION; //World Space
+	float3 normWorld : NORMAL; //World Space
 	float2 tex : TEXCOORD;
     float4 shadowPosNDC : TEXCOORD1;
 };
@@ -30,9 +32,9 @@ struct VS_OUTPUT
 VS_OUTPUT main(VS_INPUT input)
 {
     VS_OUTPUT output;
-    output.posOrig = input.inPos;
-    output.pos = mul(float4(input.inPos, 1.0f), gTransform);
-    output.norm = input.inNorm;
+    output.posWorld = mul(float4(input.inPos, 1.0f), gTransformWorld);
+    output.pos = mul(float4(input.inPos, 1.0f), gTransformWVP);
+    output.normWorld = mul(float4(input.inNorm, 1.0f), gTransformNormal);
     output.tex = input.inTex;
     output.shadowPosNDC = mul(float4(input.inPos, 1.0f), gTransformSun);
     return output;

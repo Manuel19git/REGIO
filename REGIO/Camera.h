@@ -45,7 +45,7 @@ public:
 	DirectX::XMVECTOR getForward();
 	DirectX::XMVECTOR getRight();
 	DirectX::XMVECTOR getUp();
-	DirectX::XMMATRIX getViewMatrix();
+	DirectX::XMMATRIX getViewMatrix(bool isOrthographic = false);
 	DirectX::XMMATRIX getProjectionMatrix(bool isOrthographic = false);
 	DirectX::XMMATRIX getViewProjMatrix(bool isOrthographic = false);
 	float getNear();

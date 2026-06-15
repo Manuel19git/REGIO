@@ -2,9 +2,11 @@
 
 cbuffer cbPerObject : register(b0)
 {
-	matrix gTransform; //matrix is 4x4
-    matrix gTransformSun;
-	MaterialGPU gMaterial;
+	matrix gTransformWVP;      //matrix is 4x4
+	matrix gTransformWorld;    //matrix is 4x4
+	matrix gTransformNormal;   //matrix is 4x4
+    matrix gTransformSun;      //matrix is 4x4
+    MaterialGPU gMaterial;
     int hasTexture;
 };
 
@@ -25,16 +27,16 @@ SamplerComparisonState samShadow : register(s0);
 struct PS_INPUT
 {
 	float4 pos : SV_POSITION;
-	float3 posOrig : POSITION; //World Space
-	float3 norm : NORMAL; //World Space
+	float3 posWorld : POSITION; //World Space
+	float3 normWorld : NORMAL; //World Space
 	float2 tex : TEXCOORD;
     float4 shadowPosNDC : TEXCOORD1;
 };
 
 float4 main(PS_INPUT input) : SV_TARGET
 {
-    input.norm = normalize(input.norm);
-	float3 toEye = normalize(gEyePosW - input.posOrig.xyz);
+    input.normWorld = normalize(input.normWorld);
+	float3 toEye = normalize(gEyePosW - input.posWorld.xyz);
 
     float4 texColor = float4(1, 1, 1, 1);
 	if (hasTexture)
@@ -60,18 +62,18 @@ float4 main(PS_INPUT input) : SV_TARGET
 	//This is the ambient,diffuse,specular values computed
 	float4 A, D, S;
 
-    ComputeDirectionalLight(gMaterial, gDirLight, input.norm, toEye, A, D, S);
+    ComputeDirectionalLight(gMaterial, gDirLight, input.normWorld, toEye, A, D, S);
     ambient += A;
     diffuse += shadow * D;
     specular += shadow * S;
     for (int i = 0; i < 6; ++i)
     {
-        ComputePointLight(gMaterial, gPointLights[i], input.posOrig, input.norm, toEye, A, D, S);
+        ComputePointLight(gMaterial, gPointLights[i], input.posWorld, input.normWorld, toEye, A, D, S);
         ambient += A;
         diffuse += D;
         specular += S;
     }
-    ComputeSpotLight(gMaterial, gSpotLight, input.posOrig, input.norm, toEye, A, D, S);
+    ComputeSpotLight(gMaterial, gSpotLight, input.posWorld, input.normWorld, toEye, A, D, S);
     ambient += A;
     diffuse += D;
     specular += S;

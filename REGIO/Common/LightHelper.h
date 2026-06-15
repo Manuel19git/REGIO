@@ -63,7 +63,9 @@ struct SpotLight
 
 struct cbPerObject
 {
-	DirectX::XMMATRIX gTransform;
+	DirectX::XMMATRIX gTransformWVP;
+	DirectX::XMMATRIX gTransformWorld;
+	DirectX::XMMATRIX gTransformNormal;
 	DirectX::XMMATRIX gTransformSun;
 	MaterialGPU gMaterial;
 	int hasTexture;

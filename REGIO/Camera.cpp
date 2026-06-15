@@ -133,15 +133,15 @@ DirectX::XMVECTOR Camera::getUp()
 	return upVector;
 }
 
-DirectX::XMMATRIX Camera::getViewMatrix()
+DirectX::XMMATRIX Camera::getViewMatrix(bool isOrthographic)
 {
-	updateTransform();
+	updateTransform(isOrthographic);
 	return DirectX::XMMatrixLookAtLH(DirectX::XMLoadFloat3(&position), lookAtVector, upVector);
 }
 
 DirectX::XMMATRIX Camera::getProjectionMatrix(bool isOrthographic)
 {
-	updateTransform();
+	updateTransform(isOrthographic);
 	XMMATRIX projectionMatrix = (isOrthographic) ?
 		XMMatrixOrthographicOffCenterLH(scenebbox.left, scenebbox.right, scenebbox.bottom, scenebbox.top, scenebbox.nearPlane, scenebbox.farPlane) :
 		XMMatrixPerspectiveLH(1.0f, screenHeight / screenWidth, nearPlane, farPlane);

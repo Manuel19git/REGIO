@@ -112,7 +112,7 @@ BoundingBox ComputeSunFrustum(Camera& mainCamera, Camera& sunCamera)
     DirectX::XMMATRIX proj = mainCamera.getProjectionMatrix();
     DirectX::XMMATRIX viewProj = DirectX::XMMatrixMultiply(view, proj);
     DirectX::XMMATRIX invViewProj = DirectX::XMMatrixInverse(nullptr, viewProj );
-    DirectX::XMMATRIX sunViewProj = sunCamera.getViewMatrix();
+    DirectX::XMMATRIX sunViewProj = sunCamera.getViewMatrix(true);
 
     mainCamera.setFar(farDefault);
 

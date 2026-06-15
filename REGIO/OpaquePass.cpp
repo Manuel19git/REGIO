@@ -49,10 +49,16 @@ void OpaquePass::execute(SceneData& scene, const std::vector<RenderItem>& items)
 		XMMATRIX worldTransform = renderItem.worldTransform.ToXMMATRIX();
 		XMMATRIX viewTransform = m_mainCamera->getViewMatrix();
 		XMMATRIX projTransform = m_mainCamera->getProjectionMatrix();
+		XMMATRIX normalTransform = worldTransform;
+		normalTransform.r[3] = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
+		XMVECTOR det = XMMatrixDeterminant(normalTransform);
+		normalTransform = XMMatrixTranspose(XMMatrixInverse(&det, normalTransform));
 		
-		cbObject.gTransform = XMMatrixTranspose(worldTransform * viewTransform * projTransform);
-		
-		XMMATRIX sunViewTransform = m_sunCamera->getViewMatrix();
+		cbObject.gTransformWVP = XMMatrixTranspose(worldTransform * viewTransform * projTransform);
+		cbObject.gTransformWorld = XMMatrixTranspose(worldTransform);
+		cbObject.gTransformNormal = XMMatrixTranspose(normalTransform);
+
+		XMMATRIX sunViewTransform = m_sunCamera->getViewMatrix(true);
 		XMMATRIX sunProjTransform = m_sunCamera->getProjectionMatrix(true);
 		cbObject.gTransformSun = XMMatrixTranspose(worldTransform * sunViewTransform * sunProjTransform);
 		
