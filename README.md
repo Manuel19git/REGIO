@@ -19,4 +19,4 @@ Having a shadow map with larger size would make the shadows look smoother, but I
 
 
 ## Future plans
-Currently I am in the middle of abstracting elements of the core engine to be able to add new rendering APIs in the future. I am in the middle of developing something ECS-ish with a clear speration of data and behaviour, using Render Item object to store handlers to (mesh,material,transform,etc). But this will not be a full implementation of an Entity Component System yet. 
+Currently I am in the middle of abstracting elements of the core engine to be able to add new rendering APIs in the future. I am in the middle of developing something ECS-ish with a clear separation of data and behaviour, using Render Item object to store handlers to (mesh,material,transform,etc). But this will not be a full implementation of an Entity Component System yet. 
