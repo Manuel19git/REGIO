@@ -1,0 +1,30 @@
+* Requisitos
+  - Estar en windows (el motor usa directx11 para lo que es necesario estar en windows)
+  - Instalar visual studio para coger su compilador
+  - Instalar ninja que es el generador que se usa ahora junto a cmake
+
+* Para hacer build del proyecto se necesitan lanzar dos scripts:
+  1. set-visual-env.bat (para configurar el compilador cl.exe que existe en visual studio y poder usar directx)
+  2. build.bat clean (Opcional: en caso de que hacer un build falle)
+  3. build.bat build (por defecto en debug mode)
+
+* Para sacar nueva versión del motor:
+  1. Sobre el commit que sirva como nueva versión (recomendable hacer que esto sea en master) crear un tag con el número de la versió
+     (ej: v0.1.2)
+  2. Hacer un push de dicho tag (sólo después de haber hecho un push del commit)
+
+* Para usar el motor:
+  Llamar a REGIO.exe con la opción -i y la ruta a la escena (ej: REGIO.exe -i "c:\root\to\scene.obj")
+
+* Crear un workflow como el de build pero para testing:
+  Cualquier cambio que se quiera hacer al workflow esn en \.github\workflows\archivo.yml
+
+* Sobre compile_commands.json
+  -Solo puedo generar compile_commands.json usando un generador de makefiles y ninja:
+  -Según los desarrolladores de cmake
+  https://stackoverflow.com/questions/23960835/cmake-not-generating-compile-commands-json
+  "This option (CMAKE_EXPORT_COMPILE_COMMANDS) is implemented only by Makefile Generators and the Ninja. It is ignored on other generators."
+  -clangd debería ser capaz de encontrar el compile_commands.json desde la carpeta base del proyecto indicado a lsp-mode
+
+
+* No debería desarrollar en rama master (no creo que sea buena idea hacer rebase con la rama development a la rama master)
