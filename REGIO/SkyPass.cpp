@@ -40,11 +40,19 @@ void SkyPass::execute(SceneData& scene, const RenderItem& skyItem)
 
 		// Bind constant buffers? (transform and such)
 		cbPerObject cbObject;
-		DirectX::XMMATRIX viewMatrix = m_mainCamera->getViewMatrix();
-		viewMatrix.r[3] = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f); // Remove translation part of matrix
-		DirectX::XMMATRIX projectionMatrix = m_mainCamera->getProjectionMatrix();
-		cbObject.gTransform = DirectX::XMMatrixTranspose(viewMatrix * projectionMatrix);
+		DirectX::XMMATRIX worldTransform = skyItem.worldTransform.ToXMMATRIX();
+		DirectX::XMMATRIX viewTransform = m_mainCamera->getViewMatrix();
+		DirectX::XMMATRIX projectionTransform = m_mainCamera->getProjectionMatrix();
+		DirectX::XMMATRIX normalTransform = worldTransform;
+		normalTransform.r[3] = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
+		DirectX::XMVECTOR det = XMMatrixDeterminant(normalTransform);
+		normalTransform = XMMatrixTranspose(XMMatrixInverse(&det, normalTransform));
 
+		viewTransform.r[3] = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f); // Remove translation part of matrix
+		cbObject.gTransformWVP = DirectX::XMMatrixTranspose(worldTransform * viewTransform * projectionTransform);
+		cbObject.gTransformWorld = DirectX::XMMatrixTranspose(worldTransform);
+		cbObject.gTransformNormal = XMMatrixTranspose(normalTransform);
+		
 		d3d11renderer->SetObjectConstantBufferVS(&cbObject, sizeof(cbObject), 0);
 
 		// Bind shader resources such as textures (shadow map bind here if any)

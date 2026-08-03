@@ -3,8 +3,10 @@
 using namespace DirectX;
 
 // At the moment camera depends on directx to calculate matrices and everything else
-Camera::Camera(Vector& startPosition, Vector& startForward)
+Camera::Camera(Vector& startPosition, Vector& startForward, std::string name)
 {
+	m_name = name;
+	
     translationSpeed = 0.3f;
 	rotationSpeed = 0.005f;
 	lookSensitivity = 0.02;
@@ -29,8 +31,10 @@ Camera::Camera(Vector& startPosition, Vector& startForward)
 	screenHeight = 0.0f;
 
 }
-Camera::Camera(DirectX::XMFLOAT3 &startPosition, DirectX::XMVECTOR &startForward)
+Camera::Camera(DirectX::XMFLOAT3 &startPosition, DirectX::XMVECTOR &startForward, std::string name)
 {
+	m_name = name;
+	
     translationSpeed = 0.3f;
 	rotationSpeed = 0.005f;
 	lookSensitivity = 0.02;
@@ -64,17 +68,17 @@ void Camera::moveCamera(Axis axis, int sign)
 	{
 	case X:
 		posVector = XMLoadFloat3(&position);
-		posVector += rightVector * translationSpeed * sign;
+		posVector += rightVector * (translationSpeed * sign);
 		XMStoreFloat3(&position, posVector);
 		break;
 	case Y:
 		posVector = XMLoadFloat3(&position);
-		posVector += upVector * translationSpeed * sign;
+		posVector += upVector * (translationSpeed * sign);
 		XMStoreFloat3(&position, posVector);
 		break;
 	case Z:
 		posVector = XMLoadFloat3(&position);
-		posVector += forwardVector * translationSpeed * sign;
+		posVector += forwardVector * (translationSpeed * sign);
 		XMStoreFloat3(&position, posVector);
 		break;
 	default:
@@ -129,15 +133,15 @@ DirectX::XMVECTOR Camera::getUp()
 	return upVector;
 }
 
-DirectX::XMMATRIX Camera::getViewMatrix()
+DirectX::XMMATRIX Camera::getViewMatrix(bool isOrthographic)
 {
-	updateTransform();
+	updateTransform(isOrthographic);
 	return DirectX::XMMatrixLookAtLH(DirectX::XMLoadFloat3(&position), lookAtVector, upVector);
 }
 
 DirectX::XMMATRIX Camera::getProjectionMatrix(bool isOrthographic)
 {
-	updateTransform();
+	updateTransform(isOrthographic);
 	XMMATRIX projectionMatrix = (isOrthographic) ?
 		XMMatrixOrthographicOffCenterLH(scenebbox.left, scenebbox.right, scenebbox.bottom, scenebbox.top, scenebbox.nearPlane, scenebbox.farPlane) :
 		XMMatrixPerspectiveLH(1.0f, screenHeight / screenWidth, nearPlane, farPlane);

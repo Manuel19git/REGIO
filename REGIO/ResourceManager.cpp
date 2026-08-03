@@ -75,20 +75,20 @@ bool ResourceManager::loadDefaultShaders()
 
 	// Load Vertex Shaders
 	wrl::ComPtr<ID3D11VertexShader> pVertexShader;
-	d3d11Renderer->CreateVertexShader(searchFile("\\shaders\\VertexShader.cso"), pVertexShader.GetAddressOf(), pInputLayout.GetAddressOf());
+	d3d11Renderer->CreateVertexShader("\\shaders\\VertexShader.cso", pVertexShader.GetAddressOf(), pInputLayout.GetAddressOf());
 	vertexShaders.push_back(pVertexShader);
 
 	// Load Pixel Shaders
 	wrl::ComPtr<ID3D11PixelShader> pSimplePixelShader;
-	d3d11Renderer->CreatePixelShader(searchFile("\\shaders\\SimplePixelShader.cso"), pSimplePixelShader.GetAddressOf());
+	d3d11Renderer->CreatePixelShader("\\shaders\\SimplePixelShader.cso", pSimplePixelShader.GetAddressOf());
 	pixelShaders.push_back(pSimplePixelShader);
 
 	wrl::ComPtr<ID3D11PixelShader> pPixelShader;
-	d3d11Renderer->CreatePixelShader(searchFile("\\shaders\\PixelShader.cso"), pPixelShader.GetAddressOf());
+	d3d11Renderer->CreatePixelShader("\\shaders\\PixelShader.cso", pPixelShader.GetAddressOf());
 	pixelShaders.push_back(pPixelShader);
 
 	wrl::ComPtr<ID3D11PixelShader> pSkyPixelShader;
-	d3d11Renderer->CreatePixelShader(searchFile("\\shaders\\SkyPixelShader.cso"), pSkyPixelShader.GetAddressOf());
+	d3d11Renderer->CreatePixelShader("\\shaders\\SkyPixelShader.cso", pSkyPixelShader.GetAddressOf());
 	pixelShaders.push_back(pSkyPixelShader);
 #endif
 

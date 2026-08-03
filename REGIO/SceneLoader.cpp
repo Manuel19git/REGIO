@@ -1,15 +1,22 @@
 #include "SceneLoader.h"
 #include "Common/Common.h"
 
+#ifdef _DEBUG
+#include <iostream>
+#endif
+
 SceneLoader::SceneLoader()
 {
 	pScene = std::make_unique<SceneData>();
+
+	pScene->rootNode = new SceneData::Node();
 }
 
 void SceneLoader::loadScene(std::string scenePath)
 {
 	commonSearchDirectories.push_back(getDirectory(scenePath));
-
+	std::string ext = getExtension(scenePath);
+	
 	Assimp::Importer* importer = new Assimp::Importer();
 	const aiScene* aiScene = importer->ReadFile(scenePath,
 		aiProcess_Triangulate | aiProcess_ConvertToLeftHanded);
@@ -23,16 +30,21 @@ void SceneLoader::loadScene(std::string scenePath)
 	loadMaterials(aiScene);
 
 	//Process aiScene to fill SceneData with the data we need
-	pScene->rootNode = new SceneData::Node();
 	pScene->rootNode->type = NodeType::EMPTY;
 	pScene->rootNode->name = aiScene->mRootNode->mName.C_Str();
 	pScene->rootNode->transform = aiScene->mRootNode->mTransformation;
-	
+	if (ext == ".fbx" || ext == ".gltf" || ext == ".glb")
+		pScene->rootNode->transform.Transpose();
+
 	for (int i = 0; i < aiScene->mRootNode->mNumChildren; ++i)
 	{
-		processNode(*pScene->rootNode, aiScene, aiScene->mRootNode->mChildren[i]);
+		processNode(*pScene->rootNode, aiScene, aiScene->mRootNode->mChildren[i], ext);
 	}
 	delete importer;
+
+#ifdef _DEBUG
+	logDebugInfo();
+#endif
 }
 
 std::pair<NodeType,int> getNodeTypeAndID(const aiScene* aiScene, std::string nodeName)
@@ -125,40 +137,40 @@ void SceneLoader::loadMaterials(const aiScene* scene)
 	}
 }
 
-//TODO: Nodes with children will be "empty" for now
-void SceneLoader::processNode(SceneData::Node& parentNode,const aiScene* aiScene, const aiNode* aiNode)
+void SceneLoader::processNode(SceneData::Node& parentNode,const aiScene* aiScene, const aiNode* aiNode, std::string ext)
 {
 	int numChildren = aiNode->mNumChildren;
+
+	// fbx,gltf/glb are column major, thus we transpose them
+	Matrix4x4 auxNodeTransform = aiNode->mTransformation;
+	if (ext == ".fbx" || ext == ".gltf" || ext == ".glb")
+		auxNodeTransform.Transpose();
+	
 	if (numChildren > 0) // Still process
 	{
 		SceneData::Node node;
 		node.type = NodeType::EMPTY;
 		node.name = aiNode->mName.C_Str();
-		node.transform = aiNode->mTransformation;
-
+		node.transform = auxNodeTransform * parentNode.transform;
 		parentNode.children.push_back(node);
 
 		for (int i = 0; i < aiNode->mNumChildren; ++i)
 		{
-			processNode(node, aiScene, aiNode->mChildren[i]);
+			processNode(parentNode.children.back(), aiScene, aiNode->mChildren[i], ext);
 		}
 	}
 	else // Leaf node
 	{
 		SceneData::Node leafNode;
 		leafNode.name = aiNode->mName.C_Str();
-		leafNode.transform = aiNode->mTransformation;
-
-		std::pair<NodeType,int> nodeTypeId = getNodeTypeAndID(aiScene, aiNode->mName.C_Str());
-		leafNode.type = nodeTypeId.first;
-		int nodeId = nodeTypeId.second;
-		//TODO:  For now only support one mesh per node (but the idea is to support more than one in the future)
-		if (leafNode.type == NodeType::MESH)
+  		leafNode.transform =  auxNodeTransform * parentNode.transform;
+		if (aiNode->mNumMeshes > 0)
 		{
-			//aiMesh* aiMesh = aiScene.mMeshes[aiNode->mMeshes[0]];
-			aiMesh* aiMesh = aiScene->mMeshes[nodeId];
+			leafNode.type = NodeType::MESH;
+			//TODO:  For now only support one mesh per node (but the idea is to support more than one in the future)
+			aiMesh* aiMesh = aiScene->mMeshes[aiNode->mMeshes[0]];
 			leafNode.materialName = aiScene->mMaterials[aiMesh->mMaterialIndex]->GetName().C_Str();
-
+			
 			MeshNode mesh;
 			mesh.vertices.resize(aiMesh->mNumVertices);
 			mesh.indices.resize(aiMesh->mNumFaces * aiMesh->mFaces->mNumIndices);
@@ -193,9 +205,12 @@ void SceneLoader::processNode(SceneData::Node& parentNode,const aiScene* aiScene
 			leafNode.id = pScene->meshes.size() - 1;
 
 		}
-		else if (leafNode.type == NodeType::EMITTER)
+		else if (aiScene->mNumLights > 0)
 		{
-			aiLight* aiEmitter = aiScene->mLights[nodeId];
+			leafNode.type = NodeType::EMITTER;
+			
+			// I should get more than one light if there are any
+			aiLight* aiEmitter = aiScene->mLights[0];
 
 			// For now emitters are only pointLights
 			EmitterNode emitter(
@@ -207,9 +222,12 @@ void SceneLoader::processNode(SceneData::Node& parentNode,const aiScene* aiScene
 
 			leafNode.id = pScene->emitters.size() - 1;
 		}
-		else if (leafNode.type == NodeType::CAMERA)
+		else if (aiScene->mNumCameras > 0)
 		{
-			aiCamera* aiCamera = aiScene->mCameras[nodeId];
+			leafNode.type = NodeType::CAMERA;
+			
+			// I should get more than one camera if there are any
+			aiCamera* aiCamera = aiScene->mCameras[0];
 
 			// No need to compose camera with Node (transformation is already in aiCamera)
 			Vector startPos = Vector(aiCamera->mPosition.x,aiCamera->mPosition.y, aiCamera->mPosition.z, 1.0f);
@@ -225,3 +243,13 @@ void SceneLoader::processNode(SceneData::Node& parentNode,const aiScene* aiScene
 	}
 
 }
+
+#ifdef _DEBUG
+void SceneLoader::logDebugInfo()
+{
+	std::cout << "Meshes:" << pScene->meshes.size() << std::endl;
+	std::cout << "Cameras:" << pScene->cameras.size() << std::endl;
+	std::cout << "Materials:" << pScene->materials.size() << std::endl;
+	std::cout << "Emitters:" << pScene->emitters.size() << std::endl;
+}
+#endif

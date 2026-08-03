@@ -18,11 +18,11 @@
 
 enum NodeType
 {
-	EMPTY,
-	MESH,
-	CAMERA,
-	EMITTER,
-	MATERIAL
+	EMPTY,   // 0
+	MESH,    // 1
+	CAMERA,  // 2
+	EMITTER, // 3
+	MATERIAL // 4
 };
 struct SceneData
 {
@@ -61,7 +61,7 @@ class SceneLoader
 private:
 	void loadMaterials(const aiScene* scene);
 
-	void processNode(SceneData::Node& parentNode, const aiScene* scene, const aiNode* node);
+	void processNode(SceneData::Node& parentNode, const aiScene* scene, const aiNode* node, std::string ext);
 
 public:
 	SceneLoader();
@@ -69,5 +69,8 @@ public:
 	void loadScene(std::string scenePath);
 
 	std::unique_ptr<SceneData> pScene;
-	
+
+#ifdef _DEBUG
+	void logDebugInfo();
+#endif
 };

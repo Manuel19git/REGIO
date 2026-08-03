@@ -53,10 +53,43 @@ if %ERRORLEVEL% == 1 (
 goto end
 
 :do_build_vs
-rem Time to build on Asus V3 (~7 min)
-mkdir build
-call cmake -S . -B .\build -DCMAKE_BUILD_TYPE=Release
-call cmake --build build --config Release
+:: Define the path to vswhere.exe (Standard Microsoft installation path)
+set VSWHERE="%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
+
+if not exist %VSWHERE% (
+    echo [ERROR] vswhere.exe not found. Visual Studio 2017 or newer is likely not installed.
+    exit /b 1
+)
+:: Query the major version number of the latest installed VS instance
+for /f "usebackq tokens=*" %%i in (`%VSWHERE% -latest -property installationVersion`) do (
+    set VS_VERSION=%%i
+)
+
+:: Extract just the major version number (e.g., "17" from "17.4.33103.184")
+for /f "delims=." %%a in ("%VS_VERSION%") do (set MAJOR_VERSION=%%a)
+
+:: Map the major version to the correct CMake Generator string
+if "%MAJOR_VERSION%"=="17" (
+    set "GENERATOR=Visual Studio 17 2022"
+    set "ARCH_FLAG=-A x64"
+) else if "%MAJOR_VERSION%"=="16" (
+    set "GENERATOR=Visual Studio 16 2019"
+    set "ARCH_FLAG=-A x64"
+) else if "%MAJOR_VERSION%"=="15" (
+    :: VS 2017 requires the architecture appended directly to the generator string
+    set "GENERATOR=Visual Studio 15 2017 Win64"
+    set "ARCH_FLAG="
+) else (
+    echo "[ERROR] Supported Visual Studio version not found (Detected major version: %MAJOR_VERSION%)"
+    exit /b 1
+)
+
+echo [INFO] Found %GENERATOR%
+echo [INFO] Running CMake Configuration...
+
+mkdir build_VS
+call cmake -S . -B .\build_VS -G "%GENERATOR%" %ARCH_FLAG% -DCMAKE_BUILD_TYPE=%CONIFG%
+call cmake --build build_VS --config %CONFIG%
 goto end
 
 :do_rebuild
@@ -65,9 +98,9 @@ call :do_build
 goto end
 
 :usage
-echo Usage: %~n0 ^(clean ^| build_ninja ^| build_vs ^| rebuild^)
+echo Usage: %~n0 ^(clean ^| build ^| build_vs ^) ^(debug ^| release) Note: debug config set by default
 echo   clean   	   : remove build directory
-echo   build : configure + build using Ninja + MSVC
+echo   build       : configure + build using Ninja + MSVC
 echo   build_vs    : configure + build using visual studio
 goto end
 
